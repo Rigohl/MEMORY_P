@@ -1,0 +1,61 @@
+[package]
+name = "memory_p"
+version = "0.2.0"
+edition = "2021"
+description = "MCP Toolkit HTTP 2025: análisis, edición y reparación masiva para agentes"
+authors = ["MEMORY_P Team"]
+license = "MIT"
+keywords = ["mcp", "http", "analysis", "rust"]
+categories = ["development-tools", "utilities"]
+
+[dependencies]
+# Async & Web
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3.31"
+reqwest = { version = "0.11", features = ["json"] }
+
+# Parallelism & Concurrency
+rayon = "1.8"
+scc = "2.1" # Versión estable probada
+dashmap = "5.5"
+num_cpus = "1.0"
+
+# Serialization (Zero-Copy)
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+rkyv = { version = "0.7.42", features = ["validation"] } # Versión estable estable
+toml = "0.8"
+
+# MCP Protocol
+mcp-sdk-rs = "0.3"
+mcpkit-core = "0.2"
+
+# Logging & Error Handling
+tracing = "0.1"
+tracing-subscriber = "0.3"
+thiserror = "1.0"
+anyhow = "1.0"
+
+# File & Path Operations (High Velocity)
+jwalk = "0.8"
+ignore = "0.4"
+regex = "1.10"
+walkdir = "2.5" # Deprecting
+
+# Workspace & Memory
+lazy_static = "1.4"
+memmap2 = "0.9.9"
+mimalloc = "0.1.48"
+
+[dev-dependencies]
+mockall = "0.12"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 1

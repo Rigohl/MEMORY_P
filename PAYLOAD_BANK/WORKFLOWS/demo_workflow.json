@@ -1,0 +1,29 @@
+{
+    "jsonrpc": "2.0",
+    "id": 888,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_workflow",
+        "arguments": {
+            "steps": [
+                {
+                    "action": "Scan",
+                    "params": {
+                        "path": "C:\\Users\\DELL\\Desktop\\PROYECTOS\\MEMORY_P\\src",
+                        "extension": "rs"
+                    }
+                },
+                {
+                    "action": "Filter",
+                    "params": {
+                        "pattern": "TODO"
+                    }
+                },
+                {
+                    "action": "Analyze"
+                }
+            ],
+            "dry_run": true
+        }
+    }
+}

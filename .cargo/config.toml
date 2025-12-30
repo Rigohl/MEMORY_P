@@ -1,0 +1,4 @@
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld"
+# Linker-flavor for MSVC LLD
+# rustflags = ["-C", "linker-flavor=msvc-lld"]

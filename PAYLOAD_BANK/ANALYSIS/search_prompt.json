@@ -1,0 +1,13 @@
+{
+    "jsonrpc": "2.0",
+    "id": 700,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_search",
+        "arguments": {
+            "path": "C:/Users/DELL/Desktop/hf_spaces/COPILOTO/PERSONALIZACION",
+            "pattern": "productivity",
+            "extension": "md"
+        }
+    }
+}

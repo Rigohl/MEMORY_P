@@ -1,0 +1,14 @@
+{
+    "jsonrpc": "2.0",
+    "id": 600,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_analyze",
+        "arguments": {
+            "target_dir": "C:\\Users\\DELL\\Desktop\\hf_spaces\\copilot\\prompts\\personalizacion",
+            "file_extension": "md",
+            "max_tasks": 8,
+            "dry_run": false
+        }
+    }
+}

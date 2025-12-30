@@ -1,0 +1,26 @@
+# Build and target
+/target/
+/build_*/
+*.exe
+
+# Dependencies
+Cargo.lock
+
+# Simulation data (local only)
+PAYLOAD_BANK/SIMULATIONS/
+PAYLOAD_BANK/RESULTS/
+PAYLOAD_BANK/EVOLUTION/
+*_results.json
+evolution_state*.json
+
+# Local development
+JULIA_BRAIN/
+BOT/
+temp_mcp/
+
+# Temp files
+*.log
+*.tmp
+*.bak
+*_errors.txt
+engine

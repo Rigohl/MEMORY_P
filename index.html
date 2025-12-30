@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory_P Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .stats { display: flex; gap: 20px; }
+        .stat-box { text-align: center; padding: 10px 20px; background: #21262d; border-radius: 6px; }
+        .stat-val { font-size: 1.5em; font-weight: bold; color: #e3b341; }
+        .stat-err { color: #ff7b72; }
+        .card { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 15px; margin-bottom: 10px; }
+        .card-top { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9em; }
+        .tag { background: #238636; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+        .path { color: #58a6ff; font-family: monospace; }
+        .msg { color: #d2a8ff; font-weight: 500; margin-bottom: 10px; }
+        .code { background: #0d1117; padding: 10px; border-radius: 4px; font-family: monospace; color: #8b949e; white-space: pre-wrap; border: 1px solid #30363d; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1 style="margin:0; color:#58a6ff">🛡️ Memory_P Monitor</h1>
+                <small>Estado del Proyecto & Reparación</small>
+            </div>
+            <div class="stats">
+                <div class="stat-box"><div class="stat-val stat-err">0</div><div>Errores</div></div>
+                <div class="stat-box"><div class="stat-val">23</div><div>Advertencias</div></div>
+            </div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_imports</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\analyzer.rs">analyzer.rs</span></div>
+            <div class="msg">⚠️ warning: unused import: `std::collections::HashMap`</div>
+            <div class="code">1→use walkdir::WalkDir;
+     2→use regex::Regex;
+     3→use std::collections::HashMap;
+     4→use serde::{Deserialize, Serialize};
+     5→use crate::dependencies::{DependencyAnalyzer, ModuleAnalysis};</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_imports</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused import: `Dependency`</div>
+            <div class="code">4→//! No basado en ningún código externo - 100% desarrollado por JARVIX
+     5→
+     6→use cargo_metadata::{MetadataCommand, Package, Dependency, DependencyKind};
+     7→use std::collections::{HashMap, HashSet};
+     8→use serde::{Deserialize, Serialize};</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_imports</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\metrics.rs">metrics.rs</span></div>
+            <div class="msg">⚠️ warning: unused import: `ProcessExt`</div>
+            <div class="code">1→use sysinfo::{System, SystemExt, CpuExt, ProcessExt};
+     2→use serde::{Deserialize, Serialize};
+     3→use chrono::Utc;
+     4→
+     5→#[derive(Debug, Serialize, Deserialize)]</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\linting.rs">linting.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `path`</div>
+            <div class="code">231→            file_reports,
+     232→        })
+     233→    }
+     234→
+     235→    pub async fn lint_file(&self, content: &str, path: &Path) -> Vec<LintIssue> {
+     236→        let mut issues = Vec::new();
+     237→        let lines: Vec<&str> = content.lines().collect();</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\analyzer.rs">analyzer.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `path`</div>
+            <div class="code">284→
+     285→        (defects as f64 / opportunities as f64) * 1_000_000.0
+     286→    }
+     287→
+     288→    fn detect_issues(&self, content: &str, path: &std::path::Path) -> Vec<String> {
+     289→        let mut issues = Vec::new();
+     290→</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `package`; warning: unused variable: `analysis`</div>
+            <div class="code">370→    }
+     371→
+     372→    fn analyze_package_features(&self, package: &Package, analysis: &mut DependencyAnalysis) {
+     373→        // TODO: Implementar análisis de features...
+     374→        // if let Some(features) = &package.features { ... }</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `i`</div>
+            <div class="code">506→        };
+     507→
+     508→        // JARVIX: Análisis línea por línea (algoritmo propietario)
+     509→        for (i, line) in lines.iter().enumerate() {
+     510→            let trimmed = line.trim();
+     511→</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `objectives`</div>
+            <div class="code">1052→    /// 🎯 Sistema de Optimización Multivariable JARVIX
+     1053→    /// Inspirado en matemáticas avanzadas para optimización de métricas múltiples
+     1054→    pub fn optimize_multiobjective(&self, objectives: Vec<String>, constraints: Vec<String>) -> Result<JarvixOptimization> {
+     1055→        // Implementación de optimización multivariable...</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_mut / unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: variable does not need to be mutable; warning: unused variable: `singular_values`</div>
+            <div class="code">1111→
+     1112→        // Calculate condition number using singular values
+     1113→        let n = matrix_data.len();
+     1114→        let mut singular_values: Vec<f64> = Vec::new();
+     1115→
+     1116→        // Simplified singular value calculation...</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `optimal_iterations`</div>
+            <div class="code">1169→        }
+      1170→
+      1171→        // Grover-inspired search: O(√N) complexity instead of O(N)
+      1172→        let optimal_iterations = (std::f64::consts::PI / 4.0 * (n as f64).sqrt()) as usize;
+      1173→</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `code_features`</div>
+            <div class="code">1202→    /// 🤖 Sistema de Machine Learning JARVIX para clasificación de código
+      1203→    /// Inspirado en redes neuronales profundas y ensemble learning
+      1204→    pub fn ml_code_classification(&self, code_features: Vec<f64>) -> Result<HashMap<String, f64>> {
+      1205→        // Simulated neural network classification</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `df`</div>
+            <div class="code">1240→        let t_statistic = (mean_after - mean_before) / (pooled_std * (2.0 / n).sqrt());
+      1241→
+      1242→        // Degrees of freedom and p-value approximation
+      1243→        let df = (2.0 * n) - 2.0;
+      1244→        let p_value = if t_statistic.abs() > 2.0 { 0.05 } else { 0.95 }; // Simplified</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">dead_code (método no usado)</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\dependencies.rs">dependencies.rs</span></div>
+            <div class="msg">⚠️ warning: methods ... are never used</div>
+            <div class="code"></div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">field never read</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\linting.rs">linting.rs</span></div>
+            <div class="msg">⚠️ warning: field `name` is never read</div>
+            <div class="code">46→struct LintRule {
+      47→    id: String,
+      48→    name: String,
+      49→    description: String,</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">field never read</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-core\src\validation.rs">validation.rs</span></div>
+            <div class="msg">⚠️ warning: field `command_patterns` is never read</div>
+            <div class="code">19→pub struct JarValidator {
+      20→    jarvix_pattern: Regex,
+      21→    command_patterns: HashMap<String, Regex>,
+      22→}</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_imports</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-cli\src\commands\scan.rs">scan.rs</span></div>
+            <div class="msg">⚠️ warning: unused imports: `Write` y `self`</div>
+            <div class="code">6→use clap::Args;
+      7→use jar_core::scanner::{AdvancedProcessScanner, ExtendedEditorProcess};
+      8→use std::io::{self, Write};</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-cli\src\main.rs">main.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `path`; warning: unused variable: `force`</div>
+            <div class="code">206→        }
+      207→
+      208→        Commands::Repair { path, force, dry_run } => {
+      209→            println!("{}", "🔧 JARVIX.AUTO.REPAIR.PROTOCOL.ACTIVATED".bold().yellow());</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-cli\src\main.rs">main.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `suggester`</div>
+            <div class="code">448→}
+      449→
+      450→async fn display_jarvix_command_suggestions(result: &jar_core::AnalysisResult, suggester: &CommandSuggester) {
+      451→    println!("\n{}", "🎯 JARVIX.AI.INTELLIGENCE.UNIT:".bold().cyan());</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-cli\src\main.rs">main.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `path`</div>
+            <div class="code">508→}
+      509→
+      510→async fn run_clippy_with_jarvix_intelligence(path: &str, fix: bool, strict: bool) -> anyhow::Result<()> {
+      511→    let mut args = vec!["clippy"];</div>
+        </div>        <div class="card">
+            <div class="card-top"><span class="tag">unused_variables</span><span class="path" title="C:\Users\DELL\Desktop\CLI\jarvix-workspace\jar-cli\src\main.rs">main.rs</span></div>
+            <div class="msg">⚠️ warning: unused variable: `path`</div>
+            <div class="code">536→}
+      537→
+      538→async fn run_build_with_jarvix_intelligence(path: &str, release: bool, bin: Option<&str>) -> anyhow::Result<()> {
+      539→    let mut args = vec!["build"];
+
+Notas
+- Algunos avisos aparecen duplicados en targets de prueba (`lib test`, `bin test`). Este informe lista ubicaciones únicas.
+- No se encontraron fallos de enlace ni de dependencias durante la compilación.
+
+Recomendaciones
+- unused_imports / unused_variables: elimina imports y variables no usadas o prefíjelas con `_`.
+- dead_code: elimina métodos no utilizados o añádeles `#[allow(dead_code)]` si son intencionales.
+- field never read: usa los campos o elimina del struct; considera `#[allow(dead_code)]` si aplica.
+- Ejecuta `cargo fix` para aplicar sugerencias automáticas: `cargo fix --workspace --all-targets`.</div>
+        </div></div></body></html>

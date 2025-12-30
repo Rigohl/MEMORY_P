@@ -1,0 +1,28 @@
+    Checking memory_p v0.2.0 (C:\Users\DELL\Desktop\PROYECTOS\MEMORY_P)
+error[E0433]: failed to resolve: use of undeclared type `Regex`
+   --> src\parallel_engine.rs:559:26
+    |
+559 |                 let re = Regex::new(pattern).map_err(|e| MemoryPError::Other(e.to_string()))?;
+    |                          ^^^^^ use of undeclared type `Regex`
+    |
+help: consider importing one of these structs
+    |
+  2 + use regex::Regex;
+    |
+  2 + use regex::bytes::Regex;
+    |
+
+error[E0282]: type annotations needed
+   --> src\parallel_engine.rs:559:55
+    |
+559 |                 let re = Regex::new(pattern).map_err(|e| MemoryPError::Other(e.to_string()))?;
+    |                                                       ^                      - type must be known at this point
+    |
+help: consider giving this closure parameter an explicit type
+    |
+559 |                 let re = Regex::new(pattern).map_err(|e: /* Type */| MemoryPError::Other(e.to_string()))?;
+    |                                                        ++++++++++++
+
+Some errors have detailed explanations: E0282, E0433.
+For more information about an error, try `rustc --explain E0282`.
+error: could not compile `memory_p` (bin "memory_p") due to 2 previous errors

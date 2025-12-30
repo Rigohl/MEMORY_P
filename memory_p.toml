@@ -1,0 +1,18 @@
+[parallelism]
+# 🚀 CONFIGURACIÓN OPTIMIZADA POR SIMULACIÓN BEND
+# Modelo: Saturación Asintótica + Eficiencia Parabólica
+# Result: 32 Threads | Batch 100
+threads = 32
+batch_size = 100
+
+[advanced]
+# Timeouts y Buffers calculados para Batch 100
+file_timeout_ms = 8000
+large_file_threshold = 10485760 # 10MB
+
+[orchestrator]
+# 🧠 JULIA_BRAIN Configuration
+auto_analyze = true
+mcp_port = 4040
+bend_enabled = true
+report_format = "json"

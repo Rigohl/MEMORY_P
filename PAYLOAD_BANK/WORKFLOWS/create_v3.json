@@ -1,0 +1,13 @@
+{
+    "jsonrpc": "2.0",
+    "id": 400,
+    "method": "callTool",
+    "params": {
+        "name": "create_project",
+        "arguments": {
+            "path": "C:\\Users\\DELL\\Desktop\\hf_spaces\\NUCLEAR_CRAWLER_V3",
+            "name": "nuclear_v3",
+            "template": "mcp"
+        }
+    }
+}
