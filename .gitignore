@@ -1,26 +1,16 @@
-# Build and target
-/target/
-/build_*/
-*.exe
+# Solo src/, Cargo.toml, README.md, docs/
+*
 
-# Dependencies
-Cargo.lock
+# Permitir esenciales
+!.gitignore
+!Cargo.toml
+!README.md
+!LICENSE
 
-# Simulation data (local only)
-PAYLOAD_BANK/SIMULATIONS/
-PAYLOAD_BANK/RESULTS/
-PAYLOAD_BANK/EVOLUTION/
-*_results.json
-evolution_state*.json
+# Código fuente
+!src/
+!src/**
 
-# Local development
-JULIA_BRAIN/
-BOT/
-temp_mcp/
-
-# Temp files
-*.log
-*.tmp
-*.bak
-*_errors.txt
-engine
+# Documentación básica
+!docs/
+!docs/**
