@@ -83,8 +83,6 @@ const SRC_MODULES: &[&str] = &[
     "analyzer.rs",
     "workspace.rs",
     "parallel_engine.rs",
-    "simulation_engine.rs",
-    "accelerator_bridge.rs",
     "mcp_api.rs",
     "mega_simulator.rs",
     "mcp/mod.rs",

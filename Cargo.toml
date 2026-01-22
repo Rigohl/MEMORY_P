@@ -41,7 +41,6 @@ anyhow = "1.0"
 jwalk = "0.8"
 ignore = "0.4"
 regex = "1.10"
-walkdir = "2.5" # Deprecting
 
 # Workspace & Memory
 lazy_static = "1.4"

@@ -149,9 +149,7 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                             "phase": { "type": "integer", "enum": [1, 2, 3], "description": "1=módulos, 2=paralelismo, 3=ecosystem" },
                             "iterations": { "type": "integer", "default": 1000, "description": "Simulaciones por config" },
                             "modules": { "type": "array", "items": { "type": "string" }, "description": "Para phase 1" },
-                            "use_gpu": { "type": "boolean", "default": false },
-                            "name": { "type": "string", "description": "Nombre de simulación custom" },
-                            "logic": { "type": "string", "description": "Código Bend custom" }
+                            "use_gpu": { "type": "boolean", "default": false }
                         },
                         "required": ["phase"]
                     }),
@@ -351,26 +349,7 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                         .and_then(|v| v.as_bool())
                         .unwrap_or(false);
 
-                    // Check for custom simulation
-                    if let (Some(name), Some(logic)) = (
-                        arguments.get("name").and_then(|v| v.as_str()),
-                        arguments.get("logic").and_then(|v| v.as_str()),
-                    ) {
-                        match crate::simulation_engine::run_bend_simulation(
-                            name,
-                            logic,
-                            &json!({}),
-                            use_gpu,
-                        ) {
-                            Ok(output) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("🌀 Custom Sim:\n{}", output) }] }),
-                            ),
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
-                            ),
-                        }
-                    } else {
-                        // Phase-based mega simulation with actual execution
+                    // Phase-based mega simulation with actual execution
                         let config = crate::mega_simulator::SimConfig {
                             phase: phase as u8,
                             iterations,
@@ -420,7 +399,6 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                                 json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
                             ),
                         }
-                    }
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
