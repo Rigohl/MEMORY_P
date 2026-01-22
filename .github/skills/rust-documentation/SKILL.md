@@ -28,7 +28,6 @@ Genera documentación Rust siguiendo convenciones de rustdoc y el estilo del pro
 ///
 /// # Arguments
 /// * `path` - Ruta al archivo .rs a analizar
-/// * `options` - Opciones de análisis (profundidad, patrones, etc.)
 ///
 /// # Returns
 /// * `Ok(Analysis)` - Análisis completo del archivo
@@ -58,7 +57,7 @@ Genera documentación Rust siguiendo convenciones de rustdoc y el estilo del pro
 /// # Performance
 /// Procesa ~10K líneas/segundo en CPU moderna. Para archivos grandes,
 /// considerar usar `analyze_file_async()`.
-pub fn analyze_file(path: &Path, options: AnalysisOptions) -> Result<Analysis, MemoryPError> {
+pub fn analyze_file(path: &Path) -> Result<Analysis, MemoryPError> {
     // ...
 }
 ```

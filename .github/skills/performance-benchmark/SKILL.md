@@ -24,11 +24,13 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use memory_p::analyzer::CodeAnalyzer;
 
 fn bench_analyze(c: &mut Criterion) {
+    use std::path::PathBuf;
     let analyzer = CodeAnalyzer::new();
+    let path = PathBuf::from("src/main.rs");
     
     c.bench_function("analyze_file", |b| {
         b.iter(|| {
-            analyzer.analyze_file(black_box("src/main.rs"))
+            analyzer.analyze_file(black_box(&path))
         });
     });
 }

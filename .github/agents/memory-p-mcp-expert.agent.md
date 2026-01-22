@@ -234,17 +234,31 @@ pub async fn analyze_project_handler(
 ```rust
 // En mcp_api.rs
 "tools/call" => {
-    let params = req.params.as_ref()
-        .ok_or_else(|| error_response(id.clone(), INVALID_PARAMS, "Missing params"))?;
+    // Validar params
+    let params = match req.params.as_ref() {
+        Some(p) => p,
+        None => {
+            return Json(error_response(id, INVALID_PARAMS, "Missing params"));
+        }
+    };
     
-    let tool_name = params["name"].as_str()
-        .ok_or_else(|| error_response(id.clone(), INVALID_PARAMS, "Missing tool name"))?;
+    // Validar tool name
+    let tool_name = match params["name"].as_str() {
+        Some(name) => name,
+        None => {
+            return Json(error_response(id, INVALID_PARAMS, "Missing tool name"));
+        }
+    };
     
     match tool_name {
         "analyze" => {
             let arguments = &params["arguments"];
-            let path = arguments["path"].as_str()
-                .ok_or_else(|| error_response(id.clone(), INVALID_PARAMS, "Missing path"))?;
+            let path = match arguments["path"].as_str() {
+                Some(p) => p,
+                None => {
+                    return Json(error_response(id, INVALID_PARAMS, "Missing path"));
+                }
+            };
             
             let analyzer = CodeAnalyzer::new();
             match analyzer.analyze_directory(path, "**/*.rs").await {
