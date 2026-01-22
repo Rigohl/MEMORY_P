@@ -78,8 +78,16 @@ MEMORY_P/
 │   └── analyzer.rs          # Code analysis
 ├── JULIA_BRAIN/             # Julia orchestrator
 ├── PAYLOAD_BANK/            # Workflows and analysis data
-└── docs/                    # Documentation
+├── docs/                    # Documentation
+├── AGENTS.md                # GitHub Copilot Agents guide
+└── SKILLS.md                # GitHub Copilot Skills guide
 ```
+
+## 📚 Documentation
+
+- **[AGENTS.md](AGENTS.md)** - Guía completa de GitHub Copilot Agents
+- **[SKILLS.md](SKILLS.md)** - Documentación de GitHub Copilot Agent Skills
+- **[docs/](docs/)** - Documentación técnica adicional
 
 ## 📄 License
 
