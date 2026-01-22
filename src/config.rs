@@ -2,6 +2,7 @@ use serde::Deserialize;
 use std::fs;
 
 /// Configuración principal de MEMORY_P
+#[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct AppConfig {
     pub parallelism: ParallelismConfig,
