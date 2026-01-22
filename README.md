@@ -15,19 +15,20 @@ Compatible with Cursor, Windsurf, Claude Desktop, and VS Code.
 
 | Tool        | Description                                             |
 | ----------- | ------------------------------------------------------- |
-| `analyze`   | 🔬 Massively parallel code analysis with security       |
-| `repair`    | 🛠️ Auto-fix formatting, imports, and code style         |
-| `edit`      | ✏️ Atomic bulk editing with regex support               |
-| `workflow`  | 🌊 Pipeline orchestration with auto-evolution           |
-| `simulate`  | 🌀 3-phase optimization simulations (815K sims)         |
+| `analyze`   | 🔬 Análisis masivo paralelo: deep/quick/overview modes |
+| `repair`    | 🛠️ Auto-fix: imports duplicados, formato, espacios     |
+| `edit`      | ✏️ Edición atómica masiva: replace/regex/append/delete |
+| `workflow`  | 🌊 Pipeline: Scan→Filter→Analyze→Edit→Repair→Evolve    |
+| `simulate`  | 🌀 Mega simulaciones 3-phase: 15K/150K/500K iterations |
 
 ## 📦 Tech Stack
 
-- **Parallelism**: `rayon` with work-stealing
+- **Parallelism**: `rayon 1.11` with work-stealing
 - **Memory**: `mimalloc` allocator + `memmap2` zero-copy I/O
-- **Caching**: `scc` lock-free HashMap
-- **Serialization**: `rkyv` zero-copy
-- **HTTP**: `axum` + `tokio`
+- **Caching**: `scc 2.4` lock-free HashMap
+- **Serialization**: `rkyv 0.8` zero-copy deserialization
+- **HTTP**: `axum 0.7` + `tokio 1.49`
+- **MCP**: `mcp-sdk-rs 0.3` + `mcpkit-core 0.5`
 
 ## 🛠️ Installation
 
@@ -71,12 +72,13 @@ Add to your `mcp.json`:
 ```text
 MEMORY_P/
 ├── src/
-│   ├── main.rs              # Entry point
+│   ├── main.rs              # Entry point + HTTP/stdio modes
 │   ├── mcp_api.rs           # MCP handlers (5 tools)
 │   ├── parallel_engine.rs   # Rayon-powered processing
 │   ├── mega_simulator.rs    # 3-phase simulation engine
-│   └── analyzer.rs          # Code analysis
-├── JULIA_BRAIN/             # Julia orchestrator
+│   ├── analyzer.rs          # Code analysis with security
+│   ├── workspace.rs         # Workspace management
+│   └── config.rs            # Configuration
 ├── PAYLOAD_BANK/            # Workflows and analysis data
 └── docs/                    # Documentation
 ```

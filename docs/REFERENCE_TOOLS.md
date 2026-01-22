@@ -1,39 +1,149 @@
 # Referencia de Herramientas MCP
 
-Este documento detalla los parámetros y capacidades de las herramientas expuestas por el servidor **MEMORY_P**.
+Este documento detalla las 5 herramientas MCP expuestas por **MEMORY_P v2025.2.ULTRA**.
 
-## Herramientas de Análisis
+## 🔬 Tool 1: `analyze`
 
-### `scan_project`
-Lista archivos en un directorio filtrando por extensión.
-- **Parámetros**:
-  - `path` (string, requerido): Ruta absoluta al directorio.
-  - `extension` (string, opcional, default: "rs"): Extensión de archivo.
+Análisis masivo paralelo con 3 modos de operación.
 
-### `analyze_project`
-Realiza un escaneo profundo buscando métricas de complejidad y vulnerabilidades.
-- **Parámetros**:
-  - `path` (string, requerido): Ruta absoluta.
-  - `extension` (string, opcional): Filtrar archivos.
-  - `max_tasks` (integer, opcional): Número de hilos (Rayon).
+**Parámetros:**
+- `path` (string, requerido): Ruta al proyecto
+- `mode` (string, enum): Modo de análisis
+  - `"deep"`: Análisis completo con métricas, seguridad y complejidad
+  - `"quick"`: Análisis rápido solo con métricas básicas
+  - `"overview"`: Vista arquitectónica del proyecto
+- `extension` (string, default: "rs"): Filtrar por extensión
+- `use_gitignore` (boolean, default: true): Respetar .gitignore
+- `include_hidden` (boolean, default: false): Incluir archivos ocultos
 
-## Herramientas de Edición
+**Ejemplo:**
+```json
+{
+  "name": "analyze",
+  "arguments": {
+    "path": "./src",
+    "mode": "deep",
+    "extension": "rs"
+  }
+}
+```
 
-### `edit_project`
-Normalización masiva de código (Tabs -> 4 Espacios).
-- **Parámetros**:
-  - `path` (string, requerido): Directorio raíz.
-  - `pattern` (string, opcional): Texto a buscar.
-  - `replacement` (string, opcional): Texto a reemplazar.
+## 🛠️ Tool 2: `repair`
 
-### `repair_project`
-Aplica correcciones estructurales (imports, espacios, líneas vacías).
-- **Parámetros**:
-  - `smart` (boolean, default: true): Activa la lógica avanzada de deduplicación.
+Reparación paralela automática de código.
 
-## Códigos de Error
+**Parámetros:**
+- `path` (string, requerido): Ruta al proyecto
+- `extension` (string, default: "rs"): Extensión de archivos
+- `dry_run` (boolean, default: false): Simular sin escribir
+
+**Aplica:**
+- Deduplicación de imports
+- Normalización de espacios finales
+- EOL consistency
+- Reducción de líneas vacías consecutivas
+
+**Ejemplo:**
+```json
+{
+  "name": "repair",
+  "arguments": {
+    "path": "./src",
+    "dry_run": false
+  }
+}
+```
+
+## ✏️ Tool 3: `edit`
+
+Edición masiva atómica con 4 modos.
+
+**Parámetros:**
+- `mode` (string, enum, requerido): Tipo de operación
+  - `"replace"`: Reemplazo literal de texto
+  - `"regex"`: Búsqueda/reemplazo con regex
+  - `"append"`: Añadir contenido
+  - `"delete"`: Eliminar archivos
+- `changes` (array): Para modes replace/regex/append
+  - `path` (string): Archivo a modificar
+  - `operations` (array): Lista de operaciones
+- `paths` (array): Para mode delete
+- `dry_run` (boolean, default: true): Simular cambios
+
+**Ejemplo (replace):**
+```json
+{
+  "name": "edit",
+  "arguments": {
+    "mode": "replace",
+    "changes": [{
+      "path": "./src/main.rs",
+      "operations": [{
+        "search": "old_text",
+        "replace": "new_text"
+      }]
+    }],
+    "dry_run": false
+  }
+}
+```
+
+## 🌊 Tool 4: `workflow`
+
+Pipeline de pasos secuenciales con auto-evolución.
+
+**Parámetros:**
+- `steps` (array, requerido): Lista de pasos
+  - `action` (string, enum): "Scan", "Filter", "Analyze", "Edit", "Repair", "Evolve"
+  - `params` (object): Parámetros del paso
+- `dry_run` (boolean, default: true): Modo simulación
+- `max_threads` (integer): Threads para procesamiento paralelo
+
+**Ejemplo:**
+```json
+{
+  "name": "workflow",
+  "arguments": {
+    "steps": [
+      {"action": "Scan", "params": {"path": "./src"}},
+      {"action": "Analyze", "params": {}},
+      {"action": "Repair", "params": {}}
+    ],
+    "dry_run": false
+  }
+}
+```
+
+## 🌀 Tool 5: `simulate`
+
+Mega simulaciones en 3 fases para optimización.
+
+**Parámetros:**
+- `phase` (integer, enum, requerido): 1, 2 o 3
+  - `1`: Optimización por módulo (15K iterations)
+  - `2`: Tuning de paralelismo (150K iterations)
+  - `3`: Análisis de ecosistema (500K iterations)
+- `iterations` (integer, default: 1000): Simulaciones por config
+- `modules` (array): Solo para phase 1 - lista de módulos
+- `use_gpu` (boolean, default: false): Usar aceleración GPU
+
+**Ejemplo:**
+```json
+{
+  "name": "simulate",
+  "arguments": {
+    "phase": 2,
+    "iterations": 5000,
+    "use_gpu": false
+  }
+}
+```
+
+## 📊 Códigos de Error MCP
+
 | Código | Mensaje | Causa |
 |--------|---------|-------|
-| -32600 | Invalid JSON-RPC version | La versión no es "2.0". |
-| -32601 | Method not found | La herramienta no existe. |
-| -32602 | Invalid params | Falta el parámetro `path` o es inválido. |
+| -32600 | Invalid JSON-RPC version | La versión no es "2.0" |
+| -32601 | Method not found | El método MCP no existe |
+| -32602 | Invalid params | Parámetros faltantes o inválidos |
+| -32603 | Internal error | Error interno del servidor |
