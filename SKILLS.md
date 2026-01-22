@@ -1,0 +1,419 @@
+# GitHub Copilot Agent Skills - Documentación Oficial
+
+## 📋 Índice
+- [¿Qué son las Agent Skills?](#qué-son-las-agent-skills)
+- [Diferencias: Skills vs Custom Instructions](#diferencias-skills-vs-custom-instructions)
+- [Estructura de una Skill](#estructura-de-una-skill)
+- [Creación de Skills](#creación-de-skills)
+- [Ubicaciones y Alcance](#ubicaciones-y-alcance)
+- [Mejores Prácticas](#mejores-prácticas)
+- [Ejemplos de Skills](#ejemplos-de-skills)
+- [Skills en MEMORY_P](#skills-en-memory_p)
+- [Enlaces Oficiales](#enlaces-oficiales)
+
+---
+
+## ¿Qué son las Agent Skills?
+
+Las **Agent Skills** (anteriormente llamadas "skills") son capacidades especializadas que permiten enseñar a GitHub Copilot y otros agents a realizar tareas específicas y repetibles.
+
+### Características Clave
+- 📁 **Portables**: Se definen como carpetas con instrucciones, scripts y recursos
+- 🔄 **Reutilizables**: Compartibles entre diferentes agents (CLI, Coding Agent, VS Code)
+- 🎯 **Contextuales**: Se activan automáticamente cuando el contexto es relevante
+- 🛠️ **Ejecutables**: Pueden incluir scripts y ejemplos concretos
+
+**Diferencia Principal**: A diferencia de las custom instructions, las skills pueden incluir código ejecutable y son más estructuradas.
+
+**Documentación oficial**: 
+- [About Agent Skills - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [Use Agent Skills in VS Code](https://code.visualstudio.com/docs/copilot/customization/agent-skills)
+
+---
+
+## Diferencias: Skills vs Custom Instructions
+
+| Aspecto | Agent Skills | Custom Instructions |
+|---------|--------------|-------------------|
+| **Formato** | Carpeta con `SKILL.md` + recursos | Archivo `.md` simple |
+| **Contenido** | Instrucciones + scripts + ejemplos | Solo texto/instrucciones |
+| **Portabilidad** | Alta (cross-agent) | Media (agent-specific) |
+| **Complejidad** | Workflows complejos | Directivas simples |
+| **Ejecución** | Puede incluir código | Solo guías textuales |
+| **Uso típico** | Automatizaciones, pipelines | Preferencias de estilo |
+
+---
+
+## Estructura de una Skill
+
+### Anatomía de `SKILL.md`
+
+```markdown
+---
+name: "nombre-skill"
+description: "Descripción breve de lo que hace"
+version: "1.0.0"
+author: "Tu nombre"
+tags: ["rust", "testing", "automation"]
+---
+
+# Nombre de la Skill
+
+## Descripción
+Explicación detallada de la funcionalidad.
+
+## Cuándo Usar
+- Contexto 1
+- Contexto 2
+
+## Instrucciones
+1. Paso 1
+2. Paso 2
+
+## Ejemplos
+\`\`\`rust
+// Código de ejemplo
+\`\`\`
+
+## Recursos Adicionales
+- archivo-helper.sh
+- template.json
+```
+
+### Estructura de Carpeta
+
+```
+.github/skills/mi-skill/
+├── SKILL.md           # Definición principal
+├── examples/          # Ejemplos de uso
+│   ├── example1.rs
+│   └── example2.rs
+├── scripts/           # Scripts auxiliares
+│   └── helper.sh
+└── templates/         # Plantillas
+    └── template.toml
+```
+
+---
+
+## Creación de Skills
+
+### 1. Skills a Nivel de Proyecto
+
+```bash
+# Crear estructura
+mkdir -p .github/skills/mi-skill
+cd .github/skills/mi-skill
+
+# Crear SKILL.md
+cat > SKILL.md << 'EOF'
+---
+name: "rust-testing"
+description: "Genera tests unitarios para módulos Rust"
+---
+
+# Rust Testing Skill
+
+Genera tests completos con rayon para procesamiento paralelo.
+EOF
+```
+
+### 2. Skills a Nivel de Usuario
+
+```bash
+# Ubicación global
+mkdir -p ~/.copilot/skills/global-skill
+
+# Crear skill
+cat > ~/.copilot/skills/global-skill/SKILL.md << 'EOF'
+---
+name: "git-workflow"
+description: "Automatiza flujo git con convenciones"
+---
+
+# Git Workflow Skill
+
+Automatiza commits siguiendo Conventional Commits.
+EOF
+```
+
+### 3. Activación Automática
+
+Las skills se activan cuando:
+- El contexto del proyecto coincide con tags
+- El usuario invoca explícitamente la skill
+- Copilot detecta que la tarea requiere esa skill
+
+---
+
+## Ubicaciones y Alcance
+
+### Prioridad de Carga
+1. **Proyecto**: `.github/skills/` (máxima prioridad)
+2. **Usuario**: `~/.copilot/skills/` (global)
+3. **Organización**: Skills compartidas (si configurado)
+
+### Alcance de Aplicación
+
+| Ubicación | Alcance | Uso Típico |
+|-----------|---------|------------|
+| `.github/skills/` | Solo este repo | Skills específicas del proyecto |
+| `~/.copilot/skills/` | Todos tus proyectos | Skills personales |
+| Org/Enterprise | Repos de la org | Estándares corporativos |
+
+---
+
+## Mejores Prácticas
+
+### ✅ DO's
+
+1. **Nombres Descriptivos**
+   ```markdown
+   ---
+   name: "rust-parallel-testing"
+   description: "Genera tests con rayon para procesamiento paralelo"
+   ---
+   ```
+
+2. **Ejemplos Concretos**
+   - Incluye código funcional completo
+   - Muestra casos de éxito y edge cases
+   - Documenta dependencias necesarias
+
+3. **Tags Precisos**
+   ```yaml
+   tags: ["rust", "testing", "rayon", "parallel", "memory_p"]
+   ```
+
+4. **Versionado**
+   - Usa semantic versioning
+   - Documenta breaking changes
+   - Mantén CHANGELOG
+
+5. **Modularidad**
+   - Una skill = una responsabilidad
+   - Combina skills para workflows complejos
+
+### ❌ DON'Ts
+
+1. No mezclar múltiples funcionalidades en una skill
+2. No incluir credenciales o datos sensibles
+3. No crear skills muy genéricas (ineficientes)
+4. No olvidar la documentación de uso
+5. No hardcodear paths absolutos
+
+---
+
+## Ejemplos de Skills
+
+### Ejemplo 1: Rust Testing Skill
+
+```markdown
+---
+name: "memory-p-testing"
+description: "Genera tests para MEMORY_P con rayon y assertions avanzadas"
+version: "1.0.0"
+tags: ["rust", "testing", "mcp", "parallel"]
+---
+
+# MEMORY_P Testing Skill
+
+## Descripción
+Genera tests unitarios y de integración para el proyecto MEMORY_P.
+
+## Instrucciones
+1. Analiza el módulo a testear
+2. Genera tests con `#[test]` y `#[cfg(test)]`
+3. Incluye tests paralelos con rayon si aplica
+4. Añade assertions específicas de MCP
+
+## Template
+\`\`\`rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rayon::prelude::*;
+
+    #[test]
+    fn test_parallel_processing() {
+        let data: Vec<u32> = (0..1000).collect();
+        let results: Vec<_> = data
+            .par_iter()
+            .map(|x| x * 2)
+            .collect();
+        
+        assert_eq!(results.len(), 1000);
+    }
+}
+\`\`\`
+```
+
+### Ejemplo 2: Documentation Skill
+
+```markdown
+---
+name: "memory-p-docs"
+description: "Genera documentación Rust con ejemplos y links a docs oficiales"
+version: "1.0.0"
+tags: ["rust", "documentation", "rustdoc"]
+---
+
+# MEMORY_P Documentation Skill
+
+## Instrucciones
+1. Añade doc comments (`///`) a funciones públicas
+2. Incluye sección `# Examples` con código funcional
+3. Documenta `# Panics`, `# Errors`, `# Safety` si aplica
+4. Links a documentación oficial cuando sea relevante
+
+## Ejemplo
+\`\`\`rust
+/// Procesa datos en paralelo usando rayon.
+///
+/// # Arguments
+/// * `data` - Vector de elementos a procesar
+///
+/// # Examples
+/// \`\`\`
+/// let data = vec![1, 2, 3];
+/// let results = process_parallel(data);
+/// \`\`\`
+///
+/// # Errors
+/// Retorna error si el vector está vacío.
+pub fn process_parallel(data: Vec<u32>) -> Result<Vec<u32>, Error> {
+    // ...
+}
+\`\`\`
+```
+
+### Ejemplo 3: Git Workflow Skill
+
+```markdown
+---
+name: "conventional-commits"
+description: "Genera commits siguiendo Conventional Commits"
+version: "1.0.0"
+tags: ["git", "workflow", "commits"]
+---
+
+# Conventional Commits Skill
+
+## Formato
+\`\`\`
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+\`\`\`
+
+## Types
+- `feat`: Nueva funcionalidad
+- `fix`: Corrección de bug
+- `docs`: Solo documentación
+- `refactor`: Refactorización sin cambios funcionales
+- `test`: Añade tests
+- `chore`: Mantenimiento
+
+## Ejemplo
+\`\`\`bash
+git commit -m "feat(mcp-api): add parallel processing endpoint
+
+Implements new /mcp/parallel endpoint using rayon.
+Improves throughput by 1345%.
+
+Closes #42"
+\`\`\`
+```
+
+---
+
+## Skills en MEMORY_P
+
+### Skills Recomendadas para el Proyecto
+
+#### 1. **memory-p-analyzer**
+- Analiza código Rust con énfasis en paralelismo
+- Detecta oportunidades de optimización con rayon
+- Verifica uso correcto de `mimalloc` y `memmap2`
+
+#### 2. **memory-p-workflow**
+- Automatiza creación de workflows en `PAYLOAD_BANK/`
+- Genera configuraciones `.toml` válidas
+- Valida sintaxis y estructura
+
+#### 3. **memory-p-benchmark**
+- Genera benchmarks con `criterion`
+- Compara rendimiento pre/post cambios
+- Documenta mejoras en formato README
+
+#### 4. **memory-p-mcp**
+- Valida endpoints MCP contra especificación
+- Genera tests de integración para API
+- Verifica compatibilidad con Cursor/Windsurf
+
+### Implementación Propuesta
+
+```bash
+# Estructura sugerida
+.github/skills/
+├── memory-p-analyzer/
+│   ├── SKILL.md
+│   └── examples/
+├── memory-p-workflow/
+│   ├── SKILL.md
+│   ├── templates/
+│   └── scripts/
+├── memory-p-benchmark/
+│   ├── SKILL.md
+│   └── criterion-setup.sh
+└── memory-p-mcp/
+    ├── SKILL.md
+    └── validation-script.rs
+```
+
+---
+
+## Enlaces Oficiales
+
+### Documentación Principal
+- [About Agent Skills - GitHub Docs](https://docs.github.com/en/copilot/concepts/agents/about-agent-skills)
+- [Use Agent Skills in VS Code](https://code.visualstudio.com/docs/copilot/customization/agent-skills)
+- [GitHub Copilot Features](https://docs.github.com/en/copilot/get-started/features)
+
+### Recursos de Aprendizaje
+- [Getting Started with GitHub Copilot](https://github.com/skills/getting-started-with-github-copilot) - Curso interactivo
+- [GitHub Copilot Changelog](https://github.blog/changelog/2025-12-18-github-copilot-now-supports-agent-skills/)
+
+### Repositorios de Ejemplo
+- [awesome-copilot](https://github.com/github/awesome-copilot) - Colección comunitaria
+- [anthropics/skills](https://github.com/anthropics/skills) - Skills de referencia
+
+### Documentación Técnica
+- [GitHub Copilot Documentation Hub](https://docs.github.com/en/copilot)
+- [VS Code Copilot Customization](https://code.visualstudio.com/docs/copilot/customization)
+
+---
+
+## Próximos Pasos
+
+### Para Desarrolladores
+1. ✅ Leer esta documentación
+2. ✅ Revisar ejemplos de skills
+3. 🔲 Crear primera skill para tu caso de uso
+4. 🔲 Probar skill en VS Code/Copilot CLI
+5. 🔲 Compartir con el equipo
+
+### Para MEMORY_P
+1. 🔲 Implementar skills recomendadas
+2. 🔲 Crear CI/CD para validar skills
+3. 🔲 Documentar skills específicas del proyecto
+4. 🔲 Entrenar equipo en uso de skills
+
+---
+
+**Última actualización**: Enero 2026  
+**Basado en**: Documentación oficial de GitHub Copilot Agent Skills  
+**Proyecto**: MEMORY_P - Nuclear MCP Toolkit  
+**Compatibilidad**: VS Code, Copilot CLI, Coding Agent, Cursor, Windsurf
