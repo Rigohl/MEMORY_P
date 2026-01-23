@@ -14,6 +14,13 @@ impl LoadBalancer {
         }
     }
 
+    /// Register an engine so that its load can be tracked.
+    /// If the engine is already registered, this is a no-op.
+    pub fn register_engine<S: Into<String>>(&mut self, engine: S) {
+        self.engine_loads
+            .entry(engine.into())
+            .or_insert_with(|| AtomicUsize::new(0));
+    }
     pub fn select_engine(&self, candidates: &[String]) -> Option<String> {
         candidates
             .iter()
