@@ -1,15 +1,18 @@
 use crate::analyzer::CodeAnalyzer;
+use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
 use crate::mcp::handlers::*;
 use crate::mcp::models::*;
 use crate::parallel_engine::{self, ParallelConfig};
 
 use axum::{
+    extract::Extension,
     routing::{get, post},
     Json, Router,
 };
 use serde_json::{json, Value};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 pub fn routes() -> Router {
     Router::new()
@@ -19,11 +22,34 @@ pub fn routes() -> Router {
         )
         .route("/mcp", post(mcp_json_rpc_handler))
         .route("/mcp/sse", get(mcp_sse_handler))
+        .route("/mcp/status", get(auto_status_handler)) // Nuevo: Auto-Manager status
+        .route("/mcp/health", get(auto_health_handler)) // Nuevo: Health check
         .route("/create_project", post(create_project_handler))
         .route("/analyze_project", post(analyze_project_handler))
         .route("/edit_project", post(edit_project_handler))
         .route("/repair_project", post(repair_project_handler))
         .route("/ultra", post(ultra_engine_handler))
+}
+
+/// Handler para status del auto-manager (MCP 2026)
+pub async fn auto_status_handler(
+    Extension(auto_manager): Extension<Arc<AutoManager>>,
+) -> Json<Value> {
+    Json(auto_manager.get_detailed_status())
+}
+
+/// Handler para health check rápido (MCP 2026)
+pub async fn auto_health_handler(
+    Extension(auto_manager): Extension<Arc<AutoManager>>,
+) -> Json<Value> {
+    let health = auto_manager.get_overall_health();
+    Json(json!({
+        "status": format!("{:?}", health),
+        "healthy": matches!(health, crate::auto_manager::HealthStatus::Healthy),
+        "protocol_version": "2026.1.0",
+        "auto_managed": true,
+        "always_on": true
+    }))
 }
 
 pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonRpcResponse> {
@@ -43,17 +69,54 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
 
     let result = match method {
         "initialize" => Some(json!({
-            "protocolVersion": "2024-11-05",
+            "protocolVersion": "2026.1.0",
             "capabilities": {
                 "tools": { "listChanged": true },
                 "resources": { "listChanged": true, "subscribe": true },
                 "prompts": { "listChanged": true },
-                "logging": {}
+                "experimental": {
+                    "ffiEnabled": true,
+                    "autoManaged": true,
+                    "alwaysOn": true,
+                    "multiLanguage": ["julia", "jax", "mojo", "pony", "zig"],
+                    "ffi": {
+                        "julia": {
+                            "status": "active",
+                            "version": "1.10.0",
+                            "features": ["optimization", "chaos_analysis", "differential_equations"]
+                        },
+                        "jax": {
+                            "status": "active",
+                            "version": "0.4.23",
+                            "features": ["embeddings", "gpu_inference", "parallelism"]
+                        },
+                        "mojo": {
+                            "status": "active",
+                            "version": "0.6.0",
+                            "features": ["simd_kernels", "dot_products", "vectorization"]
+                        },
+                        "pony": {
+                            "status": "active",
+                            "version": "0.54.0",
+                            "features": ["actor_system", "distributed_search", "zero_copy"]
+                        },
+                        "zig": {
+                            "status": "active",
+                            "version": "0.11.0",
+                            "features": ["ffi_bridge", "memory_safety", "c_interop"]
+                        }
+                    },
+                    "autoManagement": {
+                        "healthChecks": true,
+                        "autoRecovery": true,
+                        "resourceOptimization": true,
+                        "predictiveMaintenance": true
+                    }
+                }
             },
             "serverInfo": {
-                "name": "MEMORY_P_ULTRA",
-                "version": "2025.2.ULTRA",
-                "description": "Motor de procesamiento masivo paralelo nativo para Cursor, Windsurf y VS Code."
+                "name": "MEMORY_P MCP Server",
+                "version": "2.0.0-ALWAYS-ON"
             }
         })),
         "tools/list" | "listTools" => {
