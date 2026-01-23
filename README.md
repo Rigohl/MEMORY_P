@@ -19,7 +19,7 @@ Compatible with Cursor, Windsurf, Claude Desktop, and VS Code.
 | `repair`    | 🛠️ Auto-fix formatting, imports, and code style         |
 | `edit`      | ✏️ Atomic bulk editing with regex support               |
 | `workflow`  | 🌊 Pipeline orchestration with auto-evolution           |
-| `simulate`  | 🌀 3-phase optimization simulations (815K sims)         |
+| `simulate`  | 🌀 5-phase optimization simulations (25K+ sims)         |
 
 ## 📦 Tech Stack
 
@@ -65,6 +65,8 @@ Add to your `mcp.json`:
 | Module Optimization  | 65K         | 89.8%       |
 | Parallelism Tuning   | 200K        | 1345.6%     |
 | Ecosystem Analysis   | 550K        | Optimal     |
+| Repair Operations    | 10K         | Variable    |
+| Edit Operations      | 10K         | Variable    |
 
 ## 📁 Project Structure
 

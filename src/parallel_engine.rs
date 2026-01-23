@@ -641,7 +641,7 @@ pub fn ultra_workflow(
                     let mut fixes_applied = 0usize;
 
                     let (analysis_results, _) =
-                        engine.process_files(&active_files, |path, content| {
+                        engine.process_files(&active_files, |_path, content| {
                             let mut findings: Vec<String> = Vec::new();
 
                             // Detect fixable patterns

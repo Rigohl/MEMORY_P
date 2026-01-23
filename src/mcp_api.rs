@@ -351,27 +351,8 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                         .and_then(|v| v.as_bool())
                         .unwrap_or(false);
 
-                    // Check for custom simulation
-                    if let (Some(name), Some(logic)) = (
-                        arguments.get("name").and_then(|v| v.as_str()),
-                        arguments.get("logic").and_then(|v| v.as_str()),
-                    ) {
-                        match crate::simulation_engine::run_bend_simulation(
-                            name,
-                            logic,
-                            &json!({}),
-                            use_gpu,
-                        ) {
-                            Ok(output) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("🌀 Custom Sim:\n{}", output) }] }),
-                            ),
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
-                            ),
-                        }
-                    } else {
-                        // Phase-based mega simulation with actual execution
-                        let config = crate::mega_simulator::SimConfig {
+                    // Phase-based mega simulation with actual execution
+                    let config = crate::mega_simulator::SimConfig {
                             phase: phase as u8,
                             iterations,
                             modules: arguments
@@ -420,7 +401,6 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                                 json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
                             ),
                         }
-                    }
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
