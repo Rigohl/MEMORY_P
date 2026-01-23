@@ -157,12 +157,16 @@ impl HybridRanker {
         let mut fused: Vec<_> = scores.into_iter().collect();
         fused.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
         
-        // Return top results
-        fused.into_iter()
+        // Return top results with fused engine attribution
+        fused
+            .into_iter()
             .filter_map(|(doc_id, score)| {
-                doc_map.get_mut(&doc_id).map(|mut result| {
-                    result.score = score;
-                    result.clone()
+                doc_map.get(&doc_id).map(|result| SearchResult {
+                    id: result.id.clone(),
+                    score,
+                    content: result.content.clone(),
+                    metadata: result.metadata.clone(),
+                    engine_name: "fusion".into(),
                 })
             })
             .collect()
