@@ -508,8 +508,8 @@ curl -X POST http://localhost:4040/mcp/search \
 ## 🚀 Roadmap
 
 ### Q1 2026 (Current)
-- [x] 8-engine architecture implementation
-- [x] AI routing with fusion engine
+- [ ] 8-engine architecture implementation
+- [ ] AI routing with fusion engine
 - [x] Complete documentation overhaul
 - [ ] Kubernetes operator for auto-scaling
 - [ ] Real-time monitoring dashboard
