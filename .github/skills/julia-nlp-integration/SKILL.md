@@ -50,17 +50,41 @@ julia --version
 ```julia
 using Pkg
 
-# Install packages
-Pkg.add("TextAnalysis")
-Pkg.add("StringDistances")
-Pkg.add("LinearAlgebra")
-Pkg.add("Statistics")
-Pkg.add("JSON")
+# Recommended minimum compatible versions:
+# - TextAnalysis.jl    >= 1.0
+# - StringDistances.jl >= 0.11
+# - JSON.jl            >= 0.21
+# LinearAlgebra and Statistics are part of the Julia standard library
+# and do not require installation via Pkg.add.
+
+# Install non-stdlib packages with version constraints
+packages = [
+    PackageSpec(name = "TextAnalysis",    version = "1.0"),
+    PackageSpec(name = "StringDistances", version = "0.11"),
+    PackageSpec(name = "JSON",            version = "0.21"),
+]
+
+for pkg in packages
+    try
+        Pkg.add(pkg)
+    catch e
+        @warn "Failed to install package; check network, registry status, or version compatibility before continuing." pkg = pkg.name error = e
+        # In case of persistent failures, consider:
+        # - using a local Project.toml/Manifest.toml with known-good versions
+        # - relaxing or adjusting the version constraint above
+        # - consulting the package README for supported Julia versions
+    end
+end
+
+# Stdlib modules (no installation step required)
+import LinearAlgebra
+import Statistics
 
 # Verify
 using TextAnalysis
 using StringDistances
-println("✅ Julia NLP packages installed")
+using JSON
+println("✅ Julia NLP packages installed and loaded")
 ```
 
 ### Rust FFI Setup
