@@ -16,7 +16,6 @@ use tracing_subscriber;
 #[global_allocator]
 static GLOBAL: MiMalloc = MiMalloc;
 
-mod accelerator_bridge;
 mod analyzer;
 mod config;
 mod error;
@@ -24,7 +23,6 @@ mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
-mod simulation_engine; // Legacy native engine
 mod workspace;
 
 #[tokio::main]
