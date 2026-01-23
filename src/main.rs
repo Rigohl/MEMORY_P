@@ -21,6 +21,7 @@ mod config;
 mod error;
 mod mcp;
 mod mcp_api;
+mod mcp_context;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
 mod workspace;

@@ -10,6 +10,7 @@ pub mod config;
 pub mod error;
 pub mod mcp;
 pub mod mcp_api;
+pub mod mcp_context;
 pub mod mega_simulator;
 pub mod motores;
 pub mod parallel_engine;
