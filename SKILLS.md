@@ -331,33 +331,119 @@ Closes #42"
 
 ---
 
-## Skills en MEMORY_P
+## Skills en MEMORY_P v2.0
 
-> **Estado actual**: 5 Skills operativas ubicadas en `.github/skills/`
+> **Estado actual**: 9 Skills operativas ubicadas en `.github/skills/` - 5 Core + 4 Advanced
 
-### Skills Implementadas
+### Skills Core (v1.0)
 
-El proyecto MEMORY_P cuenta con las siguientes skills especializadas:
+El proyecto MEMORY_P cuenta con las siguientes skills especializadas fundamentales:
 
 #### 1. **rust-parallel-testing** ([Ver skill](.github/skills/rust-parallel-testing/SKILL.md))
 - Analiza código Rust con énfasis en paralelismo
 - Detecta oportunidades de optimización con rayon
 - Verifica uso correcto de `mimalloc` y `memmap2`
 
-#### 2. **memory-p-workflow**
-- Automatiza creación de workflows en `PAYLOAD_BANK/`
-- Genera configuraciones `.toml` válidas
-- Valida sintaxis y estructura
+**Tags**: `rust`, `testing`, `rayon`, `parallel`, `memory_p`
 
-#### 3. **memory-p-benchmark**
+#### 2. **memory-p-analyzer** ([Ver skill](.github/skills/memory-p-analyzer/SKILL.md))
+- Análisis profundo de código MEMORY_P
+- Detecta anti-patterns y optimizaciones potenciales
+- Valida cumplimiento de arquitectura
+
+**Tags**: `rust`, `analysis`, `architecture`, `memory_p`
+
+#### 3. **mcp-validator** ([Ver skill](.github/skills/mcp-validator/SKILL.md))
+- Valida endpoints MCP contra especificación 2024-11-05
+- Genera tests de integración para API
+- Verifica compatibilidad con Cursor/Windsurf/Claude
+
+**Tags**: `mcp`, `validation`, `api`, `testing`
+
+#### 4. **rust-documentation** ([Ver skill](.github/skills/rust-documentation/SKILL.md))
+- Genera documentación Rust con rustdoc
+- Incluye ejemplos ejecutables
+- Links a documentación oficial
+
+**Tags**: `rust`, `documentation`, `rustdoc`
+
+#### 5. **performance-benchmark** ([Ver skill](.github/skills/performance-benchmark/SKILL.md))
 - Genera benchmarks con `criterion`
 - Compara rendimiento pre/post cambios
 - Documenta mejoras en formato README
 
-#### 4. **memory-p-mcp**
-- Valida endpoints MCP contra especificación
-- Genera tests de integración para API
-- Verifica compatibilidad con Cursor/Windsurf
+**Tags**: `rust`, `performance`, `benchmarking`, `criterion`
+
+### Skills Avanzadas (v2.0)
+
+Nuevas skills multi-lenguaje para capacidades avanzadas:
+
+#### 6. **rust-mcp-optimization** ([Ver skill](.github/skills/rust-mcp-optimization/SKILL.md))
+- Optimización avanzada de servidores MCP
+- Análisis de latencia y throughput
+- Tuning de parámetros Axum/Tokio
+- Integración con Rayon para paralelismo
+
+**Tecnologías**: Rust, Tokio, Axum, Rayon  
+**Tags**: `rust`, `mcp`, `optimization`, `performance`, `axum`
+
+**Casos de Uso**:
+- Reducir latencia p99 de endpoints MCP
+- Aumentar throughput de requests concurrentes
+- Optimizar uso de memoria en servidores always-on
+
+#### 7. **julia-chaos-analysis** ([Ver skill](.github/skills/julia-chaos-analysis/SKILL.md))
+- Análisis de teoría del caos en codebases
+- Cálculo de exponentes de Lyapunov
+- Detección de inestabilidad y bifurcaciones
+- Predicción de puntos críticos
+
+**Tecnologías**: Julia, DynamicalSystems.jl, DifferentialEquations.jl  
+**Tags**: `julia`, `chaos`, `mathematics`, `prediction`, `analysis`
+
+**Casos de Uso**:
+- Detectar complejidad creciente en proyectos
+- Predecir momentos óptimos para refactorización
+- Analizar estabilidad de arquitectura
+
+#### 8. **jax-ml-inference** ([Ver skill](.github/skills/jax-ml-inference/SKILL.md))
+- Generación de embeddings semánticos con JAX
+- Predicción de intención de usuario
+- Reinforcement learning para optimización
+- Inference con XLA compilation
+
+**Tecnologías**: JAX, Flax, Optax, Transformers  
+**Tags**: `jax`, `ml`, `embeddings`, `inference`, `transformers`
+
+**Casos de Uso**:
+- Generar embeddings para búsqueda semántica
+- Predecir próximas acciones del usuario
+- Optimizar parámetros con RL
+
+#### 9. **hybrid-search-engine** ([Ver skill](.github/skills/hybrid-search-engine/SKILL.md))
+- Coordinación de 4 motores de búsqueda (Qdrant, Tantivy, MemoryBank, Híbrido)
+- Fusión matemática con Julia (Reciprocal Rank Fusion)
+- Optimización de weights por motor
+- Benchmarking de precisión y recall
+
+**Tecnologías**: Rust, Julia, Qdrant, Tantivy, Zig  
+**Tags**: `search`, `hybrid`, `qdrant`, `tantivy`, `fusion`
+
+**Casos de Uso**:
+- Implementar búsqueda multi-modal
+- Optimizar fusión de resultados
+- Evaluar performance de motores
+
+### Multi-Language FFI Skills
+
+Las skills v2.0 incorporan capacidades FFI para integración multi-lenguaje:
+
+| Skill | Lenguajes | Propósito FFI |
+|-------|-----------|---------------|
+| **rust-mcp-optimization** | Rust + Mojo | SIMD optimization via FFI |
+| **julia-chaos-analysis** | Rust + Julia | Mathematical analysis via C API |
+| **jax-ml-inference** | Rust + Python/JAX | ML inference via PyO3 |
+| **hybrid-search-engine** | Rust + Julia + Zig | Zero-copy search fusion |
 
 ### Uso de las Skills
 
@@ -366,17 +452,21 @@ Las skills se activan automáticamente en contextos relevantes o pueden invocars
 ```bash
 # En chat de GitHub Copilot
 @workspace Aplica la skill rust-parallel-testing para este módulo
+@workspace Usa julia-chaos-analysis para detectar inestabilidad
+@workspace Ejecuta jax-ml-inference para generar embeddings
 
 # En Cursor/Windsurf
 # Las skills se cargan automáticamente desde .github/skills/
+# Se activan según contexto (lenguaje, archivos abiertos, etc.)
+
+# En CLI
+copilot skill rust-mcp-optimization --analyze server.rs
 ```
 
-### Estructura de Carpetas Implementada
-
-### Estructura de Carpetas Implementada
+### Estructura de Carpetas Completa
 
 ```bash
-# Estructura actual del proyecto
+# Estructura actualizada v2.0
 .github/skills/
 ├── rust-parallel-testing/
 │   └── SKILL.md
@@ -386,8 +476,115 @@ Las skills se activan automáticamente en contextos relevantes o pueden invocars
 │   └── SKILL.md
 ├── rust-documentation/
 │   └── SKILL.md
-└── performance-benchmark/
-    └── SKILL.md
+├── performance-benchmark/
+│   └── SKILL.md
+├── rust-mcp-optimization/         # NEW v2.0
+│   ├── SKILL.md
+│   ├── scripts/
+│   │   └── optimize_mcp.rs
+│   ├── references/
+│   │   └── axum_best_practices.md
+│   └── templates/
+│       └── mcp_server_template.rs
+├── julia-chaos-analysis/           # NEW v2.0
+│   ├── SKILL.md
+│   ├── scripts/
+│   │   ├── chaos_detector.jl
+│   │   └── lyapunov_calculator.jl
+│   ├── references/
+│   │   └── chaos_theory_guide.md
+│   └── templates/
+│       └── differential_system.jl
+├── jax-ml-inference/               # NEW v2.0
+│   ├── SKILL.md
+│   ├── scripts/
+│   │   ├── embedding_generator.py
+│   │   └── intent_predictor.py
+│   ├── references/
+│   │   └── jax_optimization.md
+│   └── templates/
+│       └── neural_network.py
+└── hybrid-search-engine/           # NEW v2.0
+    ├── SKILL.md
+    ├── scripts/
+    │   ├── fusion_algorithm.rs
+    │   └── weight_optimizer.jl
+    ├── references/
+    │   └── search_theory.md
+    └── templates/
+        └── search_integration.rs
+```
+
+### Compatibilidad Cross-Agent
+
+Las skills de MEMORY_P v2.0 son compatibles con múltiples agents:
+
+| Skill | Coding Agent | CLI Agent | VS Code | Cursor | Windsurf |
+|-------|--------------|-----------|---------|--------|----------|
+| rust-parallel-testing | ✅ | ✅ | ✅ | ✅ | ✅ |
+| memory-p-analyzer | ✅ | ✅ | ✅ | ✅ | ✅ |
+| mcp-validator | ✅ | ✅ | ✅ | ✅ | ✅ |
+| rust-documentation | ✅ | ✅ | ✅ | ✅ | ✅ |
+| performance-benchmark | ✅ | ✅ | ✅ | ✅ | ✅ |
+| rust-mcp-optimization | ✅ | ✅ | ✅ | ✅ | ✅ |
+| julia-chaos-analysis | ✅ | ✅ | ⚠️ | ✅ | ✅ |
+| jax-ml-inference | ✅ | ✅ | ⚠️ | ✅ | ✅ |
+| hybrid-search-engine | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+⚠️ = Requiere Julia/Python instalado en el entorno
+
+### Matemáticas en Skills v2.0
+
+Las nuevas skills incorporan capacidades matemáticas avanzadas:
+
+#### Teoría del Caos (julia-chaos-analysis)
+```julia
+# Ejemplo: Análisis de Lyapunov
+using DynamicalSystems
+
+function analyze_codebase_chaos(metrics::Vector{Metric})
+    # Reconstruir sistema dinámico
+    ds = reconstruct_system(metrics)
+    
+    # Calcular exponentes de Lyapunov
+    λs = lyapunovspectrum(ds, 10000)
+    
+    # Clasificar estabilidad
+    stability = classify_stability(λs)
+    
+    return (λs, stability)
+end
+```
+
+#### Fusión Híbrida (hybrid-search-engine)
+```julia
+# Reciprocal Rank Fusion matemático
+function reciprocal_rank_fusion(
+    results_lists::Vector{Vector{Result}},
+    k::Float64 = 60.0
+)::Vector{Result}
+    scores = Dict{ResultId, Float64}()
+    
+    for results in results_lists
+        for (rank, result) in enumerate(results)
+            scores[result.id] = get(scores, result.id, 0.0) + 1.0 / (k + rank)
+        end
+    end
+    
+    return sort(collect(scores), by=x->x[2], rev=true)
+end
+```
+
+#### ML Inference (jax-ml-inference)
+```python
+import jax
+import jax.numpy as jnp
+
+@jax.jit
+def generate_embedding(input_ids: jnp.ndarray) -> jnp.ndarray:
+    """JIT-compiled embedding generation"""
+    outputs = model(input_ids)
+    return jnp.mean(outputs.last_hidden_state, axis=1)
 ```
 
 ---
