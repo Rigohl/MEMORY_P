@@ -691,101 +691,107 @@ Esta matriz muestra TODAS las features que podemos implementar con cada motor, i
 
 ---
 
-## 🤖 Motor 11: ONNX (Lightweight ML)
+## 🤖 Motor 11: ONNX (Lightweight ML - Modelo Custom) 🆕
 
 ### Features Implementables (16 total, 12 auto-ejecutables)
 
+**Modelo Único**: MEMORY_P Unified Model (300MB)
+- Base: DistilBERT fine-tuned
+- Multi-Task Learning: 5 tareas simultáneas
+- Latency: <50ms P99
+- Training: Continuo con datos reales
+
 #### ✅ Auto-Ejecutables (12)
 
-1. **Embeddings Generation**
-   - all-MiniLM-L6-v2 (80MB)
+1. **Custom Model Training** 🆕
+   - Transfer learning desde DistilBERT
+   - Multi-task learning pipeline
+   - Fine-tuning incremental
+   - Auto-trigger: Nuevos datos anotados
+
+2. **Unified Multi-Task Model** 🆕
+   - 1 modelo para 5 tareas
+   - Shared backbone (384-dim)
+   - Task-specific heads
+   - Auto-trigger: Inicialización
+
+3. **Transfer Learning** 🆕
+   - Adaptación a dominio específico
+   - Few-shot learning
+   - Domain adaptation
+   - Auto-trigger: Nuevo dominio
+
+4. **Model Fine-Tuning** 🆕
+   - Continuo con feedback
+   - Active learning
+   - Hard example mining
+   - Auto-trigger: Poor performance
+
+5. **Incremental Learning** 🆕
+   - Aprende de nuevos datos
+   - Sin catastrophic forgetting
+   - Online learning
+   - Auto-trigger: Batch completo
+
+6. **Active Learning** 🆕
+   - Selecciona casos difíciles
+   - Human-in-the-loop
+   - Uncertainty sampling
+   - Auto-trigger: Low confidence
+
+7. **Embeddings Generation**
+   - Semantic vectors (384-dim)
    - CPU-optimized
-   - <100ms latency
+   - <50ms latency
    - Auto-trigger: Text input
 
-2. **Semantic Similarity**
+8. **Semantic Similarity**
    - Cosine distance
    - Batch processing
    - Vectorized ops
    - Auto-trigger: Comparison
 
-3. **Re-Ranking**
-   - Cross-encoder
+9. **Re-Ranking**
    - Relevance scoring
    - Top-K selection
+   - Cross-encoder logic
    - Auto-trigger: Search results
 
-4. **Classification**
-   - Multi-class
-   - Confidence scores
-   - Auto-labeling
-   - Auto-trigger: New document
+10. **Classification**
+    - Multi-class (10+ clases)
+    - Confidence scores
+    - Auto-labeling
+    - Auto-trigger: New document
 
-5. **Named Entity Recognition**
-   - BERT-based NER
-   - Entity extraction
-   - Auto-annotation
-   - Auto-trigger: Text processing
+11. **Named Entity Recognition**
+    - PER, ORG, LOC, MISC
+    - Entity extraction
+    - Auto-annotation
+    - Auto-trigger: Text processing
 
-6. **Sentiment Analysis**
-   - Positive/Negative/Neutral
-   - Confidence score
-   - Auto-tagging
-   - Auto-trigger: User content
-
-7. **Question Answering**
-   - Extractive QA
-   - Confidence threshold
-   - Context-based
-   - Auto-trigger: Question detected
-
-8. **Summarization**
-   - Abstractive (T5)
-   - Extractive (BERT)
-   - Auto-summary
-   - Auto-trigger: Long text
-
-9. **Language Detection**
-   - 100+ languages
-   - Confidence scores
-   - Auto-routing
-   - Auto-trigger: Text input
-
-10. **Zero-Shot Classification**
-    - No training needed
-    - Custom labels
-    - Auto-categorization
-    - Auto-trigger: Unlabeled data
-
-11. **Feature Extraction**
-    - BERT embeddings
-    - Layer selection
-    - Dimensionality control
-    - Auto-trigger: Text input
-
-12. **Batch Inference**
-    - Auto-batching
-    - GPU utilization
-    - Latency optimization
-    - Auto-trigger: Queue size
+12. **Sentiment Analysis**
+    - Positive/Negative/Neutral
+    - Confidence score
+    - Auto-tagging
+    - Auto-trigger: User content
 
 #### ⏳ Manuales (4)
 
-13. **Model Quantization**
-    - INT8 optimization
-    - Requiere calibration
+13. **Question Answering**
+    - Extractive QA
+    - Requiere QA head adicional
 
-14. **Multi-Modal**
+14. **Summarization**
+    - Abstractive/Extractive
+    - Requiere decoder
+
+15. **Language Detection**
+    - 100+ languages
+    - Requiere modelo multilingüe
+
+16. **Multi-Modal**
     - Text + Image
-    - Requiere vision models
-
-15. **Custom Fine-Tuning**
-    - Domain adaptation
-    - Requiere training data
-
-16. **Model Ensemble**
-    - Multiple models
-    - Requiere strategy
+    - Requiere vision encoder
 
 ---
 

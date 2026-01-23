@@ -102,17 +102,41 @@ pub struct SharedMemoryManager {
 
 ## 🧠 ONNX Integration
 
-### Lightweight Inference Engine
+### Lightweight Inference Engine con Modelo Custom 🆕
 
-**Dependencia**: `onnxruntime = "1.17"`
+**Dependencia**: `onnxruntime = { version = "1.17", features = ["training"] }`
 
 **Ubicación**: `src/ml/onnx_engine.rs`
 
-**Modelos ONNX**:
-1. **Embeddings**: `all-MiniLM-L6-v2.onnx` (80MB)
-2. **Reranking**: `cross-encoder-ms-marco.onnx` (420MB)
-3. **Classification**: `distilbert-base.onnx` (250MB)
-4. **NER**: `bert-base-ner.onnx` (420MB)
+**1 Modelo Unificado Custom** (entrenado por nosotros):
+
+**MEMORY_P Unified Model**:
+- **Base**: DistilBERT (fine-tuned para nuestro dominio)
+- **Size**: ~300 MB (optimizado)
+- **Latency**: <50ms P99
+- **Dimensions**: 384 (embeddings)
+
+**Multi-Task Capabilities**:
+1. **Embeddings Generation** - Semantic vectors (384-dim)
+2. **Classification** - Document categorization (10+ clases)
+3. **NER** - Named Entity Recognition (PER, ORG, LOC, MISC)
+4. **Re-Ranking** - Relevance scoring para resultados
+5. **Sentiment Analysis** - Positive/Negative/Neutral
+
+**Training Pipeline**:
+- Transfer learning desde distilbert-base-uncased
+- Fine-tuning multi-task con datos del dominio
+- Incremental learning continuo
+- Active learning para casos difíciles
+- Quantization para reducir tamaño
+
+**Ventajas**:
+- ✅ Un solo modelo para 5 tareas
+- ✅ Optimizado para nuestro dominio específico
+- ✅ Más ligero que 4 modelos separados
+- ✅ Fine-tuning continuo con datos reales
+- ✅ Menor latencia (shared backbone)
+- ✅ Sin dependencias de Python
 
 **Performance**:
 - CPU: 10x más rápido que Python
@@ -467,10 +491,13 @@ MEMORY_P v2.0 - Fully Auto-Managed System
 │   ├── Text (4): Tantivy, LNX, Toshi, MeiliSearch
 │   └── Specialized (3): Julia NLP, MemoryBank, Six Sigma
 │
-├── 🚀 ONNX Engine (Lightweight ML)
-│   ├── Embeddings (80MB model)
-│   ├── Re-ranking (420MB model)
-│   └── Classification (250MB model)
+├── 🚀 ONNX Engine (Lightweight ML - 1 Unified Model) 🆕
+│   ├── Embeddings (384-dim)
+│   ├── Classification (multi-class)
+│   ├── NER (entity extraction)
+│   ├── Re-ranking (relevance scoring)
+│   └── Sentiment Analysis
+│   └── Size: 300MB custom trained model
 │
 ├── 🔄 Auto-Executing MCP Tools
 │   ├── auto_index (every 30s)
