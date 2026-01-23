@@ -175,7 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Initialize engines
     for name in ["qdrant", "tantivy", "meilisearch"] {
-        let config = create_config(name);
+        let config = /* create config based on engine name */ ;
         let engine = EngineFactory::create_engine(name, config)?;
         fusion.register_engine(name.to_string(), engine).await;
     }
