@@ -145,11 +145,11 @@ Aquí defines el comportamiento específico del agent...
 
 ## Implementación en MEMORY_P
 
-> **Estado actual**: Proyecto con 3 Custom Agents operativos y 5 Skills especializadas
+> **Estado actual**: Proyecto con 4 Custom Agents operativos, 5 Skills especializadas, y arquitectura de 8 motores
 
 ### Custom Agents Activos
 
-El proyecto MEMORY_P cuenta con tres agents personalizados ubicados en `.github/agents/`:
+El proyecto MEMORY_P v2.0 cuenta con cuatro agents personalizados ubicados en `.github/agents/`:
 
 #### 1. **memory-p-optimizer** ([Ver código](.github/agents/memory-p-optimizer.agent.md))
 Especialista en optimización de rendimiento con Rayon y técnicas de paralelización.
@@ -160,14 +160,93 @@ Experto en implementación del protocolo MCP 2024-11-05 y JSON-RPC 2.0.
 #### 3. **memory-p-refactor** ([Ver código](.github/agents/memory-p-refactor.agent.md))
 Especialista en refactorización y mejora de calidad del código Rust.
 
+#### 4. **motor-routing-ai** ([Ver código](.github/agents/motor-routing-ai.agent.md))
+Coordinador AI especializado en routing inteligente entre los 8 motores de búsqueda basado en características de query y optimización de performance.
+
+### Coordinación de 8 Motores
+
+MEMORY_P v2.0 implementa una **arquitectura revolucionaria de 8 motores especializados** con coordinación inteligente:
+
+#### Vector Search Engines (3)
+1. **Qdrant** - Búsqueda semántica general con Qdrant Edge 2025
+2. **FAISS-GPU** - Ultra-rápido local con aceleración GPU, billions-scale
+3. **SCANN (Google)** - Enterprise scale con learned indexing
+
+#### Text Search Engines (3)
+1. **Tantivy** - BM25 single-node ultra-rápido en Rust
+2. **LNX** - Distributed search con Raft consensus y auto-sharding
+3. **MeiliSearch** - Typo-tolerant + faceted search user-friendly
+
+#### Specialized Engines (2)
+1. **Julia NLP** - Mathematical NLP con TextAnalysis.jl y StringDistances.jl
+2. **MemoryBank Ultra** - Motor FFI multi-lenguaje con predictive indexing
+
+### Intelligent Routing System
+
+El **motor-routing-ai** agent utiliza JAX para:
+
+```python
+# AI-based engine selection
+def predict_optimal_engine(query_features):
+    scores = neural_network(query_features)
+    return {
+        'primary': top_engine(scores),
+        'fallbacks': backup_engines(scores),
+        'confidence': max(scores)
+    }
+```
+
+#### Factores de Decisión
+- **Tipo de Query**: Vector similarity, full-text, hybrid, mathematical
+- **Tamaño Dataset**: Miles, millones, billions, trillions
+- **Latencia Requerida**: Real-time (<10ms), interactive (<100ms), batch
+- **Necesidad Distribución**: Single-node, multi-node cluster, geo-distributed
+- **Precisión**: Approximate, exact, learning-based
+
+### Load Balancing Inteligente
+
+```rust
+// Dynamic load balancing across engines
+pub struct LoadBalancer {
+    engine_loads: Arc<RwLock<HashMap<EngineId, LoadMetrics>>>,
+}
+
+impl LoadBalancer {
+    pub fn select_engine(&self, candidates: Vec<EngineId>) -> EngineId {
+        // Select least-loaded engine from candidates
+        let loads = self.engine_loads.read();
+        candidates.into_iter()
+            .min_by_key(|id| loads.get(id).map(|m| m.current_qps).unwrap_or(0))
+            .unwrap()
+    }
+}
+```
+
+### Fusion Engine
+
+El **Fusion Engine** combina resultados de múltiples motores:
+
+- **Parallel Fusion**: Búsqueda simultánea en múltiples engines
+- **Cascade Fusion**: Intenta engines en orden hasta umbral
+- **Adaptive Fusion**: Ajusta dinámicamente según performance
+- **Reciprocal Rank Fusion**: Algoritmo de ranking híbrido
+
 ### Agent Skills Disponibles
 
-Ver [SKILLS.md](SKILLS.md) para documentación completa de las 5 skills implementadas:
-- `rust-parallel-testing` - Tests con Rayon
-- `memory-p-analyzer` - Análisis de código  
-- `mcp-validator` - Validación MCP
-- `rust-documentation` - Documentación Rust
+Ver [SKILLS.md](SKILLS.md) para documentación completa de las 9 skills implementadas:
+
+#### Core Skills
+- `rust-parallel-testing` - Tests con Rayon para procesamiento paralelo
+- `memory-p-analyzer` - Análisis de código Rust con énfasis en paralelismo
+- `mcp-validator` - Validación de endpoints MCP contra especificación
+- `rust-documentation` - Documentación Rust con rustdoc
 - `performance-benchmark` - Benchmarks con Criterion
+
+#### Engine-Specific Skills (Nuevas v2.0)
+- `scann-optimization` - Google SCANN optimization para billion-scale vectors
+- `lnx-distributed-setup` - Configuración de clusters LNX distribuidos
+- `faiss-gpu-optimization` - Optimización GPU para FAISS con CUDA
+- `julia-nlp-integration` - Integración Julia NLP para análisis matemático
 
 ### Agent Actual: MEMORY_P Optimization
 

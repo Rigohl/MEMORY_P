@@ -333,31 +333,64 @@ Closes #42"
 
 ## Skills en MEMORY_P
 
-> **Estado actual**: 5 Skills operativas ubicadas en `.github/skills/`
+> **Estado actual**: 9 Skills operativas ubicadas en `.github/skills/` (5 core + 4 engine-specific)
 
 ### Skills Implementadas
 
-El proyecto MEMORY_P cuenta con las siguientes skills especializadas:
+El proyecto MEMORY_P v2.0 cuenta con las siguientes skills especializadas:
 
-#### 1. **rust-parallel-testing** ([Ver skill](.github/skills/rust-parallel-testing/SKILL.md))
+#### Core Skills (5)
+
+##### 1. **rust-parallel-testing** ([Ver skill](.github/skills/rust-parallel-testing/SKILL.md))
 - Analiza código Rust con énfasis en paralelismo
 - Detecta oportunidades de optimización con rayon
 - Verifica uso correcto de `mimalloc` y `memmap2`
 
-#### 2. **memory-p-workflow**
-- Automatiza creación de workflows en `PAYLOAD_BANK/`
-- Genera configuraciones `.toml` válidas
-- Valida sintaxis y estructura
+##### 2. **memory-p-analyzer** ([Ver skill](.github/skills/memory-p-analyzer/SKILL.md))
+- Análisis profundo de código MEMORY_P
+- Detección de patterns de rendimiento
+- Sugerencias de optimización paralela
 
-#### 3. **memory-p-benchmark**
+##### 3. **mcp-validator** ([Ver skill](.github/skills/mcp-validator/SKILL.md))
+- Valida endpoints MCP contra especificación 2024-11-05
+- Genera tests de integración para API
+- Verifica compatibilidad con Cursor/Windsurf
+
+##### 4. **rust-documentation** ([Ver skill](.github/skills/rust-documentation/SKILL.md))
+- Genera documentación Rust con rustdoc
+- Incluye ejemplos y links a docs oficiales
+- Documenta Panics, Errors, Safety
+
+##### 5. **performance-benchmark** ([Ver skill](.github/skills/performance-benchmark/SKILL.md))
 - Genera benchmarks con `criterion`
 - Compara rendimiento pre/post cambios
 - Documenta mejoras en formato README
 
-#### 4. **memory-p-mcp**
-- Valida endpoints MCP contra especificación
-- Genera tests de integración para API
-- Verifica compatibilidad con Cursor/Windsurf
+#### Engine-Specific Skills (4 - Nuevas en v2.0)
+
+##### 6. **scann-optimization** ([Ver skill](.github/skills/scann-optimization/SKILL.md))
+- Google SCANN optimization para billion-scale vector search
+- Learned indexing parameter configuration
+- Anisotropic quantization tuning
+- Enterprise-scale performance benchmarks
+
+##### 7. **lnx-distributed-setup** ([Ver skill](.github/skills/lnx-distributed-setup/SKILL.md))
+- LNX distributed search cluster configuration
+- Multi-node setup con Raft consensus
+- Sharding strategy y replication factor
+- Automatic failover testing
+
+##### 8. **faiss-gpu-optimization** ([Ver skill](.github/skills/faiss-gpu-optimization/SKILL.md))
+- FAISS-GPU acceleration con CUDA
+- IVF index con Product Quantization
+- GPU memory optimization
+- Billion-scale vector search benchmarks
+
+##### 9. **julia-nlp-integration** ([Ver skill](.github/skills/julia-nlp-integration/SKILL.md))
+- Julia NLP mathematical analysis
+- TextAnalysis.jl y StringDistances.jl integration
+- FFI coordination con Rust
+- Advanced semantic similarity algorithms
 
 ### Uso de las Skills
 
