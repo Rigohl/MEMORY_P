@@ -39,6 +39,19 @@ anyhow = "1.0"
 # Async Traits (for motores module)
 async-trait = "0.1"
 
+# Search Engines - Real Implementations
+tantivy = "0.22"           # Full-text search engine
+hnsw_rs = "0.3"            # HNSW for vector search
+
+# Statistics & Optimization (Six Sigma)
+statrs = "0.17"            # Statistical functions
+ndarray = "0.16"           # N-dimensional arrays
+ndarray-stats = "0.6"      # Statistics for ndarray
+
+# Advanced Parallelism
+crossbeam = "0.8"          # Advanced concurrency primitives
+parking_lot = "0.12"       # Fast synchronization primitives
+
 # File & Path Operations (High Velocity)
 jwalk = "0.8"
 ignore = "0.4"
