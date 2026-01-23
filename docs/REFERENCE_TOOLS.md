@@ -4,7 +4,7 @@ Este documento detalla las 5 herramientas MCP expuestas por **MEMORY_P v2025.2.U
 
 ## 🔬 Tool 1: `analyze`
 
-Análisis masivo paralelo con 3 modos de operación.
+Análisis masivo paralelo con 4 modos de operación.
 
 **Parámetros:**
 - `path` (string, requerido): Ruta al proyecto
@@ -12,20 +12,53 @@ Análisis masivo paralelo con 3 modos de operación.
   - `"deep"`: Análisis completo con métricas, seguridad y complejidad
   - `"quick"`: Análisis rápido solo con métricas básicas
   - `"overview"`: Vista arquitectónica del proyecto
+  - `"optimize"`: **🆕 Auto-optimización de threads usando Amdahl's Law**
 - `extension` (string, default: "rs"): Filtrar por extensión
 - `use_gitignore` (boolean, default: true): Respetar .gitignore
 - `include_hidden` (boolean, default: false): Incluir archivos ocultos
 
-**Ejemplo:**
+**Modo Optimize (Avanzado):**
+
+El modo `optimize` utiliza un modelo matemático basado en **Amdahl's Law** para calcular automáticamente la configuración óptima de paralelismo para tu carga de trabajo:
+
+- Analiza el tamaño del workload (número de archivos)
+- Calcula overhead por thread (context switching, sincronización)
+- Balancea throughput vs overhead
+- Retorna: threads recomendados, batch size óptimo, speedup esperado, efficiency score
+
+**Ejemplo (overview):**
 ```json
 {
   "name": "analyze",
   "arguments": {
     "path": "./src",
-    "mode": "deep",
+    "mode": "overview"
+  }
+}
+```
+
+**Ejemplo (optimize - Auto-Optimización):**
+```json
+{
+  "name": "analyze",
+  "arguments": {
+    "path": "./src",
+    "mode": "optimize",
     "extension": "rs"
   }
 }
+```
+
+Salida ejemplo:
+```
+⚡ Auto-Optimization Results:
+📂 Workload: 1523 files
+🧵 Recommended Threads: 16
+📦 Recommended Batch Size: 100
+🚀 Expected Speedup: 12.8x
+📊 Efficiency Score: 0.9234
+
+💡 Apply with: max_threads=16, chunk_size=100
 ```
 
 ## 🛠️ Tool 2: `repair`

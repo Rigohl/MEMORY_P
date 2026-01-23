@@ -15,7 +15,7 @@ Compatible with Cursor, Windsurf, Claude Desktop, and VS Code.
 
 | Tool        | Description                                             |
 | ----------- | ------------------------------------------------------- |
-| `analyze`   | 🔬 Análisis masivo paralelo: deep/quick/overview modes |
+| `analyze`   | 🔬 Análisis masivo: deep/quick/overview/**optimize** (Amdahl's Law) |
 | `repair`    | 🛠️ Auto-fix: imports duplicados, formato, espacios     |
 | `edit`      | ✏️ Edición atómica masiva: replace/regex/append/delete |
 | `workflow`  | 🌊 Pipeline: Scan→Filter→Analyze→Edit→Repair→Evolve    |

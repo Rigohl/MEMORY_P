@@ -5,6 +5,7 @@
 
 use crate::error::{MemoryPError, Result};
 use rayon::prelude::*;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -600,4 +601,107 @@ pub fn save_results(result: &SimResult, path: &Path) -> Result<()> {
         .map_err(|e| MemoryPError::Other(format!("Failed to save results: {}", e)))?;
 
     Ok(())
+}
+
+// ============================================================================
+// ADVANCED: Auto-Optimization of Thread Count using Amdahl's Law Model
+// ============================================================================
+
+/// Calcula el número óptimo de threads basado en carga de trabajo usando Amdahl's Law
+/// 
+/// Este modelo considera:
+/// - Overhead por thread (context switching, sincronización)
+/// - Poder computacional ganado por paralelismo
+/// - Balance entre overhead y throughput
+/// 
+/// # Argumentos
+/// * `workload_size` - Tamaño de la carga de trabajo (ej: número de archivos, líneas de código)
+/// * `parallel_fraction` - Fracción del trabajo paralelizable (0.0 a 1.0, default: 0.95)
+/// 
+/// # Retorna
+/// Número óptimo de threads para la carga dada
+/// 
+/// # Ejemplo
+/// ```ignore
+/// let optimal = optimize_thread_count(10000, 0.95);
+/// println!("Optimal threads for 10K files: {}", optimal);
+/// ```
+pub fn optimize_thread_count(workload_size: usize, parallel_fraction: f64) -> usize {
+    let max_threads = num_cpus::get();
+    let mut best_threads = 1;
+    let mut best_efficiency = 0.0;
+
+    // Test thread counts: 1, 2, 4, 8, ..., max_threads
+    let mut threads = 1;
+    while threads <= max_threads {
+        let efficiency = compute_efficiency(threads, workload_size, parallel_fraction);
+        
+        if efficiency > best_efficiency {
+            best_efficiency = efficiency;
+            best_threads = threads;
+        }
+        
+        threads = if threads == 1 { 2 } else { threads * 2 };
+    }
+
+    best_threads
+}
+
+/// Calcula la eficiencia de usar N threads para una carga de trabajo
+fn compute_efficiency(threads: usize, workload: usize, parallel_fraction: f64) -> f64 {
+    // Amdahl's Law: Speedup = 1 / ((1 - P) + P/N)
+    // donde P = parallel_fraction, N = threads
+    let serial_fraction = 1.0 - parallel_fraction;
+    let speedup = 1.0 / (serial_fraction + (parallel_fraction / threads as f64));
+
+    // Overhead model: cada thread tiene un costo fijo + costo variable
+    let overhead_per_thread = 0.5; // context switching, sincronización
+    let total_overhead = threads as f64 * overhead_per_thread;
+
+    // Power: throughput ganado por paralelismo
+    let power = threads as f64 * 10.0; // cada thread aporta 10x unidades de poder
+
+    // Workload processing time con overhead
+    let processing_time = (workload as f64 / power) + total_overhead;
+
+    // Efficiency: speedup dividido por tiempo de procesamiento
+    // Buscamos maximizar speedup mientras minimizamos processing_time
+    speedup / (1.0 + processing_time / 1000.0)
+}
+
+/// Optimiza automáticamente la configuración completa de paralelismo
+/// 
+/// Retorna la configuración óptima basada en el workload y capacidades del sistema
+pub fn auto_optimize_config(workload_size: usize) -> ParallelOptimization {
+    let parallel_fraction = 0.95; // 95% del código es paralelizable
+    let optimal_threads = optimize_thread_count(workload_size, parallel_fraction);
+    
+    // Batch size óptimo: balance entre overhead y granularidad
+    let optimal_batch = if workload_size < 100 {
+        10
+    } else if workload_size < 1000 {
+        50
+    } else {
+        100
+    };
+
+    ParallelOptimization {
+        recommended_threads: optimal_threads,
+        recommended_batch_size: optimal_batch,
+        expected_speedup: compute_speedup(optimal_threads, parallel_fraction),
+        efficiency_score: compute_efficiency(optimal_threads, workload_size, parallel_fraction),
+    }
+}
+
+fn compute_speedup(threads: usize, parallel_fraction: f64) -> f64 {
+    let serial_fraction = 1.0 - parallel_fraction;
+    1.0 / (serial_fraction + (parallel_fraction / threads as f64))
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ParallelOptimization {
+    pub recommended_threads: usize,
+    pub recommended_batch_size: usize,
+    pub expected_speedup: f64,
+    pub efficiency_score: f64,
 }

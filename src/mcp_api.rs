@@ -61,12 +61,12 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                 // === TOOL 1: analyze (combines ultra_analyze + ultra_overview) ===
                 Tool {
                     name: "analyze".to_string(),
-                    description: "🔬 Análisis masivo paralelo con métricas, seguridad y overview arquitectónico.".to_string(),
+                    description: "🔬 Análisis masivo paralelo con métricas, seguridad, overview y optimización automática de paralelismo.".to_string(),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
                             "path": { "type": "string", "description": "Ruta al proyecto" },
-                            "mode": { "type": "string", "enum": ["deep", "quick", "overview"], "description": "deep=completo, quick=rápido, overview=arquitectura" },
+                            "mode": { "type": "string", "enum": ["deep", "quick", "overview", "optimize"], "description": "deep=completo, quick=rápido, overview=arquitectura, optimize=auto-optimización threads" },
                             "extension": { "type": "string", "default": "rs" },
                             "use_gitignore": { "type": "boolean", "default": true },
                             "include_hidden": { "type": "boolean", "default": false }
@@ -198,6 +198,31 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                             Some(json!({ "content": [{ "type": "text", "text": format!(
                                 "🏛️ Overview: {} | Files: {} | Cargo.toml: {}",
                                 path, total_files, if has_cargo { "✅" } else { "❌" }
+                            )}]}))
+                        }
+                        "optimize" => {
+                            // Auto-optimización de threads basada en Amdahl's Law
+                            let files = CodeAnalyzer::scan_files(path, ext, use_gitignore, include_hidden)
+                                .unwrap_or_default();
+                            let workload_size = files.len();
+                            
+                            let optimization = crate::mega_simulator::auto_optimize_config(workload_size);
+                            
+                            Some(json!({ "content": [{ "type": "text", "text": format!(
+                                "⚡ Auto-Optimization Results:\n\
+                                 📂 Workload: {} files\n\
+                                 🧵 Recommended Threads: {}\n\
+                                 📦 Recommended Batch Size: {}\n\
+                                 🚀 Expected Speedup: {:.2}x\n\
+                                 📊 Efficiency Score: {:.4}\n\n\
+                                 💡 Apply with: max_threads={}, chunk_size={}",
+                                workload_size,
+                                optimization.recommended_threads,
+                                optimization.recommended_batch_size,
+                                optimization.expected_speedup,
+                                optimization.efficiency_score,
+                                optimization.recommended_threads,
+                                optimization.recommended_batch_size
                             )}]}))
                         }
                         _ => {
