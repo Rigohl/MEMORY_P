@@ -564,6 +564,163 @@ fn simulate_library(lib: &str, category: &str) -> f64 {
 }
 
 // ============================================================================
+// Phase 4: Repair Simulation (10K) - Parallelism stress test
+// ============================================================================
+
+pub fn run_phase4_repair(iterations: usize) -> Result<SimResult> {
+    let start = std::time::Instant::now();
+    let completed = AtomicUsize::new(0);
+
+    // Repair scenarios to simulate
+    let repair_types = vec![
+        ("format_fix", 0.95),    // Formatting repairs
+        ("import_sort", 0.90),   // Import organization
+        ("unused_remove", 0.85), // Dead code removal
+        ("lint_fix", 0.88),      // Lint error fixes
+        ("type_annotate", 0.75), // Type annotation additions
+    ];
+
+    let sims_per_type = iterations / repair_types.len();
+    let total_sims = repair_types.len() * sims_per_type;
+
+    // Parallel simulation of repair operations
+    let results: Vec<_> = (0..total_sims)
+        .into_par_iter()
+        .map(|i| {
+            let repair_idx = i % repair_types.len();
+            let (repair_name, success_rate) = &repair_types[repair_idx];
+
+            // Simulate repair with varying thread counts
+            let threads = [1, 2, 4, 8, 16, 32][i % 6];
+            let batch_size = [10, 50, 100, 500][i % 4];
+
+            // Simulated performance based on parallelism
+            let base_time = 100.0; // ms
+            let parallel_speedup = (threads as f64).sqrt();
+            let batch_efficiency = 1.0 + (batch_size as f64).ln() / 10.0;
+            let sim_time = base_time / (parallel_speedup * batch_efficiency);
+
+            completed.fetch_add(1, Ordering::Relaxed);
+
+            (
+                repair_name.to_string(),
+                threads,
+                batch_size,
+                sim_time,
+                *success_rate,
+            )
+        })
+        .collect();
+
+    // Find optimal config
+    let best = results
+        .iter()
+        .min_by(|a, b| a.3.partial_cmp(&b.3).unwrap())
+        .unwrap();
+
+    let mut best_config: HashMap<String, serde_json::Value> = HashMap::new();
+    best_config.insert("repair_type".into(), serde_json::json!(best.0));
+    best_config.insert("optimal_threads".into(), serde_json::json!(best.1));
+    best_config.insert("optimal_batch_size".into(), serde_json::json!(best.2));
+    best_config.insert("estimated_time_ms".into(), serde_json::json!(best.3));
+
+    Ok(SimResult {
+        phase: 4,
+        total_sims,
+        completed: completed.load(Ordering::Relaxed),
+        best_config,
+        improvements: vec![SimImprovement {
+            target: "repair_parallelism".into(),
+            metric: "throughput".into(),
+            before: 100.0,
+            after: best.3,
+            improvement_pct: ((100.0 / best.3) - 1.0) * 100.0,
+        }],
+        duration_ms: start.elapsed().as_millis() as u64,
+    })
+}
+
+// ============================================================================
+// Phase 5: Edit Simulation (10K) - Mass editing parallelism
+// ============================================================================
+
+pub fn run_phase5_edit(iterations: usize) -> Result<SimResult> {
+    let start = std::time::Instant::now();
+    let completed = AtomicUsize::new(0);
+
+    // Edit operation types
+    let edit_ops = vec![
+        ("replace", 1.0),        // String replacement
+        ("regex_replace", 0.85), // Regex-based replacement
+        ("append", 0.95),        // Append content
+        ("insert", 0.90),        // Insert at position
+        ("delete_lines", 0.92),  // Line deletion
+    ];
+
+    let sims_per_op = iterations / edit_ops.len();
+    let total_sims = edit_ops.len() * sims_per_op;
+
+    // Parallel edit simulation
+    let results: Vec<_> = (0..total_sims)
+        .into_par_iter()
+        .map(|i| {
+            let op_idx = i % edit_ops.len();
+            let (op_name, complexity) = &edit_ops[op_idx];
+
+            // Simulate with varying file counts and sizes
+            let file_count = [10, 50, 100, 500, 1000][i % 5];
+            let avg_file_size_kb = [1, 10, 50, 100, 500][i % 5];
+            let threads = [4, 8, 16, 32][i % 4];
+
+            // Edit performance model
+            let base_ops_per_sec = 1000.0;
+            let thread_factor = (threads as f64).powf(0.8); // Diminishing returns
+            let size_penalty = 1.0 + (avg_file_size_kb as f64).ln() / 5.0;
+            let ops_per_sec = base_ops_per_sec * thread_factor / size_penalty * complexity;
+
+            let total_time = (file_count as f64) / ops_per_sec * 1000.0; // ms
+
+            completed.fetch_add(1, Ordering::Relaxed);
+
+            (
+                op_name.to_string(),
+                file_count,
+                threads,
+                total_time,
+                ops_per_sec,
+            )
+        })
+        .collect();
+
+    // Find optimal config
+    let best = results
+        .iter()
+        .max_by(|a, b| a.4.partial_cmp(&b.4).unwrap())
+        .unwrap();
+
+    let mut best_config: HashMap<String, serde_json::Value> = HashMap::new();
+    best_config.insert("edit_operation".into(), serde_json::json!(best.0));
+    best_config.insert("file_count".into(), serde_json::json!(best.1));
+    best_config.insert("optimal_threads".into(), serde_json::json!(best.2));
+    best_config.insert("ops_per_second".into(), serde_json::json!(best.4));
+
+    Ok(SimResult {
+        phase: 5,
+        total_sims,
+        completed: completed.load(Ordering::Relaxed),
+        best_config,
+        improvements: vec![SimImprovement {
+            target: "edit_parallelism".into(),
+            metric: "ops_per_second".into(),
+            before: 1000.0,
+            after: best.4,
+            improvement_pct: ((best.4 / 1000.0) - 1.0) * 100.0,
+        }],
+        duration_ms: start.elapsed().as_millis() as u64,
+    })
+}
+
+// ============================================================================
 // Main Entry Point
 // ============================================================================
 
@@ -572,6 +729,8 @@ pub fn run_mega_simulation(config: SimConfig) -> Result<SimResult> {
         1 => run_phase1(config.iterations),
         2 => run_phase2(config.iterations),
         3 => run_phase3(config.iterations),
+        4 => run_phase4_repair(config.iterations),
+        5 => run_phase5_edit(config.iterations),
         _ => Err(MemoryPError::Other(format!(
             "Invalid phase: {}",
             config.phase
