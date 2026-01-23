@@ -22,6 +22,7 @@ mod auto_manager; // Sistema de auto-gestión MCP 2026
 mod config;
 mod error;
 mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
+mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
@@ -71,17 +72,31 @@ async fn http_server_mode() -> crate::error::Result<()> {
         tracing::warn!("⚠️  Continuando sin auto-gestión completa");
     }
     
+    // 2. Auto-iniciar KPI Tracker (Six Sigma + Automation)
+    let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(
+        kpi_tracker::KpiConfig::default()
+    ));
+    
+    tracing::info!("📊 Iniciando KPI Tracker (Six Sigma)...");
+    if let Err(e) = kpi_tracker.start().await {
+        tracing::error!("❌ Error al iniciar KPI Tracker: {}", e);
+        tracing::warn!("⚠️  Continuando sin KPI tracking");
+    }
+    
     tracing::info!("✅ Sistema auto-gestionado activo");
     tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");
     tracing::info!("   • Health checks: cada 30s");
     tracing::info!("   • Auto-recovery: habilitado");
     tracing::info!("   • Zero-touch operation: activo");
+    tracing::info!("   • KPI Tracking: Six Sigma always-on");
+    tracing::info!("   • Mediciones: cada 10s");
     
-    // 2. Construir router con auto-manager
+    // 3. Construir router con auto-manager y kpi-tracker
     let app = Router::new()
         .merge(mcp_api::routes())
         .fallback(error_404)
-        .layer(axum::Extension(auto_manager.clone()));
+        .layer(axum::Extension(auto_manager.clone()))
+        .layer(axum::Extension(kpi_tracker.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
 
@@ -91,6 +106,7 @@ async fn http_server_mode() -> crate::error::Result<()> {
     tracing::info!("📋 Protocolo: MCP 2026.1.0-ALWAYS-ON");
     tracing::info!("🔌 Transports: HTTP, WebSocket, stdio");
     tracing::info!("🌐 Compatible: Cursor, Windsurf, Claude Desktop, VS Code");
+    tracing::info!("📊 KPIs: Six Sigma + Automation (DMAIC)");
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     let listener = TcpListener::bind(addr)
@@ -102,6 +118,7 @@ async fn http_server_mode() -> crate::error::Result<()> {
         .map_err(|e| crate::error::MemoryPError::Io(e))?;
 
     // Cleanup al salir
+    kpi_tracker.stop().await;
     auto_manager.stop().await;
     
     Ok(())

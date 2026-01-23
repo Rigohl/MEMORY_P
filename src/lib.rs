@@ -10,6 +10,7 @@ pub mod auto_manager; // Sistema de auto-gestión MCP 2026
 pub mod config;
 pub mod error;
 pub mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
+pub mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 pub mod mcp;
 pub mod mcp_api;
 pub mod mega_simulator;

@@ -1,6 +1,7 @@
 use crate::analyzer::CodeAnalyzer;
 use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
+use crate::kpi_tracker::KpiTracker; // KPI Tracking Six Sigma
 use crate::mcp::handlers::*;
 use crate::mcp::models::*;
 use crate::parallel_engine::{self, ParallelConfig};
@@ -22,8 +23,10 @@ pub fn routes() -> Router {
         )
         .route("/mcp", post(mcp_json_rpc_handler))
         .route("/mcp/sse", get(mcp_sse_handler))
-        .route("/mcp/status", get(auto_status_handler)) // Nuevo: Auto-Manager status
-        .route("/mcp/health", get(auto_health_handler)) // Nuevo: Health check
+        .route("/mcp/status", get(auto_status_handler)) // Auto-Manager status
+        .route("/mcp/health", get(auto_health_handler)) // Health check
+        .route("/mcp/kpis", get(kpi_dashboard_handler)) // KPI Dashboard (Six Sigma)
+        .route("/mcp/kpis/record", post(kpi_record_handler)) // Record metric
         .route("/create_project", post(create_project_handler))
         .route("/analyze_project", post(analyze_project_handler))
         .route("/edit_project", post(edit_project_handler))
@@ -49,6 +52,89 @@ pub async fn auto_health_handler(
         "protocol_version": "2026.1.0",
         "auto_managed": true,
         "always_on": true
+    }))
+}
+
+/// Handler para KPI Dashboard (Six Sigma)
+pub async fn kpi_dashboard_handler(
+    Extension(kpi_tracker): Extension<Arc<KpiTracker>>,
+) -> Json<Value> {
+    let dashboard = kpi_tracker.get_dashboard();
+    
+    Json(json!({
+        "timestamp": dashboard.timestamp.elapsed().as_secs(),
+        "overall_sigma_level": dashboard.overall_sigma_level,
+        "target_sigma": 4.0,
+        "categories": dashboard.categories.iter().map(|cat| {
+            json!({
+                "category": format!("{:?}", cat.category),
+                "metrics_count": cat.metrics_count,
+                "avg_cpk": cat.avg_cpk,
+                "defect_rate": cat.defect_rate,
+                "sigma_level": cat.sigma_level,
+                "status": if cat.sigma_level >= 4.0 { "excellent" }
+                         else if cat.sigma_level >= 3.0 { "good" }
+                         else { "needs_improvement" }
+            })
+        }).collect::<Vec<_>>(),
+        "alerts": dashboard.alerts.iter().map(|alert| {
+            json!({
+                "severity": format!("{:?}", alert.severity),
+                "category": format!("{:?}", alert.category),
+                "message": alert.message,
+                "age_seconds": alert.timestamp.elapsed().as_secs()
+            })
+        }).collect::<Vec<_>>(),
+        "methodology": "Six Sigma DMAIC",
+        "automation": "always-on"
+    }))
+}
+
+/// Handler para registrar métrica
+pub async fn kpi_record_handler(
+    Extension(kpi_tracker): Extension<Arc<KpiTracker>>,
+    Json(payload): Json<Value>,
+) -> Json<Value> {
+    use crate::kpi_tracker::{KpiCategory, SixSigmaMetric};
+    use std::time::Instant;
+    
+    // Parse request
+    let name = payload["name"].as_str().unwrap_or("unknown").to_string();
+    let value = payload["value"].as_f64().unwrap_or(0.0);
+    let target = payload["target"].as_f64().unwrap_or(value);
+    let usl = payload["upper_spec_limit"].as_f64().unwrap_or(target * 1.2);
+    let lsl = payload["lower_spec_limit"].as_f64().unwrap_or(target * 0.8);
+    let unit = payload["unit"].as_str().unwrap_or("").to_string();
+    
+    let category = match payload["category"].as_str().unwrap_or("performance") {
+        "quality" => KpiCategory::Quality,
+        "performance" => KpiCategory::Performance,
+        "availability" => KpiCategory::Availability,
+        "efficiency" => KpiCategory::Efficiency,
+        "defects" => KpiCategory::Defects,
+        "cost" => KpiCategory::Cost,
+        _ => KpiCategory::Performance,
+    };
+    
+    let metric = SixSigmaMetric {
+        name: name.clone(),
+        category,
+        value,
+        target,
+        upper_spec_limit: usl,
+        lower_spec_limit: lsl,
+        timestamp: Instant::now(),
+        unit,
+    };
+    
+    kpi_tracker.record_metric(metric.clone());
+    
+    Json(json!({
+        "status": "recorded",
+        "metric": name,
+        "value": value,
+        "within_spec": metric.is_within_spec(),
+        "category": format!("{:?}", category)
     }))
 }
 
