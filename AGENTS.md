@@ -22,7 +22,7 @@ Este archivo define el comportamiento de agentes IA (Cascade/Copilot/Claude) par
 - `config.rs` - Configuración de paralelismo y caching
 
 ### MCP Toolkit (Las 5 Herramientas)
-1. **analyze** - Análisis paralelo masivo (deep/quick/overview)
+1. **analyze** - Análisis paralelo masivo con 4 modos: deep/quick/overview/optimize (este último usa la Ley de Amdahl para optimizar hilos)
 2. **repair** - Auto-fix de imports, formato y espacios
 3. **edit** - Edición atómica masiva (replace/regex/append/delete)
 4. **workflow** - Pipeline de pasos con auto-evolución
