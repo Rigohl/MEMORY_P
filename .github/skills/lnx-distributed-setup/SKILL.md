@@ -42,14 +42,16 @@ LNX distributed search cluster configuration skill para búsqueda de texto distr
 
 ### Software
 ```bash
-# Instalar LNX (cada nodo)
-curl -sSL https://lnx.rs/install.sh | bash
+# Instalar LNX desde el código fuente (cada nodo)
+git clone https://github.com/lnx-search/lnx.git
+cd lnx
+cargo build --release
 
 # O con Docker
-docker pull lnx/lnx:latest
+docker pull ghcr.io/lnx-search/lnx:latest
 
 # Verificar instalación
-lnx --version
+./target/release/lnx --version
 ```
 
 ### Network Requirements
