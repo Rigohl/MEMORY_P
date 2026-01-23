@@ -4,19 +4,54 @@
 # Permitir esenciales
 !.gitignore
 !Cargo.toml
+!Cargo.lock
 !README.md
 !LICENSE
+!INSTALL.md
+!AGENTS.md
+!SKILLS.md
 
 # Código fuente
 !src/
 !src/**
 
+# FFI multi-lenguaje
+!FFI/
+!FFI/README.md
+!FFI/Makefile
+!FFI/src/
+!FFI/src/**
+!FFI/examples/
+!FFI/examples/**
+!FFI/lib/
+!FFI/lib/README.md
+!FFI/lib/.gitkeep
+
 # Documentación básica
 !docs/
 !docs/**
-!AGENTS.md
-!SKILLS.md
 
 # GitHub Copilot Agents & Skills
 !.github/
 !.github/**
+
+# Configuraciones
+!.windsurf/
+!.windsurf/**
+!.agent/
+!.agent/**
+!.vscode/
+!.vscode/**
+!.cargo/
+!.cargo/**
+
+# Payload Bank
+!PAYLOAD_BANK/
+!PAYLOAD_BANK/**
+
+# Ignorar binarios y builds en FFI
+FFI/lib/*.so
+FFI/lib/*.dylib
+FFI/lib/*.dll
+FFI/lib/*.a
+FFI/build/

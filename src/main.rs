@@ -19,6 +19,7 @@ static GLOBAL: MiMalloc = MiMalloc;
 mod analyzer;
 mod config;
 mod error;
+mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
