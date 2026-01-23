@@ -15,6 +15,14 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 const DEFAULT_PARALLEL_FRACTION: f64 = 0.95; // 95% del código es paralelizable
 const THREAD_OVERHEAD_COST: f64 = 0.5; // Overhead por thread (context switching)
 const THREAD_POWER_FACTOR: f64 = 10.0; // Throughput por thread
+const EFFICIENCY_SCALE_FACTOR: f64 = 1000.0; // Factor de escala para normalizar efficiency
+
+// Constantes para batch size auto-optimization
+const SMALL_WORKLOAD_THRESHOLD: usize = 100;
+const MEDIUM_WORKLOAD_THRESHOLD: usize = 1000;
+const SMALL_BATCH_SIZE: usize = 10;
+const MEDIUM_BATCH_SIZE: usize = 50;
+const LARGE_BATCH_SIZE: usize = 100;
 
 /// Configuración de simulación
 #[allow(dead_code)]
@@ -671,7 +679,7 @@ fn compute_efficiency(threads: usize, workload: usize, parallel_fraction: f64) -
 
     // Efficiency: speedup dividido por tiempo de procesamiento
     // Buscamos maximizar speedup mientras minimizamos processing_time
-    speedup / (1.0 + processing_time / 1000.0)
+    speedup / (1.0 + processing_time / EFFICIENCY_SCALE_FACTOR)
 }
 
 /// Optimiza automáticamente la configuración completa de paralelismo
@@ -681,12 +689,12 @@ pub fn auto_optimize_config(workload_size: usize) -> ParallelOptimization {
     let optimal_threads = optimize_thread_count(workload_size, DEFAULT_PARALLEL_FRACTION);
     
     // Batch size óptimo: balance entre overhead y granularidad
-    let optimal_batch = if workload_size < 100 {
-        10
-    } else if workload_size < 1000 {
-        50
+    let optimal_batch = if workload_size < SMALL_WORKLOAD_THRESHOLD {
+        SMALL_BATCH_SIZE
+    } else if workload_size < MEDIUM_WORKLOAD_THRESHOLD {
+        MEDIUM_BATCH_SIZE
     } else {
-        100
+        LARGE_BATCH_SIZE
     };
 
     ParallelOptimization {
