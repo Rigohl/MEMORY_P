@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[allow(dead_code)]
 pub struct ToshiEngine {
     config: EngineConfig,
     cluster_nodes: Vec<String>,

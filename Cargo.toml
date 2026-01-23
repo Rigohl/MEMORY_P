@@ -36,6 +36,9 @@ tracing-subscriber = "0.3"
 thiserror = "1.0"
 anyhow = "1.0"
 
+# Async Traits (for motores module)
+async-trait = "0.1"
+
 # File & Path Operations (High Velocity)
 jwalk = "0.8"
 ignore = "0.4"

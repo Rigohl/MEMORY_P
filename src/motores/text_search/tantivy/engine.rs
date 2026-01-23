@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[allow(dead_code)]
 pub struct TantivyEngine {
     config: EngineConfig,
     initialized: bool,

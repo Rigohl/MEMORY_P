@@ -12,6 +12,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Qdrant search engine implementation
+#[allow(dead_code)]
 pub struct QdrantEngine {
     config: EngineConfig,
     collection_name: String,

@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+#[allow(dead_code)]
 pub struct FaissEngine {
     config: EngineConfig,
     vector_size: usize,
