@@ -1,17 +1,19 @@
 # GitHub Copilot Agents & Skills para MEMORY_P
 
-Este directorio contiene la configuración de Agents y Skills personalizados para el proyecto MEMORY_P, optimizados para desarrollo Rust de alto rendimiento con MCP.
+> **Estado Post-Merge PR #4**: Configuración completa de Agents y Skills operativos
+
+Este directorio contiene la configuración de Custom Agents y Agent Skills personalizados para el proyecto MEMORY_P, optimizados para desarrollo Rust de alto rendimiento con protocolo MCP.
 
 ## 📁 Estructura
 
 ```
 .github/
-├── agents/                          # Custom Agents
+├── agents/                          # Custom Agents (3 configurados)
 │   ├── memory-p-optimizer.agent.md   # Optimización de rendimiento
 │   ├── memory-p-mcp-expert.agent.md  # Especialista en protocolo MCP
 │   └── memory-p-refactor.agent.md    # Refactorización de código
 │
-└── skills/                          # Agent Skills
+└── skills/                          # Agent Skills (5 implementadas)
     ├── rust-parallel-testing/       # Tests con Rayon
     ├── memory-p-analyzer/           # Análisis de código
     ├── mcp-validator/               # Validación MCP
@@ -21,8 +23,10 @@ Este directorio contiene la configuración de Agents y Skills personalizados par
 
 ## 🤖 Custom Agents
 
-### 1. memory-p-optimizer
-**Propósito**: Maximizar rendimiento del código Rust
+> **3 Agents Operativos** - Especializados en diferentes aspectos del desarrollo
+
+### 1. memory-p-optimizer ([Ver archivo](agents/memory-p-optimizer.agent.md))
+**Propósito**: Maximizar rendimiento del código Rust con técnicas avanzadas
 
 **Capacidades**:
 - Detecta oportunidades de paralelización con Rayon
@@ -35,7 +39,7 @@ Este directorio contiene la configuración de Agents y Skills personalizados par
 - Mejorando throughput
 - Reduciendo latencia de operaciones MCP
 
-### 2. memory-p-mcp-expert
+### 2. memory-p-mcp-expert ([Ver archivo](agents/memory-p-mcp-expert.agent.md))
 **Propósito**: Implementar y validar protocolo MCP 2024-11-05
 
 **Capacidades**:
@@ -49,7 +53,7 @@ Este directorio contiene la configuración de Agents y Skills personalizados par
 - Depurando problemas de compatibilidad
 - Validando requests/responses
 
-### 3. memory-p-refactor
+### 3. memory-p-refactor ([Ver archivo](agents/memory-p-refactor.agent.md))
 **Propósito**: Mejorar calidad del código sin cambiar funcionalidad
 
 **Capacidades**:
@@ -65,7 +69,9 @@ Este directorio contiene la configuración de Agents y Skills personalizados par
 
 ## 🎯 Agent Skills
 
-### 1. rust-parallel-testing
+> **5 Skills Implementadas** - Capacidades especializadas reutilizables
+
+### 1. rust-parallel-testing ([Ver skill](skills/rust-parallel-testing/SKILL.md))
 Genera tests unitarios optimizados con Rayon para procesamiento paralelo.
 
 **Templates incluidos**:
@@ -73,7 +79,7 @@ Genera tests unitarios optimizados con Rayon para procesamiento paralelo.
 - Tests asíncronos con `tokio::test`
 - Tests de error handling
 
-### 2. memory-p-analyzer
+### 2. memory-p-analyzer ([Ver skill](skills/memory-p-analyzer/SKILL.md))
 Analiza código identificando oportunidades de optimización.
 
 **Detecta**:
@@ -82,7 +88,7 @@ Analiza código identificando oportunidades de optimización.
 - Allocations evitables
 - Funciones sin tests
 
-### 3. mcp-validator
+### 3. mcp-validator ([Ver skill](skills/mcp-validator/SKILL.md))
 Valida endpoints contra especificación MCP 2024-11-05.
 
 **Verifica**:
@@ -91,7 +97,7 @@ Valida endpoints contra especificación MCP 2024-11-05.
 - Error codes correctos
 - Compatibilidad con clientes (Cursor, Windsurf, Claude)
 
-### 4. rust-documentation
+### 4. rust-documentation ([Ver skill](skills/rust-documentation/SKILL.md))
 Genera documentación siguiendo convenciones de rustdoc.
 
 **Incluye**:
@@ -100,7 +106,7 @@ Genera documentación siguiendo convenciones de rustdoc.
 - Links intra-doc
 - Ejemplos ejecutables
 
-### 5. performance-benchmark
+### 5. performance-benchmark ([Ver skill](skills/performance-benchmark/SKILL.md))
 Crea benchmarks con Criterion para validar optimizaciones.
 
 **Features**:

@@ -108,3 +108,16 @@ curl -I http://localhost:4040/
 # Test tools/call
 ./scripts/test_mcp_tools_call.sh
 ```
+
+---
+
+## 📚 Ver También
+
+- [SKILLS.md](../../../SKILLS.md) - Documentación completa de Skills
+- [AGENTS.md](../../../AGENTS.md) - Guía de Agents
+- [Agent memory-p-mcp-expert](../../agents/memory-p-mcp-expert.agent.md) - Implementación MCP
+- [Documentación MCP](../../../docs/REFERENCE_TOOLS.md) - Referencia de herramientas
+- [MCP Specification](https://spec.modelcontextprotocol.io) - Especificación oficial
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

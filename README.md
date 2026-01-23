@@ -23,11 +23,12 @@ Compatible with Cursor, Windsurf, Claude Desktop, and VS Code.
 
 ## 📦 Tech Stack
 
-- **Parallelism**: `rayon` with work-stealing
-- **Memory**: `mimalloc` allocator + `memmap2` zero-copy I/O
-- **Caching**: `scc` lock-free HashMap
-- **Serialization**: `rkyv` zero-copy
-- **HTTP**: `axum` + `tokio`
+- **Parallelism**: `rayon` 1.8 with work-stealing scheduler
+- **Memory**: `mimalloc` 0.1.48 allocator + `memmap2` zero-copy I/O
+- **Caching**: `scc` 2.1 lock-free HashMap
+- **Serialization**: `rkyv` 0.7.42 zero-copy deserialization
+- **HTTP**: `axum` 0.7 + `tokio` async runtime
+- **Protocol**: MCP 2024-11-05 with JSON-RPC 2.0
 
 ## 🛠️ Installation
 
@@ -45,7 +46,9 @@ cargo build --release
 
 ## ⚙️ MCP Configuration
 
-Add to your `mcp.json`:
+### For Cursor / Windsurf
+
+Add to your MCP settings or `mcp.json`:
 
 ```json
 {
@@ -53,6 +56,22 @@ Add to your `mcp.json`:
     "memory_p": {
       "url": "http://127.0.0.1:4040/mcp",
       "transport": "http"
+    }
+  }
+}
+```
+
+### For Claude Desktop
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "memory_p": {
+      "command": "cargo",
+      "args": ["run", "--release", "--", "--stdio"],
+      "cwd": "/path/to/MEMORY_P"
     }
   }
 }
@@ -89,7 +108,11 @@ MEMORY_P/
 
 - **[AGENTS.md](AGENTS.md)** - Guía completa de GitHub Copilot Agents
 - **[SKILLS.md](SKILLS.md)** - Documentación de GitHub Copilot Agent Skills
-- **[docs/](docs/)** - Documentación técnica adicional
+- **[.github/README.md](.github/README.md)** - Agents & Skills personalizados del proyecto
+- **[docs/](docs/)** - Documentación técnica:
+  - [Tutorial de Inicio](docs/TUTORIAL_START.md)
+  - [Guía de Reparación](docs/HOWTO_REPAIR.md)
+  - [Referencia de Herramientas](docs/REFERENCE_TOOLS.md)
 
 ## 📄 License
 

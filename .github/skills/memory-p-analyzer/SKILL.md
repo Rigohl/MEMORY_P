@@ -74,3 +74,15 @@ cargo clippy -- -D warnings
 cargo audit
 cargo outdated
 ```
+
+---
+
+## 📚 Ver También
+
+- [SKILLS.md](../../../SKILLS.md) - Documentación completa de Skills
+- [AGENTS.md](../../../AGENTS.md) - Guía de Agents
+- [Agent memory-p-optimizer](../../agents/memory-p-optimizer.agent.md) - Aplica sugerencias de análisis
+- [Skill rust-parallel-testing](../rust-parallel-testing/SKILL.md) - Tests para código paralelo
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

@@ -63,3 +63,16 @@ open target/criterion/report/index.html
 - Análisis: >1000 archivos/segundo
 - Operaciones MCP: <100ms
 - Throughput: Escalar linealmente hasta 8 cores
+
+---
+
+## 📚 Ver También
+
+- [SKILLS.md](../../../SKILLS.md) - Documentación completa de Skills
+- [AGENTS.md](../../../AGENTS.md) - Guía de Agents
+- [Agent memory-p-optimizer](../../agents/memory-p-optimizer.agent.md) - Optimización basada en benchmarks
+- [Skill memory-p-analyzer](../memory-p-analyzer/SKILL.md) - Análisis para optimizar
+- [Criterion Documentation](https://bheisler.github.io/criterion.rs/book/) - Documentación oficial
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

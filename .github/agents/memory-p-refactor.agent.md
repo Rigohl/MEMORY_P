@@ -337,3 +337,16 @@ pub struct TaskConfig {
 - No optimizar prematuramente
 - Dejar el código mejor de como lo encontraste
 - Si no hay tests, escríbelos primero
+
+---
+
+## 📚 Ver También
+
+- [AGENTS.md](../../AGENTS.md) - Guía completa de GitHub Copilot Agents
+- [SKILLS.md](../../SKILLS.md) - Documentación de Agent Skills
+- [README del proyecto](../../README.md) - Overview de MEMORY_P
+- [Agent memory-p-optimizer](memory-p-optimizer.agent.md) - Para optimización post-refactor
+- [Skill rust-parallel-testing](../skills/rust-parallel-testing/SKILL.md) - Tests para validar refactors
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop
