@@ -33,3 +33,7 @@
 # FFI folder
 !FFI/
 !FFI/**
+
+# Auto-management documentation
+!AUTO_MANAGEMENT.md
+!MOTORS_FEATURES_MATRIX.md
