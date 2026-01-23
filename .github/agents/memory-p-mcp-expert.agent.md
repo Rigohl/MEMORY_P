@@ -400,3 +400,16 @@ mod tests {
 - [MCP Specification](https://spec.modelcontextprotocol.io)
 - [JSON-RPC 2.0](https://www.jsonrpc.org/specification)
 - [mcp-sdk-rs docs](https://docs.rs/mcp-sdk-rs)
+
+---
+
+## 📚 Ver También
+
+- [AGENTS.md](../../AGENTS.md) - Guía completa de GitHub Copilot Agents
+- [SKILLS.md](../../SKILLS.md) - Documentación de Agent Skills
+- [README del proyecto](../../README.md) - Overview de MEMORY_P
+- [Skill mcp-validator](../skills/mcp-validator/SKILL.md) - Complementa este agent
+- [Documentación MCP](../../docs/REFERENCE_TOOLS.md) - Referencia de herramientas
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

@@ -51,3 +51,15 @@ cargo test --release
 cargo test -- --nocapture
 cargo test --test-threads=4
 ```
+
+---
+
+## 📚 Ver También
+
+- [SKILLS.md](../../../SKILLS.md) - Documentación completa de Skills
+- [AGENTS.md](../../../AGENTS.md) - Guía de Agents
+- [Agent memory-p-refactor](../../agents/memory-p-refactor.agent.md) - Tests para validar refactors
+- [Skill memory-p-analyzer](../memory-p-analyzer/SKILL.md) - Análisis pre-testing
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

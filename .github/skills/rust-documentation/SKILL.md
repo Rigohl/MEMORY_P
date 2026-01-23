@@ -259,3 +259,28 @@ cargo rustdoc -- -D rustdoc::broken-intra-doc-links
 #![warn(missing_docs)]
 #![warn(rustdoc::broken_intra_doc_links)]
 ```
+
+## Comandos
+```bash
+# Generar documentación
+cargo doc --no-deps --open
+
+# Con ejemplos
+cargo doc --no-deps --document-private-items
+
+# Verificar links
+cargo doc --no-deps 2>&1 | grep warning
+```
+
+---
+
+## 📚 Ver También
+
+- [SKILLS.md](../../../SKILLS.md) - Documentación completa de Skills
+- [AGENTS.md](../../../AGENTS.md) - Guía de Agents
+- [Tutorial de Documentación](../../../docs/TUTORIAL_START.md) - Inicio rápido
+- [Rustdoc Book](https://doc.rust-lang.org/rustdoc/) - Documentación oficial de rustdoc
+- [RFC 1574](https://rust-lang.github.io/rfcs/1574-more-api-documentation-conventions.html) - Convenciones API docs
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop

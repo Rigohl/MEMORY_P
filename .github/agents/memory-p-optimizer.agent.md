@@ -203,3 +203,15 @@ ls -lh target/release/memory_p
 - Mide antes y después de optimizar
 - Prioriza legibilidad sobre micro-optimizaciones
 - Documenta trade-offs de performance vs mantenibilidad
+
+---
+
+## 📚 Ver También
+
+- [AGENTS.md](../../AGENTS.md) - Guía completa de GitHub Copilot Agents
+- [SKILLS.md](../../SKILLS.md) - Documentación de Agent Skills
+- [README del proyecto](../../README.md) - Overview de MEMORY_P
+- [Skill memory-p-analyzer](../skills/memory-p-analyzer/SKILL.md) - Complementa este agent
+
+**Última actualización**: Enero 2026 (Post-merge PR #4)  
+**Compatibilidad**: GitHub Copilot, Cursor, Windsurf, Claude Desktop
