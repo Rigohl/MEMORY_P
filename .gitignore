@@ -14,6 +14,8 @@
 !SUMMARY.md
 !CHANGELOG.md
 !IMPLEMENTATION_NOTES.md
+!FFI_REAL_SETUP.md
+!environment.yml
 
 # Código fuente
 !src/
@@ -23,6 +25,7 @@
 !FFI/
 !FFI/README.md
 !FFI/Makefile
+!FFI/build.sh
 !FFI/src/
 !FFI/src/**
 !FFI/examples/
