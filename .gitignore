@@ -11,6 +11,10 @@
 !src/
 !src/**
 
+# Motores (8-engine architecture)
+!motores/
+!motores/**
+
 # Documentación básica
 !docs/
 !docs/**
@@ -20,3 +24,8 @@
 # GitHub Copilot Agents & Skills
 !.github/
 !.github/**
+
+# Docker & Configuration
+!docker-compose.yml
+!.dockerignore
+!Dockerfile
