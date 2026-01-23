@@ -333,11 +333,10 @@ impl JuliaNLPEngine {
         }
         
         // Load Julia module
-        let module_path = CString::new("./julia_nlp_engine.jl")?;
+        // Use a static command string to avoid constructing Julia code from dynamic input.
+        let include_cmd = CString::new("include(\"./julia_nlp_engine.jl\")")?;
         unsafe {
-            julia_sys::jl_eval_string(
-                format!("include(\"{}\")", module_path.to_str()?).as_ptr() as *const c_char
-            );
+            julia_sys::jl_eval_string(include_cmd.as_ptr());
         }
         
         Ok(JuliaNLPEngine { initialized: true })
