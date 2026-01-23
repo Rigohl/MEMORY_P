@@ -187,7 +187,20 @@ limit: 10
 
 ### Custom Agents Activos
 
-El proyecto MEMORY_P cuenta con tres agents personalizados ubicados en `.github/agents/`:
+El proyecto MEMORY_P cuenta con **7 agents personalizados** ubicados en `.github/agents/`:
+
+**Core Agents (3)**:
+- memory-p-optimizer - Optimización de rendimiento
+- memory-p-mcp-expert - Protocolo MCP
+- memory-p-refactor - Refactorización de código
+
+**Advanced Agents (3)**:
+- memory-p-chaos-analyzer - Análisis de teoría del caos
+- memory-p-learning-coordinator - Aprendizaje continuo
+- memory-p-predictive-optimizer - Optimización predictiva
+
+**Routing Agent (1)**:
+- motor-routing-ai - Enrutamiento inteligente entre 9 motores
 
 #### 1. **memory-p-optimizer** ([Ver código](.github/agents/memory-p-optimizer.agent.md))
 
@@ -235,6 +248,78 @@ con soporte para streaming de resultados
 ```bash
 @memory-p-refactor refactoriza memory_bank.rs para mejorar
 la separación de concerns y testability
+```
+
+#### 4. **memory-p-chaos-analyzer** ([Ver código](.github/agents/memory-p-chaos-analyzer.agent.md))
+
+**Rol**: Especialista en análisis de teoría del caos aplicada a sistemas de desarrollo.
+
+**Capacidades**:
+- Cálculo de exponentes de Lyapunov (sensibilidad a condiciones iniciales)
+- Análisis de dimensión de correlación (complejidad del sistema)
+- Detección de atractores caóticos y estados estables
+- Predicción de puntos críticos y bifurcaciones
+
+**Stack**: Julia (DynamicalSystems.jl, DifferentialEquations.jl), Rust FFI
+
+**Ejemplo de Uso**:
+```bash
+@memory-p-chaos-analyzer analiza la estabilidad del sistema
+y predice posibles puntos de fallo
+```
+
+#### 5. **memory-p-learning-coordinator** ([Ver código](.github/agents/memory-p-learning-coordinator.agent.md))
+
+**Rol**: Coordinador del sistema de aprendizaje continuo y adaptación automática.
+
+**Capacidades**:
+- Detección automática de patrones de usuario
+- Memoria episódica de sesiones (PostgreSQL)
+- Optimización adaptativa con reinforcement learning
+- Evolución dinámica de knowledge graph
+
+**Stack**: Rust, Julia, JAX, PostgreSQL, Redis
+
+**Ejemplo de Uso**:
+```bash
+@memory-p-learning-coordinator aprende de las últimas 100 sesiones
+y optimiza los parámetros del sistema automáticamente
+```
+
+#### 6. **memory-p-predictive-optimizer** ([Ver código](.github/agents/memory-p-predictive-optimizer.agent.md))
+
+**Rol**: Optimizador matemático que predice y mejora patrones de desarrollo.
+
+**Capacidades**:
+- Predicción de métricas con ARIMA/SARIMA
+- Optimización multi-objetivo (NSGA-II, Pareto frontiers)
+- Sistemas dinámicos (EDOs, control óptimo)
+- Análisis de tendencias y extrapolación
+
+**Stack**: Julia (Optim.jl, Forecasting.jl, DifferentialEquations.jl), Rust FFI
+
+**Ejemplo de Uso**:
+```bash
+@memory-p-predictive-optimizer predice métricas de desarrollo
+para los próximos 7 días y optimiza parámetros
+```
+
+#### 7. **motor-routing-ai** ([Ver código](.github/agents/motor-routing-ai.agent.md))
+
+**Rol**: Enrutamiento inteligente entre los 9 motores de búsqueda.
+
+**Capacidades**:
+- Selección automática del motor óptimo según query
+- Balance de carga entre motores
+- Fallback automático si un motor falla
+- Optimización de latencia y throughput
+
+**Stack**: Rust, algoritmos de routing heurísticos
+
+**Ejemplo de Uso**:
+```bash
+@motor-routing-ai implementa nueva estrategia de routing
+para queries híbridas (vector + texto)
 ```
 
 ### Agent Skills Disponibles
