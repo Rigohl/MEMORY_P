@@ -331,11 +331,11 @@ Closes #42"
 
 ---
 
-## Skills en MEMORY_P
+## Skills en MEMORY_P v2.0
 
-> **Estado actual**: 5 Skills operativas ubicadas en `.github/skills/`
+> **Estado actual**: 5 Skills operativas + 6 Skills multi-lenguaje ubicadas en `.github/skills/`
 
-### Skills Implementadas
+### Skills Core (Implementadas)
 
 El proyecto MEMORY_P cuenta con las siguientes skills especializadas:
 
@@ -343,40 +343,321 @@ El proyecto MEMORY_P cuenta con las siguientes skills especializadas:
 - Analiza código Rust con énfasis en paralelismo
 - Detecta oportunidades de optimización con rayon
 - Verifica uso correcto de `mimalloc` y `memmap2`
+- Genera tests con assertions específicas de concurrencia
 
-#### 2. **memory-p-workflow**
-- Automatiza creación de workflows en `PAYLOAD_BANK/`
-- Genera configuraciones `.toml` válidas
-- Valida sintaxis y estructura
+#### 2. **memory-p-analyzer** ([Ver skill](.github/skills/memory-p-analyzer/SKILL.md))
+- Análisis profundo de código con métricas avanzadas
+- Detección de complejidad ciclomática
+- Identificación de código inseguro (`unsafe`, `unwrap()`)
+- Integración con Julia para análisis de caos
 
-#### 3. **memory-p-benchmark**
+#### 3. **mcp-validator** ([Ver skill](.github/skills/mcp-validator/SKILL.md))
+- Valida endpoints MCP contra especificación 2024-11-05
+- Genera tests de integración para API
+- Verifica compatibilidad con Cursor/Windsurf/Claude Desktop
+- Validación de schemas JSON-RPC 2.0
+
+#### 4. **rust-documentation** ([Ver skill](.github/skills/rust-documentation/SKILL.md))
+- Genera documentación Rust con ejemplos y benchmarks
+- Doc comments con secciones `# Examples`, `# Panics`, `# Errors`
+- Links a documentación oficial
+- Integración con rustdoc para generación HTML
+
+#### 5. **performance-benchmark** ([Ver skill](.github/skills/performance-benchmark/SKILL.md))
 - Genera benchmarks con `criterion`
 - Compara rendimiento pre/post cambios
+- Análisis estadístico de resultados
 - Documenta mejoras en formato README
 
-#### 4. **memory-p-mcp**
-- Valida endpoints MCP contra especificación
-- Genera tests de integración para API
-- Verifica compatibilidad con Cursor/Windsurf
+### Skills Multi-Lenguaje (v2.0)
 
-### Uso de las Skills
+Nuevas skills que integran el stack multi-lenguaje:
+
+#### 6. **julia-math-optimization** (Nueva)
+```markdown
+---
+name: "julia-math-optimization"
+description: "Optimización matemática con Julia + Optim.jl"
+version: "2.0.0"
+tags: ["julia", "optimization", "chaos", "differential-equations"]
+---
+
+# Julia Mathematical Optimization Skill
+
+## Descripción
+Aplica algoritmos de optimización matemática usando Julia para mejorar
+parámetros de código, detectar patrones caóticos y resolver ecuaciones
+diferenciales.
+
+## Cuándo Usar
+- Optimización de parámetros numéricos
+- Análisis de estabilidad de sistemas
+- Detección de comportamiento caótico
+- Modelado de sistemas dinámicos
+
+## Instrucciones
+1. Identificar parámetros a optimizar
+2. Definir función objetivo en Julia
+3. Aplicar Optim.jl (LBFGS, NelderMead, etc.)
+4. Analizar resultados con ChaosTools.jl
+5. Validar mejoras con tests
+
+## Ejemplo
+\`\`\`julia
+using Optim, ChaosTools
+
+# Optimizar pesos de búsqueda híbrida
+function search_quality(weights)
+    precision = evaluate_search(weights)
+    return -precision  # Minimizar negativo = maximizar
+end
+
+result = optimize(search_quality, [0.33, 0.33, 0.34], LBFGS())
+optimal_weights = result.minimizer
+# [0.41, 0.29, 0.30]
+\`\`\`
+```
+
+#### 7. **jax-ml-inference** (Nueva)
+```markdown
+---
+name: "jax-ml-inference"
+description: "ML inference y embeddings con JAX"
+version: "2.0.0"
+tags: ["jax", "ml", "embeddings", "inference"]
+---
+
+# JAX ML Inference Skill
+
+## Descripción
+Genera embeddings semánticos y ejecuta inference de modelos ML
+usando JAX con aceleración GPU/TPU.
+
+## Cuándo Usar
+- Generación de embeddings para búsqueda vectorial
+- Clasificación de código
+- Semantic similarity
+- Ranking ML-powered
+
+## Instrucciones
+1. Cargar modelo (sentence-transformers)
+2. Compilar con @jax.jit para máximo rendimiento
+3. Procesar en batches para eficiencia
+4. Almacenar en Qdrant o PostgreSQL+pgvector
+
+## Ejemplo
+\`\`\`python
+import jax.numpy as jnp
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+@jax.jit
+def batch_embed(texts: list) -> jnp.ndarray:
+    return jnp.array([model.encode(t) for t in texts])
+
+embeddings = batch_embed(["query 1", "query 2"])
+\`\`\`
+```
+
+#### 8. **mojo-simd-kernels** (Nueva)
+```markdown
+---
+name: "mojo-simd-kernels"
+description: "Kernels ultra-optimizados con Mojo SIMD"
+version: "2.0.0"
+tags: ["mojo", "simd", "performance", "vectorization"]
+---
+
+# Mojo SIMD Kernels Skill
+
+## Descripción
+Optimiza operaciones numéricas críticas usando SIMD intrinsics
+de Mojo para rendimiento 35000x superior a Python.
+
+## Cuándo Usar
+- Dot products de vectores grandes
+- Matrix operations
+- Operaciones sobre arrays numéricos
+- Hotspots identificados por profiling
+
+## Instrucciones
+1. Identificar operación crítica (profile)
+2. Implementar en Mojo con @vectorize
+3. Compilar con --release
+4. Integrar vía FFI desde Rust
+5. Benchmark y comparar
+
+## Ejemplo
+\`\`\`mojo
+@export("mojo_dot_product")
+fn dot_product(a: Pointer[Float64], b: Pointer[Float64], n: Int32) -> Float64:
+    alias simd_width = simdwidthof[DType.float64]()
+    var result: Float64 = 0.0
+    
+    @parameter
+    fn compute[width: Int](i: Int):
+        result += (a.simd_load[width](i) * b.simd_load[width](i)).reduce_add()
+    
+    vectorize[simd_width, compute](int(n))
+    return result
+\`\`\`
+```
+
+#### 9. **zig-ffi-bridge** (Nueva)
+```markdown
+---
+name: "zig-ffi-bridge"
+description: "Puente FFI entre Rust y otros lenguajes con Zig"
+version: "2.0.0"
+tags: ["zig", "ffi", "c-abi", "interop"]
+---
+
+# Zig FFI Bridge Skill
+
+## Descripción
+Crea puentes FFI seguros y eficientes entre Rust y Julia/Mojo/Pony
+usando Zig como capa de abstracción C ABI.
+
+## Cuándo Usar
+- Llamar funciones Julia desde Rust
+- Integrar kernels Mojo
+- Interop con Pony actors
+- Cualquier FFI multi-lenguaje
+
+## Instrucciones
+1. Definir structs C-compatible (@repr(C) en Rust, extern struct en Zig)
+2. Crear funciones export en Zig
+3. Compilar con zig build-lib
+4. Enlazar desde Rust con extern "C"
+5. Validar memory safety
+
+## Ejemplo
+\`\`\`zig
+// Zig bridge
+export fn zig_call_julia(data: [*]f64, len: usize) callconv(.C) [*]f64 {
+    const julia_fn = @extern(*fn([*]f64, usize) [*]f64, "julia_optimize");
+    return julia_fn(data, len);
+}
+
+// Rust side
+extern "C" {
+    fn zig_call_julia(data: *const f64, len: usize) -> *mut f64;
+}
+\`\`\`
+```
+
+#### 10. **pony-actor-system** (Nueva)
+```markdown
+---
+name: "pony-actor-system"
+description: "Concurrencia segura con Pony actors"
+version: "2.0.0"
+tags: ["pony", "actors", "concurrency", "distributed"]
+---
+
+# Pony Actor System Skill
+
+## Descripción
+Implementa procesamiento concurrente y distribuido usando el modelo
+de actores de Pony, con garantías de seguridad en compile-time.
+
+## Cuándo Usar
+- Búsqueda distribuida en múltiples índices
+- Procesamiento paralelo sin locks
+- Sistemas de mensajería
+- Evitar data races
+
+## Instrucciones
+1. Definir actors con comportamientos (be)
+2. Implementar message passing
+3. Usar reference capabilities para seguridad
+4. Integrar vía C FFI desde Rust
+5. Validar ausencia de data races
+
+## Ejemplo
+\`\`\`pony
+actor SearchWorker
+  let _index: Index val
+  
+  new create(index: Index val) =>
+    _index = index
+  
+  be search(query: String, respond: SearchResponder) =>
+    let results = _index.search(query)
+    respond.receive(results)
+\`\`\`
+```
+
+#### 11. **hybrid-search-fusion** (Nueva)
+```markdown
+---
+name: "hybrid-search-fusion"
+description: "Fusión de resultados de múltiples motores de búsqueda"
+version: "2.0.0"
+tags: ["search", "fusion", "ranking", "hybrid"]
+---
+
+# Hybrid Search Fusion Skill
+
+## Descripción
+Combina resultados de vector search (Qdrant), full-text (Tantivy)
+y heurísticas (MemoryBank) usando Reciprocal Rank Fusion.
+
+## Cuándo Usar
+- Búsquedas que requieren precisión máxima
+- Combinar semántica + keywords + heurísticas
+- Ranking multi-criterio
+- Optimización de relevancia
+
+## Instrucciones
+1. Ejecutar búsquedas en paralelo (Rayon)
+2. Normalizar scores de cada motor
+3. Aplicar RRF con pesos configurables
+4. Agregar heurísticas matemáticas (Julia)
+5. Retornar top-k final
+
+## Ejemplo
+\`\`\`rust
+async fn hybrid_search(query: &str) -> Vec<Document> {
+    let (vector_res, text_res, heuristic_res) = tokio::join!(
+        qdrant_search(query),
+        tantivy_search(query),
+        memorybank_search(query)
+    );
+    
+    rrf_fusion(
+        vector_res, 0.4,
+        text_res, 0.35,
+        heuristic_res, 0.25
+    ).top_k(10)
+}
+\`\`\`
+```
+
+### Uso de las Skills v2.0
 
 Las skills se activan automáticamente en contextos relevantes o pueden invocarse manualmente:
 
 ```bash
 # En chat de GitHub Copilot
-@workspace Aplica la skill rust-parallel-testing para este módulo
+@workspace Aplica la skill julia-math-optimization para optimizar
+los pesos de búsqueda híbrida
 
 # En Cursor/Windsurf
 # Las skills se cargan automáticamente desde .github/skills/
+
+# Invocación explícita
+Use the jax-ml-inference skill to generate embeddings for the new documents
+
+# Combinación de skills
+Apply rust-parallel-testing and performance-benchmark skills to validate
+the new SIMD kernels
 ```
 
-### Estructura de Carpetas Implementada
-
-### Estructura de Carpetas Implementada
+### Estructura de Carpetas v2.0
 
 ```bash
-# Estructura actual del proyecto
 .github/skills/
 ├── rust-parallel-testing/
 │   └── SKILL.md
@@ -386,8 +667,32 @@ Las skills se activan automáticamente en contextos relevantes o pueden invocars
 │   └── SKILL.md
 ├── rust-documentation/
 │   └── SKILL.md
-└── performance-benchmark/
-    └── SKILL.md
+├── performance-benchmark/
+│   └── SKILL.md
+├── julia-math-optimization/      # Nueva v2.0
+│   ├── SKILL.md
+│   └── examples/
+│       └── optimize_weights.jl
+├── jax-ml-inference/             # Nueva v2.0
+│   ├── SKILL.md
+│   └── examples/
+│       └── batch_embed.py
+├── mojo-simd-kernels/            # Nueva v2.0
+│   ├── SKILL.md
+│   └── examples/
+│       └── dot_product.mojo
+├── zig-ffi-bridge/               # Nueva v2.0
+│   ├── SKILL.md
+│   └── examples/
+│       └── bridge.zig
+├── pony-actor-system/            # Nueva v2.0
+│   ├── SKILL.md
+│   └── examples/
+│       └── search_worker.pony
+└── hybrid-search-fusion/         # Nueva v2.0
+    ├── SKILL.md
+    └── examples/
+        └── rrf_fusion.rs
 ```
 
 ---
@@ -422,16 +727,19 @@ Las skills se activan automáticamente en contextos relevantes o pueden invocars
 4. 🔲 Usar skills en desarrollo diario
 5. 🔲 Proponer mejoras o nuevas skills
 
-### Para MEMORY_P
-1. ✅ Skills implementadas y documentadas
+### Para MEMORY_P v2.0
+1. ✅ Skills core implementadas y documentadas
 2. ✅ Agents personalizados configurados
-3. 🔲 Crear CI/CD para validar skills
-4. 🔲 Añadir ejemplos adicionales en cada skill
-5. 🔲 Documentar casos de uso avanzados
+3. ✅ Skills multi-lenguaje especificadas (6 nuevas)
+4. 🔲 Implementar skills Julia/JAX/Mojo/Zig/Pony
+5. 🔲 Crear CI/CD para validar skills
+6. 🔲 Añadir ejemplos adicionales en cada skill
+7. 🔲 Documentar casos de uso avanzados
+8. 🔲 Integración completa con MemoryBank FFI
 
 ---
 
 **Última actualización**: Enero 2026  
 **Basado en**: Documentación oficial de GitHub Copilot Agent Skills  
-**Proyecto**: MEMORY_P - Nuclear MCP Toolkit  
+**Proyecto**: MEMORY_P v2.0 - Always-On MCP Toolkit with Multi-Language Brain  
 **Compatibilidad**: VS Code, Copilot CLI, Coding Agent, Cursor, Windsurf
