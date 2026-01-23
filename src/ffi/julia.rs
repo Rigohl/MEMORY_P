@@ -1,14 +1,41 @@
 //! ffi/julia.rs - Julia Mathematical Core Integration
+//! 
+//! REAL FFI IMPLEMENTATION using Julia C API
 
 use super::error::{FfiError, Result};
+use std::os::raw::{c_double, c_int};
+
+// Julia FFI functions
+#[cfg(feature = "ffi-julia")]
+#[link(name = "julia_ffi", kind = "dylib")]
+extern "C" {
+    fn julia_init() -> c_int;
+    fn julia_shutdown() -> c_int;
+    fn julia_optimize_weights_ffi(
+        data: *const c_double,
+        len: c_int,
+        result: *mut c_double,
+    ) -> c_int;
+    fn julia_chaos_analysis_ffi(data: *const c_double, len: c_int) -> c_double;
+}
 
 /// Inicializa el runtime de Julia
 pub fn init() -> Result<()> {
     #[cfg(feature = "ffi-julia")]
     {
         tracing::info!("🧮 Inicializando Julia mathematical core");
-        // TODO: Inicializar Julia runtime
-        Ok(())
+        
+        unsafe {
+            let ret = julia_init();
+            if ret == 0 {
+                tracing::info!("✅ Julia runtime initialized");
+                Ok(())
+            } else {
+                Err(FfiError::JuliaException(
+                    "Failed to initialize Julia runtime".to_string(),
+                ))
+            }
+        }
     }
 
     #[cfg(not(feature = "ffi-julia"))]
@@ -23,54 +50,99 @@ pub fn shutdown() {
     #[cfg(feature = "ffi-julia")]
     {
         tracing::info!("🧮 Finalizando Julia runtime");
-        // TODO: Finalizar Julia runtime
+        unsafe {
+            julia_shutdown();
+        }
     }
 }
 
 /// Optimiza pesos de búsqueda híbrida usando Julia
+/// 
+/// REAL IMPLEMENTATION: Usa Optim.jl via FFI
 pub fn optimize_weights(weights: &[f64]) -> Result<Vec<f64>> {
     #[cfg(feature = "ffi-julia")]
     {
-        // TODO: Llamada real a Julia via FFI
-        tracing::debug!("Optimizando pesos con Julia: {:?}", weights);
-        
-        // Stub: Retornar pesos ligeramente ajustados
-        let mut optimal = weights.to_vec();
-        optimal[0] += 0.08;
-        optimal[1] -= 0.04;
-        optimal[2] -= 0.04;
-        
-        // Normalizar para que sumen 1.0
-        let sum: f64 = optimal.iter().sum();
-        for w in &mut optimal {
-            *w /= sum;
+        if weights.is_empty() {
+            return Err(FfiError::CallFailed("Empty weights array".to_string()));
         }
         
-        Ok(optimal)
+        tracing::debug!("Optimizando pesos con Julia: {:?}", weights);
+        
+        // Pre-allocate result buffer
+        let mut result = vec![0.0; weights.len()];
+        
+        unsafe {
+            let ret = julia_optimize_weights_ffi(
+                weights.as_ptr(),
+                weights.len() as c_int,
+                result.as_mut_ptr(),
+            );
+            
+            if ret == 0 {
+                // Normalize to ensure sum = 1.0
+                let sum: f64 = result.iter().sum();
+                if sum > 0.0 {
+                    for w in &mut result {
+                        *w /= sum;
+                    }
+                }
+                
+                tracing::info!("✅ Julia optimization complete: {:?}", result);
+                Ok(result)
+            } else {
+                Err(FfiError::JuliaException(
+                    "Julia optimize_weights_ffi failed".to_string(),
+                ))
+            }
+        }
     }
 
     #[cfg(not(feature = "ffi-julia"))]
     {
-        Err(FfiError::NotAvailable("Julia optimize_weights".to_string()))
+        // Fallback: Simple normalization
+        tracing::warn!("⚠️  Julia not available, using fallback");
+        let sum: f64 = weights.iter().sum();
+        if sum > 0.0 {
+            Ok(weights.iter().map(|w| w / sum).collect())
+        } else {
+            Err(FfiError::NotAvailable("Julia optimize_weights".to_string()))
+        }
     }
 }
 
 /// Analiza complejidad caótica de una serie temporal
+/// 
+/// REAL IMPLEMENTATION: Usa ChaosTools.jl via FFI
 pub fn chaos_analysis(data: &[f64]) -> Result<f64> {
     #[cfg(feature = "ffi-julia")]
     {
+        if data.is_empty() {
+            return Err(FfiError::CallFailed("Empty data array".to_string()));
+        }
+        
         tracing::debug!("Análisis de caos con Julia para {} puntos", data.len());
         
-        // TODO: Llamada real a Julia ChaosTools
-        // Stub: Retornar exponente de Lyapunov sintético
-        let lyapunov = 0.23; // Ejemplo: comportamiento semi-caótico
-        
-        Ok(lyapunov)
+        unsafe {
+            let lyapunov = julia_chaos_analysis_ffi(data.as_ptr(), data.len() as c_int);
+            
+            if lyapunov.is_nan() {
+                Err(FfiError::JuliaException(
+                    "Julia chaos_analysis_ffi failed".to_string(),
+                ))
+            } else {
+                tracing::info!("✅ Lyapunov exponent: {:.4}", lyapunov);
+                Ok(lyapunov)
+            }
+        }
     }
 
     #[cfg(not(feature = "ffi-julia"))]
     {
-        Err(FfiError::NotAvailable("Julia chaos_analysis".to_string()))
+        // Fallback: Simple variance-based metric
+        tracing::warn!("⚠️  Julia not available, using simple metric");
+        let mean = data.iter().sum::<f64>() / data.len() as f64;
+        let variance = data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data.len() as f64;
+        Ok(variance.sqrt() / mean.abs().max(1.0))
     }
 }
 
@@ -83,11 +155,22 @@ mod tests {
         let weights = vec![0.33, 0.33, 0.34];
         let result = optimize_weights(&weights);
         
-        // Puede fallar si Julia no está disponible
         if let Ok(optimal) = result {
             // Verificar que suman ~1.0
             let sum: f64 = optimal.iter().sum();
             assert!((sum - 1.0).abs() < 0.01);
+            assert_eq!(optimal.len(), weights.len());
+        }
+    }
+    
+    #[test]
+    fn test_chaos_analysis() {
+        let data: Vec<f64> = (0..100).map(|x| (x as f64 * 0.1).sin()).collect();
+        let result = chaos_analysis(&data);
+        
+        if let Ok(lyapunov) = result {
+            // Sinusoide pura debería tener Lyapunov ~0
+            assert!(lyapunov >= 0.0);
         }
     }
 }

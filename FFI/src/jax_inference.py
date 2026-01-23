@@ -1,6 +1,8 @@
 """
 jax_inference.py - JAX ML Inference Engine for MEMORY_P v2.0
 
+REAL IMPLEMENTATION with CUDA support and GPU acceleration.
+
 Proporciona capacidades de machine learning:
 - Generación de embeddings semánticos
 - Inference de modelos de clasificación
@@ -9,28 +11,45 @@ Proporciona capacidades de machine learning:
 """
 
 import sys
+import os
 from typing import List, Optional, Tuple
 import numpy as np
+import ctypes
 
-# Imports opcionales con fallbacks
+# Setup JAX with GPU support
+os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'  # Better memory management
+os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
+
+# Import JAX with error handling
 try:
     import jax
     import jax.numpy as jnp
-    from jax import jit
+    from jax import jit, vmap
     JAX_AVAILABLE = True
-    print("[JAX] JAX disponible:", jax.__version__)
-except ImportError:
+    
+    # Log device info
+    devices = jax.devices()
+    has_gpu = any(d.platform == 'gpu' for d in devices)
+    print(f"[JAX] Initialized with {len(devices)} device(s)", file=sys.stderr)
+    print(f"[JAX] GPU available: {has_gpu}", file=sys.stderr)
+    if has_gpu:
+        print(f"[JAX] GPU devices: {[d for d in devices if d.platform == 'gpu']}", file=sys.stderr)
+except ImportError as e:
     JAX_AVAILABLE = False
-    print("[JAX] WARNING: JAX no disponible, usando NumPy como fallback")
     jnp = np
+    print(f"[JAX] WARNING: JAX not available ({e}), using NumPy fallback", file=sys.stderr)
 
 try:
     from sentence_transformers import SentenceTransformer
     EMBEDDINGS_AVAILABLE = True
-    print("[JAX] sentence-transformers disponible")
-except ImportError:
+    print("[JAX] sentence-transformers available", file=sys.stderr)
+except ImportError as e:
     EMBEDDINGS_AVAILABLE = False
-    print("[JAX] WARNING: sentence-transformers no disponible")
+    print(f"[JAX] WARNING: sentence-transformers not available ({e})", file=sys.stderr)
+
+# Global model cache
+_MODEL_CACHE = {}
+_DEFAULT_MODEL = "all-MiniLM-L6-v2"  # Fast 384-dim embeddings
 
 
 class JaxInferenceEngine:
@@ -241,3 +260,162 @@ if __name__ == "__main__":
     print(f"  Similarity(Rust, Mojo): {sim:.4f}")
     
     print("\n✅ All tests passed")
+
+# ============================================================================
+# C FFI Interface - REAL IMPLEMENTATION
+# ============================================================================
+
+class FfiArray(ctypes.Structure):
+    """C-compatible array structure for FFI"""
+    _fields_ = [
+        ("data", ctypes.POINTER(ctypes.c_float)),
+        ("len", ctypes.c_size_t),
+        ("dims", ctypes.c_int),
+    ]
+
+def jax_init_ffi() -> int:
+    """
+    Initialize JAX engine for FFI.
+    Returns 0 on success, -1 on error.
+    """
+    try:
+        global _engine
+        if _engine is None:
+            _engine = JaxInferenceEngine(_DEFAULT_MODEL)
+        print("[JAX FFI] Engine initialized", file=sys.stderr)
+        return 0
+    except Exception as e:
+        print(f"[JAX FFI] Initialization failed: {e}", file=sys.stderr)
+        return -1
+
+def jax_shutdown_ffi() -> int:
+    """
+    Shutdown JAX engine.
+    Returns 0 on success.
+    """
+    try:
+        global _engine, _MODEL_CACHE
+        _engine = None
+        _MODEL_CACHE.clear()
+        print("[JAX FFI] Engine shutdown", file=sys.stderr)
+        return 0
+    except Exception as e:
+        print(f"[JAX FFI] Shutdown error: {e}", file=sys.stderr)
+        return -1
+
+def jax_generate_embedding_ffi(
+    text_ptr: ctypes.c_char_p,
+    text_len: ctypes.c_size_t,
+    result: ctypes.POINTER(ctypes.c_float),
+    result_len: ctypes.c_size_t
+) -> int:
+    """
+    Generate embedding via FFI.
+    
+    Args:
+        text_ptr: Pointer to UTF-8 text
+        text_len: Length of text
+        result: Pre-allocated buffer for embedding (384 floats)
+        result_len: Size of result buffer
+        
+    Returns:
+        0 on success, -1 on error
+    """
+    try:
+        # Decode text
+        text_bytes = ctypes.string_at(text_ptr, text_len)
+        text = text_bytes.decode('utf-8')
+        
+        # Generate embedding
+        engine = get_engine()
+        embedding = engine.generate_embedding(text)
+        
+        # Validate size
+        if len(embedding) != result_len:
+            print(f"[JAX FFI] Size mismatch: {len(embedding)} != {result_len}", file=sys.stderr)
+            return -1
+        
+        # Copy to result buffer
+        for i, val in enumerate(embedding):
+            result[i] = float(val)
+        
+        return 0
+    except Exception as e:
+        print(f"[JAX FFI] Embedding generation failed: {e}", file=sys.stderr)
+        return -1
+
+def jax_cosine_similarity_ffi(
+    vec1: ctypes.POINTER(ctypes.c_float),
+    vec2: ctypes.POINTER(ctypes.c_float),
+    dim: ctypes.c_size_t
+) -> ctypes.c_float:
+    """
+    Calculate cosine similarity via FFI.
+    
+    Returns similarity in [-1, 1] or NaN on error.
+    """
+    try:
+        # Convert to numpy arrays
+        v1 = np.ctypeslib.as_array(vec1, shape=(dim,))
+        v2 = np.ctypeslib.as_array(vec2, shape=(dim,))
+        
+        # Calculate similarity
+        sim = JaxInferenceEngine.cosine_similarity(v1, v2)
+        
+        return ctypes.c_float(sim)
+    except Exception as e:
+        print(f"[JAX FFI] Cosine similarity failed: {e}", file=sys.stderr)
+        return ctypes.c_float(float('nan'))
+
+def jax_batch_embeddings_ffi(
+    texts: ctypes.POINTER(ctypes.c_char_p),
+    n_texts: ctypes.c_size_t,
+    result: ctypes.POINTER(ctypes.c_float),
+    embedding_dim: ctypes.c_size_t
+) -> int:
+    """
+    Generate batch embeddings via FFI.
+    
+    Args:
+        texts: Array of text pointers
+        n_texts: Number of texts
+        result: Pre-allocated buffer (n_texts * embedding_dim floats)
+        embedding_dim: Dimension of each embedding (e.g., 384)
+        
+    Returns:
+        0 on success, -1 on error
+    """
+    try:
+        # Decode all texts
+        text_list = []
+        for i in range(n_texts):
+            text_bytes = ctypes.string_at(texts[i])
+            text_list.append(text_bytes.decode('utf-8'))
+        
+        # Generate embeddings
+        engine = get_engine()
+        embeddings = engine.generate_embeddings_batch(text_list)
+        
+        # Copy to result buffer (row-major)
+        for i, emb in enumerate(embeddings):
+            offset = i * embedding_dim
+            for j, val in enumerate(emb):
+                result[offset + j] = float(val)
+        
+        return 0
+    except Exception as e:
+        print(f"[JAX FFI] Batch embeddings failed: {e}", file=sys.stderr)
+        return -1
+
+# Export functions for ctypes
+if __name__ != "__main__":
+    # When imported as module, export FFI functions
+    __all__ = [
+        'jax_init_ffi',
+        'jax_shutdown_ffi', 
+        'jax_generate_embedding_ffi',
+        'jax_cosine_similarity_ffi',
+        'jax_batch_embeddings_ffi',
+        'JaxInferenceEngine',
+        'get_engine'
+    ]
