@@ -208,6 +208,7 @@ CREATE TABLE learning_sessions (
     context JSONB NOT NULL,
     outcomes JSONB,
     learned_patterns JSONB,
+    embedding vector(768),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
