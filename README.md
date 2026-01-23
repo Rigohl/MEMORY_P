@@ -572,4 +572,4 @@ MIT License - Built with 🦀 Rust
 
 **Built by developers, for developers. Powered by Rust 🦀**
 
-For support, open an issue or contact: [support@memory-p.io](mailto:support@memory-p.io)
+For support, open an issue on [GitHub](https://github.com/Rigohl/MEMORY_P/issues) or join our discussions.

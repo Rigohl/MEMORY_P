@@ -65,9 +65,11 @@ impl FusionEngine {
     
     /// Cascade fusion: try engines in order
     async fn cascade_fusion(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, EngineError> {
+        let min_results = query.min_results;
+        
         for engine in &self.engines {
             if let Ok(results) = engine.search(query).await {
-                if results.len() >= query.limit {
+                if results.len() >= min_results {
                     return Ok(results);
                 }
             }
@@ -90,9 +92,28 @@ impl FusionEngine {
         }
     }
     
-    fn analyze_query_confidence(&self, _query: &SearchQuery) -> f32 {
-        // TODO: Implement ML-based confidence scoring
-        0.5
+    fn analyze_query_confidence(&self, query: &SearchQuery) -> f32 {
+        // Basic heuristic-based confidence scoring
+        // TODO: Replace with ML-based scoring in production
+        
+        let mut confidence = 0.5;
+        
+        // Higher confidence if we have a vector
+        if query.vector.is_some() {
+            confidence += 0.2;
+        }
+        
+        // Higher confidence for simple text queries
+        if query.text.len() > 10 && query.text.len() < 100 {
+            confidence += 0.1;
+        }
+        
+        // Lower confidence for complex queries
+        if query.filters.is_some() {
+            confidence -= 0.1;
+        }
+        
+        confidence.clamp(0.0, 1.0)
     }
 }
 

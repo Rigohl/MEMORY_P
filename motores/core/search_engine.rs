@@ -42,6 +42,7 @@ pub struct SearchQuery {
     pub limit: usize,
     pub offset: usize,
     pub timeout_ms: u64,
+    pub min_results: usize,  // Minimum results for cascade fusion
 }
 
 /// Search result structure
