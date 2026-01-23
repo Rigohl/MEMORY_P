@@ -31,13 +31,13 @@ impl RoutingAI {
     }
 
     /// Analyze query and determine optimal routing
-    pub fn route_query(&self, _query: &SearchQuery) -> Vec<EngineSelection> {
+    pub fn route_query(&self, query: &SearchQuery) -> Vec<EngineSelection> {
         let pattern = self.analyze_query_characteristics(query);
         self.select_engines_for_pattern(&pattern)
     }
 
     /// Analyze query characteristics to determine pattern
-    pub fn analyze_query_characteristics(&self, _query: &SearchQuery) -> QueryPattern {
+    pub fn analyze_query_characteristics(&self, query: &SearchQuery) -> QueryPattern {
         // Vector search detection
         if query.vector.is_some() && query.query_type == QueryType::Vector {
             return QueryPattern::SemanticSearch;
@@ -116,12 +116,12 @@ impl RoutingAI {
     }
 
     /// Check if query requires massive scale processing
-    fn requires_massive_scale(&self, _query: &SearchQuery) -> bool {
+    fn requires_massive_scale(&self, query: &SearchQuery) -> bool {
         // Check if filter suggests large dataset
         query
             .filters
             .get("dataset_size")
-            .and_then(|v| v.as_u64())
+            .and_then(|v: &serde_json::Value| v.as_u64())
             .map(|size| size > 1_000_000_000) // > 1 billion
             .unwrap_or(false)
     }

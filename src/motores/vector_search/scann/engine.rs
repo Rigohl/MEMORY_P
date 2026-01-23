@@ -120,8 +120,8 @@ impl SearchEngine for ScannEngine {
 impl VectorSearchEngine for ScannEngine {
     async fn vector_search(
         &self,
-        _vector: &[f32],
-        __limit: usize,
+        vector: &[f32],
+        limit: usize,
     ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
@@ -134,6 +134,7 @@ impl VectorSearchEngine for ScannEngine {
             )
             .into());
         }
+        let _ = limit; // Unused in stub
         Ok(vec![])
     }
 

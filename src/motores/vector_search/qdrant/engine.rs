@@ -152,8 +152,8 @@ impl SearchEngine for QdrantEngine {
 impl VectorSearchEngine for QdrantEngine {
     async fn vector_search(
         &self,
-        _vector: &[f32],
-        _limit: usize,
+        vector: &[f32],
+        limit: usize,
     ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
@@ -169,6 +169,7 @@ impl VectorSearchEngine for QdrantEngine {
         }
 
         // In production: perform actual vector search
+        let _ = limit; // Unused in stub
         Ok(vec![])
     }
 

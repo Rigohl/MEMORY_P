@@ -25,7 +25,7 @@ impl FusionEngine {
         engines.insert(name, engine);
     }
 
-    pub async fn search_multi(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    pub async fn search_multi(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         let engine_selections = self.router.route_query(query);
         let engines = self.engines.read().await;
         
