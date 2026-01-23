@@ -284,26 +284,66 @@ end
 
 # Export FFI functions for C ABI
 Base.@ccallable function julia_optimize_weights_ffi(
-    data::Ptr{Float64}, 
-    len::Cint, 
+    data::Ptr{Float64},
+    len::Cint,
     result::Ptr{Float64}
 )::Cint
-    return MemoryPMath.julia_optimize_weights_ffi(data, len, result)
+    # Validate inputs
+    if data == C_NULL || result == C_NULL || len < 0
+        return Cint(-1)
+    end
+
+    n = Int(len)
+    if n == 0
+        return Cint(0)
+    end
+
+    # Wrap input pointer as a non-owning Julia array
+    input = unsafe_wrap(Vector{Float64}, data, n; own = false)
+
+    # Compute optimized weights using the internal Julia function
+    weights = optimize_weights(input)
+
+    # Write results back to the output buffer
+    GC.@preserve input weights begin
+        m = length(weights)
+        for i in 1:m
+            @inbounds unsafe_store!(result + (i - 1), weights[i])
+        end
+    end
+
+    return Cint(0)
 end
 
 Base.@ccallable function julia_chaos_analysis_ffi(
-    data::Ptr{Float64}, 
+    data::Ptr{Float64},
     len::Cint
 )::Float64
-    return MemoryPMath.julia_chaos_analysis_ffi(data, len)
+    if data == C_NULL || len <= 0
+        return NaN
+    end
+
+    n = Int(len)
+    input = unsafe_wrap(Vector{Float64}, data, n; own = false)
+
+    result = chaos_analysis(input)
+    return result
 end
 
 Base.@ccallable function julia_init()::Cint
-    return MemoryPMath.julia_init()
+    try
+        __init__()
+        return Cint(0)
+    catch e
+        @warn "[Julia] julia_init failed" exception = e
+        return Cint(-1)
+    end
 end
 
 Base.@ccallable function julia_shutdown()::Cint
-    return MemoryPMath.julia_shutdown()
+    # Currently no explicit shutdown logic is required.
+    # This function exists for FFI symmetry and future extensibility.
+    return Cint(0)
 end
 
 end # module MemoryPMath
