@@ -20,6 +20,10 @@ pub enum FusionStrategy {
 pub struct FusionEngine {
     engines: Vec<Arc<dyn SearchEngine>>,
     strategy: FusionStrategy,
+    /// Result fusion / ranking component used by parallel strategies.
+    /// Currently only `parallel_fusion` (and `adaptive_fusion` when it delegates
+    /// to parallel) require this; cascade fusion returns results from a single
+    /// engine without cross-engine ranking.
     ranker: HybridRanker,
 }
 
