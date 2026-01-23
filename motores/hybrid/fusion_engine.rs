@@ -84,8 +84,12 @@ impl FusionEngine {
         let confidence = self.analyze_query_confidence(query);
         
         if confidence > 0.9 {
-            // High confidence: use single best engine
-            self.engines[0].search(query).await
+            // High confidence: use single best engine (assumed pre-ordered by AI router)
+            if let Some(engine) = self.engines.first() {
+                engine.search(query).await
+            } else {
+                Err(EngineError::SearchFailed("No search engines configured for adaptive fusion".into()))
+            }
         } else {
             // Low confidence: use parallel fusion
             self.parallel_fusion(query).await
