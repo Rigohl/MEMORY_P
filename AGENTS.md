@@ -1,5 +1,7 @@
 # GitHub Copilot Agents - Documentación Oficial
 
+> **Actualizado post-merge PR #4**: Esta documentación refleja la integración completa de Agents y Skills en el proyecto MEMORY_P.
+
 ## 📋 Índice
 - [¿Qué son los Agents de GitHub Copilot?](#qué-son-los-agents-de-github-copilot)
 - [Características Principales](#características-principales)
@@ -142,6 +144,30 @@ Aquí defines el comportamiento específico del agent...
 ---
 
 ## Implementación en MEMORY_P
+
+> **Estado actual**: Proyecto con 3 Custom Agents operativos y 5 Skills especializadas
+
+### Custom Agents Activos
+
+El proyecto MEMORY_P cuenta con tres agents personalizados ubicados en `.github/agents/`:
+
+#### 1. **memory-p-optimizer** ([Ver código](.github/agents/memory-p-optimizer.agent.md))
+Especialista en optimización de rendimiento con Rayon y técnicas de paralelización.
+
+#### 2. **memory-p-mcp-expert** ([Ver código](.github/agents/memory-p-mcp-expert.agent.md))
+Experto en implementación del protocolo MCP 2024-11-05 y JSON-RPC 2.0.
+
+#### 3. **memory-p-refactor** ([Ver código](.github/agents/memory-p-refactor.agent.md))
+Especialista en refactorización y mejora de calidad del código Rust.
+
+### Agent Skills Disponibles
+
+Ver [SKILLS.md](SKILLS.md) para documentación completa de las 5 skills implementadas:
+- `rust-parallel-testing` - Tests con Rayon
+- `memory-p-analyzer` - Análisis de código  
+- `mcp-validator` - Validación MCP
+- `rust-documentation` - Documentación Rust
+- `performance-benchmark` - Benchmarks con Criterion
 
 ### Agent Actual: MEMORY_P Optimization
 
