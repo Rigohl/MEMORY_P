@@ -14,3 +14,9 @@
 # Documentación básica
 !docs/
 !docs/**
+!AGENTS.md
+!SKILLS.md
+
+# GitHub Copilot Agents & Skills
+!.github/
+!.github/**
