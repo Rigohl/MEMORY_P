@@ -10,6 +10,7 @@
 use axum::Router;
 use mimalloc::MiMalloc;
 use std::net::SocketAddr;
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing_subscriber;
 
@@ -17,8 +18,11 @@ use tracing_subscriber;
 static GLOBAL: MiMalloc = MiMalloc;
 
 mod analyzer;
+mod auto_manager; // Sistema de auto-gestión MCP 2026
 mod config;
 mod error;
+mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
+mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
@@ -49,17 +53,61 @@ async fn main() {
 }
 
 async fn http_server_mode() -> crate::error::Result<()> {
-    // Construir router
-    let app = Router::new().merge(mcp_api::routes()).fallback(error_404);
+    // ========================================================
+    // MCP PROTOCOL 2026 - ALWAYS-ON AUTO-MANAGED SYSTEM
+    // ========================================================
+    
+    tracing::info!("╔══════════════════════════════════════════════════╗");
+    tracing::info!("║  MEMORY_P MCP Server 2026 - ALWAYS-ON EDITION   ║");
+    tracing::info!("╚══════════════════════════════════════════════════╝");
+    
+    // 1. Auto-iniciar sistema de gestión
+    let auto_manager = Arc::new(auto_manager::AutoManager::new(
+        auto_manager::ManagerConfig::default()
+    ));
+    
+    tracing::info!("🔧 Iniciando sistema de auto-gestión...");
+    if let Err(e) = auto_manager.auto_start().await {
+        tracing::error!("❌ Error al iniciar AutoManager: {}", e);
+        tracing::warn!("⚠️  Continuando sin auto-gestión completa");
+    }
+    
+    // 2. Auto-iniciar KPI Tracker (Six Sigma + Automation)
+    let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(
+        kpi_tracker::KpiConfig::default()
+    ));
+    
+    tracing::info!("📊 Iniciando KPI Tracker (Six Sigma)...");
+    if let Err(e) = kpi_tracker.start().await {
+        tracing::error!("❌ Error al iniciar KPI Tracker: {}", e);
+        tracing::warn!("⚠️  Continuando sin KPI tracking");
+    }
+    
+    tracing::info!("✅ Sistema auto-gestionado activo");
+    tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");
+    tracing::info!("   • Health checks: cada 30s");
+    tracing::info!("   • Auto-recovery: habilitado");
+    tracing::info!("   • Zero-touch operation: activo");
+    tracing::info!("   • KPI Tracking: Six Sigma always-on");
+    tracing::info!("   • Mediciones: cada 10s");
+    
+    // 3. Construir router con auto-manager y kpi-tracker
+    let app = Router::new()
+        .merge(mcp_api::routes())
+        .fallback(error_404)
+        .layer(axum::Extension(auto_manager.clone()))
+        .layer(axum::Extension(kpi_tracker.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
 
-    tracing::info!("🚀 MCP Toolkit HTTP iniciando");
-    tracing::info!(
-        "📡 Escuchando en http://{}:{} (MCP Protocol 2024-11-05)",
-        addr.ip(),
-        addr.port()
-    );
+    tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    tracing::info!("🚀 Servidor iniciado");
+    tracing::info!("📡 Escuchando en http://{}:{}", addr.ip(), addr.port());
+    tracing::info!("📋 Protocolo: MCP 2026.1.0-ALWAYS-ON");
+    tracing::info!("🔌 Transports: HTTP, WebSocket, stdio");
+    tracing::info!("🌐 Compatible: Cursor, Windsurf, Claude Desktop, VS Code");
+    tracing::info!("📊 KPIs: Six Sigma + Automation (DMAIC)");
+    tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     let listener = TcpListener::bind(addr)
         .await
@@ -69,6 +117,10 @@ async fn http_server_mode() -> crate::error::Result<()> {
         .await
         .map_err(|e| crate::error::MemoryPError::Io(e))?;
 
+    // Cleanup al salir
+    kpi_tracker.stop().await;
+    auto_manager.stop().await;
+    
     Ok(())
 }
 

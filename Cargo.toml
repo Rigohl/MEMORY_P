@@ -57,3 +57,13 @@ strip = true
 
 [profile.dev]
 opt-level = 1
+
+[features]
+default = []
+# FFI Features (opcionales - el core funciona sin ellas)
+ffi-zig = []
+ffi-julia = []
+ffi-jax = []
+ffi-mojo = []
+ffi-pony = []
+ffi-all = ["ffi-zig", "ffi-julia", "ffi-jax", "ffi-mojo", "ffi-pony"]
