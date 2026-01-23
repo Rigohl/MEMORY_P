@@ -161,6 +161,22 @@ git branch | grep -v "master" | xargs git branch -D
 - Total branches to delete: 11 branches
 - Result: Clean repository with only `master` branch
 
+### ⚠️ Known Issues
+
+**Motor Module Compilation**:
+The `src/motores/` directory contains a complete 9-motor architecture implementation, but currently has trait object safety issues:
+- The `SearchEngine` trait uses async methods, making it non-object-safe
+- This prevents using `dyn SearchEngine` and causes compilation errors
+- The module is commented out in `src/lib.rs` to allow the rest of the code to compile
+
+**To Fix**:
+1. Refactor `SearchEngine` trait to use enum dispatch instead of trait objects
+2. Or use `async-trait` crate with `Box<dyn Future>` returns
+3. Or split async methods into a separate trait
+4. See `src/motores/core/traits.rs` for the trait definition
+
+The motor architecture code is preserved and documented for future integration.
+
 ---
 
 **Created**: 2026-01-23  

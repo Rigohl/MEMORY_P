@@ -11,8 +11,11 @@ pub mod error;
 pub mod mcp;
 pub mod mcp_api;
 pub mod mega_simulator;
-pub mod motores;
+// TODO: Fix trait object safety issues in motores module
+// The SearchEngine trait has async methods which prevents it from being object-safe
+// Need to refactor using enum dispatch or async-trait with Box<dyn Future>
+// pub mod motores;
 pub mod parallel_engine;
 pub mod workspace;
 
-pub use motores::*;
+// pub use motores::*;
