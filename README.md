@@ -181,6 +181,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     
     // Intelligent multi-engine search
+    // Compute or load the embedding for your query text using your preferred model
+    let embedding: Vec<f32> = vec![0.0; 768]; // placeholder embedding
+    
     let query = SearchQuery {
         text: "machine learning".to_string(),
         vector: Some(embedding),
