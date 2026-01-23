@@ -4,11 +4,17 @@
 //! Phase 3: 550K (500K+50K) - Ecosystem comparison with Context7
 
 use crate::error::{MemoryPError, Result};
+use num_cpus;
 use rayon::prelude::*;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
+
+// Constantes para el modelo de optimización de threads (Amdahl's Law)
+const DEFAULT_PARALLEL_FRACTION: f64 = 0.95; // 95% del código es paralelizable
+const THREAD_OVERHEAD_COST: f64 = 0.5; // Overhead por thread (context switching)
+const THREAD_POWER_FACTOR: f64 = 10.0; // Throughput por thread
 
 /// Configuración de simulación
 #[allow(dead_code)]
@@ -655,11 +661,10 @@ fn compute_efficiency(threads: usize, workload: usize, parallel_fraction: f64) -
     let speedup = 1.0 / (serial_fraction + (parallel_fraction / threads as f64));
 
     // Overhead model: cada thread tiene un costo fijo + costo variable
-    let overhead_per_thread = 0.5; // context switching, sincronización
-    let total_overhead = threads as f64 * overhead_per_thread;
+    let total_overhead = threads as f64 * THREAD_OVERHEAD_COST;
 
     // Power: throughput ganado por paralelismo
-    let power = threads as f64 * 10.0; // cada thread aporta 10x unidades de poder
+    let power = threads as f64 * THREAD_POWER_FACTOR;
 
     // Workload processing time con overhead
     let processing_time = (workload as f64 / power) + total_overhead;
@@ -673,8 +678,7 @@ fn compute_efficiency(threads: usize, workload: usize, parallel_fraction: f64) -
 /// 
 /// Retorna la configuración óptima basada en el workload y capacidades del sistema
 pub fn auto_optimize_config(workload_size: usize) -> ParallelOptimization {
-    let parallel_fraction = 0.95; // 95% del código es paralelizable
-    let optimal_threads = optimize_thread_count(workload_size, parallel_fraction);
+    let optimal_threads = optimize_thread_count(workload_size, DEFAULT_PARALLEL_FRACTION);
     
     // Batch size óptimo: balance entre overhead y granularidad
     let optimal_batch = if workload_size < 100 {
@@ -688,8 +692,8 @@ pub fn auto_optimize_config(workload_size: usize) -> ParallelOptimization {
     ParallelOptimization {
         recommended_threads: optimal_threads,
         recommended_batch_size: optimal_batch,
-        expected_speedup: compute_speedup(optimal_threads, parallel_fraction),
-        efficiency_score: compute_efficiency(optimal_threads, workload_size, parallel_fraction),
+        expected_speedup: compute_speedup(optimal_threads, DEFAULT_PARALLEL_FRACTION),
+        efficiency_score: compute_efficiency(optimal_threads, workload_size, DEFAULT_PARALLEL_FRACTION),
     }
 }
 
