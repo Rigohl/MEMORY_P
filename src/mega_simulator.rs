@@ -615,8 +615,8 @@ pub fn run_phase4_repair(iterations: usize) -> Result<SimResult> {
     // Find optimal config
     let best = results
         .iter()
-        .min_by(|a, b| a.3.partial_cmp(&b.3).unwrap())
-        .unwrap();
+        .min_by(|a, b| a.3.partial_cmp(&b.3).unwrap_or(std::cmp::Ordering::Equal))
+        .ok_or_else(|| MemoryPError::Other("No simulation results generated".into()))?;
 
     let mut best_config: HashMap<String, serde_json::Value> = HashMap::new();
     best_config.insert("repair_type".into(), serde_json::json!(best.0));
@@ -695,8 +695,8 @@ pub fn run_phase5_edit(iterations: usize) -> Result<SimResult> {
     // Find optimal config
     let best = results
         .iter()
-        .max_by(|a, b| a.4.partial_cmp(&b.4).unwrap())
-        .unwrap();
+        .max_by(|a, b| a.4.partial_cmp(&b.4).unwrap_or(std::cmp::Ordering::Equal))
+        .ok_or_else(|| MemoryPError::Other("No simulation results generated".into()))?;
 
     let mut best_config: HashMap<String, serde_json::Value> = HashMap::new();
     best_config.insert("edit_operation".into(), serde_json::json!(best.0));
