@@ -34,6 +34,10 @@
 !FFI/lib/README.md
 !FFI/lib/.gitkeep
 
+# Julia Brain
+!JULIA_BRAIN/
+!JULIA_BRAIN/**
+
 # Documentación básica
 !docs/
 !docs/**

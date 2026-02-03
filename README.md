@@ -109,6 +109,29 @@ flax==0.8.4                    # Neural networks
 
 ## 🛠️ Installation
 
+### Quick Start with Docker (Recommended)
+
+```bash
+# Clone repository
+git clone https://github.com/Rigohl/MEMORY_P.git
+cd MEMORY_P
+
+# Start all services (9 search engines + monitoring)
+docker-compose up -d
+
+# Verify system health
+./scripts/diagnose.sh
+
+# Access services
+# - MEMORY_P API: http://localhost:4040
+# - Grafana Dashboards: http://localhost:3000 (admin/admin)
+# - Prometheus Metrics: http://localhost:9090
+# - Qdrant: http://localhost:6333
+# - MeiliSearch: http://localhost:7700
+```
+
+**📖 For complete DevOps guide, see [DEVOPS.md](DEVOPS.md)**
+
 ### Quick Start (Rust Core Only)
 
 ```bash
@@ -263,6 +286,7 @@ MEMORY_P/
 - **[INSTALL.md](INSTALL.md)** - Complete installation guide for all languages
 - **[docs/TUTORIAL_START.md](docs/TUTORIAL_START.md)** - Quick start tutorial
 - **[BLUEPRINT.md](BLUEPRINT.md)** - Architectural deep-dive and design
+- **[DEVOPS.md](DEVOPS.md)** - 🚀 DevOps guide: deployment, monitoring, CI/CD
 
 ### Technical Reference
 - **[docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md)** - Complete MCP tools API
@@ -273,6 +297,15 @@ MEMORY_P/
 - **[AGENTS.md](AGENTS.md)** - GitHub Copilot Agents guide
 - **[SKILLS.md](SKILLS.md)** - Agent Skills documentation
 - **[.github/README.md](.github/README.md)** - Custom agents & skills
+
+### DevOps & Operations
+- **[DEVOPS.md](DEVOPS.md)** - Complete DevOps guide
+  - 🐳 Docker & docker-compose setup
+  - 🔄 CI/CD with GitHub Actions
+  - 📊 Monitoring with Prometheus & Grafana
+  - 🤖 Intelligent DevOps agents
+  - 🔧 Troubleshooting & optimization
+  - 💾 Backup & recovery strategies
 
 ### Architecture Resources
 - 📐 **Architecture Diagrams**: See [BLUEPRINT.md](BLUEPRINT.md)
