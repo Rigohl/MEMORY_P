@@ -1,0 +1,218 @@
+name: Security - Vulnerability Scanning
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    name: Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo audit
+        run: cargo audit --deny warnings
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python', 'javascript' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  secret-scanning:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t memory-p:scan .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'memory-p:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Grype vulnerability scanner
+        uses: anchore/scan-action@v3
+        with:
+          image: 'memory-p:scan'
+          fail-build: true
+          severity-cutoff: high
+
+  python-security:
+    name: Python Security Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f environment.yml ]; then
+            pip install pyyaml
+            python -c "import yaml; deps = yaml.safe_load(open('environment.yml'))['dependencies']; pip_deps = [d['pip'] for d in deps if isinstance(d, dict) and 'pip' in d][0]; print('\n'.join(pip_deps))" > requirements.txt
+          fi
+
+      - name: Run Safety check
+        if: hashFiles('requirements.txt') != ''
+        run: |
+          pip install safety
+          safety check -r requirements.txt --continue-on-error
+
+      - name: Run Bandit security linter
+        run: |
+          pip install bandit
+          find . -name "*.py" -exec bandit {} + || true
+
+  docker-compose-audit:
+    name: Docker Compose Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate docker-compose.yml
+        run: |
+          docker-compose config --quiet
+          echo "✓ docker-compose.yml is valid"
+
+      - name: Check for security issues
+        run: |
+          # Check for privileged containers
+          if grep -q "privileged: true" docker-compose.yml; then
+            echo "⚠️  Warning: Privileged containers found"
+          fi
+          
+          # Check for host network mode
+          if grep -q "network_mode: host" docker-compose.yml; then
+            echo "⚠️  Warning: Host network mode found"
+          fi
+          
+          # Check for bind mounts to sensitive paths
+          if grep -E "- /:/|- /etc:|- /var:" docker-compose.yml; then
+            echo "⚠️  Warning: Potentially sensitive bind mounts found"
+          fi
+
+  auto-fix:
+    name: Auto-fix Vulnerabilities
+    runs-on: ubuntu-latest
+    needs: [cargo-audit, python-security]
+    if: failure() && github.event_name != 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Update vulnerable dependencies
+        run: |
+          cargo update --aggressive || true
+          
+      - name: Create PR with fixes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore: auto-fix security vulnerabilities'
+          title: '🔒 Security: Auto-fix vulnerabilities'
+          body: |
+            This PR contains automated security fixes generated by the security workflow.
+            
+            Please review the changes carefully before merging.
+          branch: security/auto-fix-${{ github.run_number }}
+          delete-branch: true

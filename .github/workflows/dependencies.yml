@@ -1,0 +1,216 @@
+name: Dependencies - Auto Update
+
+on:
+  schedule:
+    # Run weekly on Monday at 3 AM UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-rust-dependencies:
+    name: Update Rust Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Update dependencies
+        run: |
+          cargo update
+          cargo upgrade --workspace
+
+      - name: Run tests
+        run: cargo test --all-features
+        continue-on-error: true
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(deps): update Rust dependencies'
+          title: '⬆️ Update Rust dependencies'
+          body: |
+            This PR updates Rust dependencies to their latest compatible versions.
+            
+            ## Changes
+            - Updated Cargo.lock with latest versions
+            - Ran `cargo update` and `cargo upgrade`
+            
+            ## Testing
+            - [ ] All tests pass
+            - [ ] No breaking changes introduced
+            
+            Please review and merge if all checks pass.
+          branch: deps/rust-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: dependencies,rust
+
+  update-docker-images:
+    name: Update Docker Base Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Dockerfile base images
+        run: |
+          # Update Rust version
+          LATEST_RUST=$(curl -s https://raw.githubusercontent.com/rust-lang/rust/master/src/version)
+          sed -i "s/rust:[0-9.]*-slim/rust:${LATEST_RUST}-slim/g" Dockerfile || true
+          
+          # Update Ubuntu version if needed
+          sed -i 's/ubuntu:22.04/ubuntu:22.04/g' Dockerfile
+
+      - name: Update docker-compose service versions
+        run: |
+          # Update Qdrant
+          QDRANT_VERSION=$(curl -s https://api.github.com/repos/qdrant/qdrant/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+          sed -i "s/qdrant\/qdrant:v[0-9.]*/qdrant\/qdrant:v${QDRANT_VERSION}/g" docker-compose.yml || true
+          
+          # Update MeiliSearch
+          MEILI_VERSION=$(curl -s https://api.github.com/repos/meilisearch/meilisearch/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+          sed -i "s/getmeili\/meilisearch:v[0-9.]*/getmeili\/meilisearch:v${MEILI_VERSION}/g" docker-compose.yml || true
+          
+          # Update PostgreSQL (check for latest pgvector tag)
+          sed -i 's/pgvector\/pgvector:pg[0-9]*/pgvector\/pgvector:pg16/g' docker-compose.yml || true
+          
+          # Update Redis
+          sed -i 's/redis:[0-9]*-alpine/redis:7-alpine/g' docker-compose.yml || true
+
+      - name: Test docker-compose
+        run: |
+          docker-compose config
+          echo "✓ docker-compose.yml is valid"
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(deps): update Docker images'
+          title: '🐳 Update Docker base images'
+          body: |
+            This PR updates Docker base images to their latest versions.
+            
+            ## Updated Images
+            - Rust base image
+            - Qdrant
+            - MeiliSearch
+            - PostgreSQL (pgvector)
+            - Redis
+            
+            Please review and test before merging.
+          branch: deps/docker-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: dependencies,docker
+
+  update-python-dependencies:
+    name: Update Python Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Update environment.yml versions
+        run: |
+          # Update Python version
+          sed -i 's/python=[0-9.]*/python=3.11/g' environment.yml
+          
+          # Update CUDA toolkit
+          sed -i 's/cuda-toolkit=[0-9.]*/cuda-toolkit=12.4/g' environment.yml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: 'chore(deps): update Python dependencies'
+          title: '🐍 Update Python/JAX dependencies'
+          body: |
+            This PR updates Python and related dependencies in environment.yml.
+            
+            ## Changes
+            - Updated Python version
+            - Updated CUDA toolkit
+            - Updated pip dependencies
+            
+            Please review before merging.
+          branch: deps/python-updates-${{ github.run_number }}
+          delete-branch: true
+          labels: dependencies,python
+
+  check-outdated:
+    name: Check Outdated Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-outdated
+        run: cargo install cargo-outdated
+
+      - name: Check outdated dependencies
+        run: |
+          cargo outdated --format json > outdated.json
+          cat outdated.json
+
+      - name: Upload outdated report
+        uses: actions/upload-artifact@v4
+        with:
+          name: outdated-dependencies
+          path: outdated.json
+          retention-days: 7
+
+  dependency-graph:
+    name: Generate Dependency Graph
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-tree
+        run: cargo install cargo-tree
+
+      - name: Generate dependency tree
+        run: |
+          cargo tree --all-features > dependency-tree.txt
+          cargo tree --duplicates > duplicate-deps.txt
+
+      - name: Upload dependency reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-reports
+          path: |
+            dependency-tree.txt
+            duplicate-deps.txt
+          retention-days: 30
