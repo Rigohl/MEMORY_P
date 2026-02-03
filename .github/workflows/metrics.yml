@@ -1,0 +1,182 @@
+name: Metrics & Performance Tracking
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sundays
+  workflow_dispatch:
+
+jobs:
+  performance-benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-bench-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install criterion
+        run: |
+          if ! grep -q "criterion" Cargo.toml; then
+            echo "No benchmarks configured, skipping..."
+            exit 0
+          fi
+      
+      - name: Run benchmarks
+        run: |
+          if [ -d "benches" ]; then
+            cargo bench --all-features -- --output-format bencher | tee benchmark-results.txt
+          else
+            echo "## Benchmarks" >> $GITHUB_STEP_SUMMARY
+            echo "No benchmark directory found. To add benchmarks:" >> $GITHUB_STEP_SUMMARY
+            echo '```toml' >> $GITHUB_STEP_SUMMARY
+            echo '[dev-dependencies]' >> $GITHUB_STEP_SUMMARY
+            echo 'criterion = "0.5"' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  build-time-tracking:
+    name: Build Time Tracking
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Measure build time
+        run: |
+          echo "## Build Time Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          start_time=$(date +%s)
+          cargo build --release --all-features
+          end_time=$(date +%s)
+          
+          duration=$((end_time - start_time))
+          echo "**Full Release Build:** ${duration}s" >> $GITHUB_STEP_SUMMARY
+          
+          start_time=$(date +%s)
+          cargo build --all-features
+          end_time=$(date +%s)
+          
+          duration=$((end_time - start_time))
+          echo "**Debug Build:** ${duration}s" >> $GITHUB_STEP_SUMMARY
+
+  test-execution-time:
+    name: Test Execution Time
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Measure test time
+        run: |
+          echo "## Test Execution Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          start_time=$(date +%s)
+          cargo test --all-features 2>&1 | tee test-output.txt
+          end_time=$(date +%s)
+          
+          duration=$((end_time - start_time))
+          test_count=$(grep -oP '\d+(?= passed)' test-output.txt | head -1 || echo "0")
+          
+          echo "**Total Tests:** ${test_count}" >> $GITHUB_STEP_SUMMARY
+          echo "**Execution Time:** ${duration}s" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$test_count" -gt 0 ]; then
+            avg_time=$(echo "scale=2; $duration / $test_count" | bc)
+            echo "**Average per Test:** ${avg_time}s" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  code-quality-metrics:
+    name: Code Quality Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install tokei
+        run: cargo install tokei
+      
+      - name: Generate code statistics
+        run: |
+          tokei . --output json > tokei.json
+          
+          echo "## Code Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          tokei . >> $GITHUB_STEP_SUMMARY
+      
+      - name: Count tests
+        run: |
+          test_count=$(grep -r "#\[test\]" src/ --include="*.rs" | wc -l)
+          cfg_test_count=$(grep -r "#\[cfg(test)\]" src/ --include="*.rs" | wc -l)
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Coverage Indicators:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Test functions: ${test_count}" >> $GITHUB_STEP_SUMMARY
+          echo "- Test modules: ${cfg_test_count}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload statistics
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-statistics
+          path: tokei.json
+
+  dependency-metrics:
+    name: Dependency Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Analyze dependencies
+        run: |
+          echo "## Dependency Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          direct_deps=$(grep -c "^[a-z]" Cargo.toml || echo "0")
+          echo "**Direct Dependencies:** ${direct_deps}" >> $GITHUB_STEP_SUMMARY
+          
+          cargo tree --depth 1 > tree.txt
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Top-level Dependency Tree:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          head -20 tree.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  metrics-summary:
+    name: Metrics Dashboard
+    needs: [performance-benchmarks, build-time-tracking, test-execution-time, code-quality-metrics, dependency-metrics]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create dashboard
+        run: |
+          echo "# 📊 MEMORY_P Metrics Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Status" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏃 Performance Benchmarks: ${{ needs.performance-benchmarks.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏱️ Build Time Tracking: ${{ needs.build-time-tracking.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 Test Execution: ${{ needs.test-execution-time.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📈 Code Quality: ${{ needs.code-quality-metrics.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Dependencies: ${{ needs.dependency-metrics.result }}" >> $GITHUB_STEP_SUMMARY
