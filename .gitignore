@@ -37,6 +37,7 @@
 # Documentación básica
 !docs/
 !docs/**
+!DEVOPS.md
 
 # GitHub Copilot Agents & Skills
 !.github/
@@ -66,6 +67,10 @@
 !Dockerfile
 !config/
 !config/**
+
+# Scripts
+!scripts/
+!scripts/**
 
 # Ignorar binarios y builds en FFI
 FFI/lib/*.so
