@@ -38,6 +38,14 @@
 !docs/
 !docs/**
 
+# Implementation summaries
+!*IMPLEMENTATION_SUMMARY.md
+!*SUMMARY.md
+
+# Examples
+!examples/
+!examples/**
+
 # GitHub Copilot Agents & Skills
 !.github/
 !.github/**
