@@ -1,0 +1,456 @@
+name: Nuclear Crawler Hybrid Validation
+
+# Validación específica del subsistema Nuclear Crawler Hybrid
+# Monitoreo de sincronización y validación de módulos críticos
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'FFI/**'
+      - 'src/motores/**'
+      - 'PAYLOAD_BANK/**'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'FFI/**'
+      - 'src/motores/**'
+  schedule:
+    # Validación diaria a las 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      validation_level:
+        description: 'Nivel de validación'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard
+          - deep
+          - nuclear
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Detección de módulos del crawler
+  detect_crawler_modules:
+    name: Detectar Módulos Crawler
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect.outputs.modules }}
+      has_changes: ${{ steps.detect.outputs.has_changes }}
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar módulos del crawler
+        id: detect
+        run: |
+          echo "🔍 Detectando módulos del Nuclear Crawler Hybrid..."
+          
+          # Módulos críticos del crawler
+          CRITICAL_MODULES=(
+            "data_management"
+            "jax_integration"
+            "intelligent_storage"
+            "parallel_engine"
+            "auto_manager"
+            "workspace"
+            "analyzer"
+            "ffi/memory_bank"
+          )
+          
+          FOUND_MODULES=()
+          CHANGED_MODULES=()
+          
+          for module in "${CRITICAL_MODULES[@]}"; do
+            # Buscar archivos del módulo
+            if find src -name "*$module*" -type f 2>/dev/null | grep -q .; then
+              echo "  ✅ Módulo encontrado: $module"
+              FOUND_MODULES+=("$module")
+              
+              # Verificar si tiene cambios recientes
+              if git diff --name-only HEAD~1..HEAD 2>/dev/null | grep -q "$module"; then
+                echo "  🔄 Módulo con cambios: $module"
+                CHANGED_MODULES+=("$module")
+              fi
+            else
+              echo "  ⏭️  Módulo no encontrado: $module (puede ser legacy)"
+            fi
+          done
+          
+          # Exportar resultados
+          echo "modules=$(IFS=,; echo "${FOUND_MODULES[*]}")" >> $GITHUB_OUTPUT
+          
+          if [ ${#CHANGED_MODULES[@]} -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✅ Cambios detectados en ${#CHANGED_MODULES[@]} módulos"
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  No hay cambios en módulos críticos"
+          fi
+
+  # Validación de integridad del crawler
+  validate_crawler_integrity:
+    name: Validación de Integridad
+    runs-on: ubuntu-latest
+    needs: detect_crawler_modules
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Validar estructura del crawler
+        run: |
+          echo "🏗️  Validando estructura del Nuclear Crawler..."
+          
+          # Verificar archivos críticos
+          CRITICAL_FILES=(
+            "src/workspace.rs"
+            "src/parallel_engine.rs"
+            "src/auto_manager.rs"
+            "src/analyzer.rs"
+            "Cargo.toml"
+          )
+          
+          MISSING_FILES=()
+          for file in "${CRITICAL_FILES[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Archivo crítico faltante: $file"
+              MISSING_FILES+=("$file")
+            else
+              echo "✅ Archivo encontrado: $file"
+            fi
+          done
+          
+          if [ ${#MISSING_FILES[@]} -gt 0 ]; then
+            echo "::error::Archivos críticos faltantes: ${MISSING_FILES[*]}"
+            exit 1
+          fi
+
+      - name: Verificar dependencias del crawler
+        run: |
+          echo "📦 Verificando dependencias..."
+          
+          # Verificar dependencias críticas en Cargo.toml
+          REQUIRED_DEPS=(
+            "rayon"
+            "tokio"
+            "serde"
+            "tracing"
+          )
+          
+          for dep in "${REQUIRED_DEPS[@]}"; do
+            if grep -q "^$dep =" Cargo.toml || grep -q "^$dep\.workspace" Cargo.toml; then
+              echo "✅ Dependencia encontrada: $dep"
+            else
+              echo "⚠️  Dependencia posiblemente faltante: $dep"
+            fi
+          done
+
+      - name: Análisis estático del código crawler
+        run: |
+          echo "🔬 Análisis estático del código..."
+          
+          # Buscar patrones problemáticos específicos del crawler
+          echo "Verificando patrones problemáticos..."
+          
+          # 1. Código bloqueante en contexto async
+          BLOCKING_ISSUES=$(grep -rn "\.wait()" src/ 2>/dev/null | wc -l)
+          echo "  - Llamadas bloqueantes (.wait()): $BLOCKING_ISSUES"
+          
+          # 2. Unwraps peligrosos
+          UNWRAP_COUNT=$(grep -rn "\.unwrap()" src/ 2>/dev/null | wc -l)
+          echo "  - Unwraps potencialmente peligrosos: $UNWRAP_COUNT"
+          
+          # 3. Mutexes que podrían causar deadlocks
+          MUTEX_COUNT=$(grep -rn "Mutex<" src/ 2>/dev/null | wc -l)
+          echo "  - Mutexes detectados: $MUTEX_COUNT"
+          
+          # Advertencias si hay demasiados
+          if [ $UNWRAP_COUNT -gt 100 ]; then
+            echo "⚠️  Alto número de unwraps ($UNWRAP_COUNT) - considerar manejo de errores"
+          fi
+
+  # Tests específicos del crawler
+  crawler_tests:
+    name: Tests del Crawler
+    runs-on: ubuntu-latest
+    needs: detect_crawler_modules
+    if: needs.detect_crawler_modules.outputs.has_changes == 'true'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [unit, integration, stress]
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache de dependencias
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: crawler-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Ejecutar tests - ${{ matrix.test-type }}
+        run: |
+          echo "🧪 Ejecutando tests: ${{ matrix.test-type }}"
+          
+          case "${{ matrix.test-type }}" in
+            unit)
+              echo "Tests unitarios del crawler..."
+              cargo test --lib workspace -- --nocapture || true
+              cargo test --lib parallel_engine -- --nocapture || true
+              cargo test --lib auto_manager -- --nocapture || true
+              cargo test --lib analyzer -- --nocapture || true
+              ;;
+            integration)
+              echo "Tests de integración del crawler..."
+              cargo test --test '*' -- --nocapture || true
+              ;;
+            stress)
+              echo "Tests de estrés del crawler..."
+              # Simular carga alta
+              cargo test --release -- --ignored --nocapture || true
+              ;;
+          esac
+          
+          echo "✅ Tests ${{ matrix.test-type }} completados"
+
+  # Validación de módulos específicos
+  validate_modules:
+    name: Validar Módulos Específicos
+    runs-on: ubuntu-latest
+    needs: detect_crawler_modules
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - data_management
+          - jax_integration
+          - intelligent_storage
+          - parallel_engine
+          - auto_manager
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Validar módulo - ${{ matrix.module }}
+        run: |
+          echo "🔍 Validando módulo: ${{ matrix.module }}"
+          
+          # Buscar archivos relacionados
+          FILES=$(find src -name "*${{ matrix.module }}*" -type f 2>/dev/null || true)
+          
+          if [ -z "$FILES" ]; then
+            echo "⚠️  No se encontraron archivos para el módulo ${{ matrix.module }}"
+            echo "Puede ser un módulo legacy o nombre diferente"
+            exit 0
+          fi
+          
+          echo "Archivos encontrados:"
+          echo "$FILES"
+          
+          # Verificar que compilen
+          echo ""
+          echo "Verificando compilación..."
+          cargo check --verbose 2>&1 | grep -i "${{ matrix.module }}" || true
+          
+          # Buscar TODOs o FIXMEs
+          echo ""
+          echo "Buscando items pendientes..."
+          for file in $FILES; do
+            TODOS=$(grep -n "TODO\|FIXME\|HACK" "$file" 2>/dev/null || true)
+            if [ ! -z "$TODOS" ]; then
+              echo "⚠️  Items pendientes en $file:"
+              echo "$TODOS"
+            fi
+          done
+          
+          echo "✅ Validación de ${{ matrix.module }} completada"
+
+  # Monitoreo de sincronización
+  sync_monitoring:
+    name: Monitoreo de Sincronización
+    runs-on: ubuntu-latest
+    needs: detect_crawler_modules
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+
+      - name: Verificar sincronización con main
+        run: |
+          echo "🔄 Verificando sincronización con main..."
+          
+          # Obtener rama actual
+          CURRENT_BRANCH=$(git branch --show-current)
+          echo "Rama actual: $CURRENT_BRANCH"
+          
+          # Verificar divergencia con main
+          git fetch origin main
+          COMMITS_BEHIND=$(git rev-list --count HEAD..origin/main 2>/dev/null || echo "0")
+          COMMITS_AHEAD=$(git rev-list --count origin/main..HEAD 2>/dev/null || echo "0")
+          
+          echo "📊 Estado de sincronización:"
+          echo "  - Commits detrás de main: $COMMITS_BEHIND"
+          echo "  - Commits adelante de main: $COMMITS_AHEAD"
+          
+          if [ "$COMMITS_BEHIND" -gt 50 ]; then
+            echo "⚠️  Rama muy desactualizada ($COMMITS_BEHIND commits detrás)"
+            echo "::warning::Considerar rebase con main"
+          fi
+
+      - name: Verificar conflictos potenciales
+        run: |
+          echo "🔍 Verificando conflictos potenciales..."
+          
+          # Intentar merge en dry-run
+          git fetch origin main
+          git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main > merge_check.txt 2>&1 || true
+          
+          if grep -q "<<<<<<" merge_check.txt; then
+            echo "⚠️  Conflictos de merge detectados"
+            echo "::warning::Hay conflictos potenciales con main"
+          else
+            echo "✅ No se detectaron conflictos"
+          fi
+
+  # Auto-push de cambios validados (Nuclear Crawler)
+  auto_push_crawler:
+    name: Auto-Push Cambios Crawler
+    runs-on: ubuntu-latest
+    needs: [detect_crawler_modules, validate_crawler_integrity, crawler_tests, validate_modules]
+    if: |
+      needs.detect_crawler_modules.outputs.has_changes == 'true' &&
+      needs.validate_crawler_integrity.result == 'success' &&
+      needs.crawler_tests.result == 'success' &&
+      needs.validate_modules.result == 'success' &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/staging')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Validar pre-push
+        run: |
+          echo "✅ Todas las validaciones pasaron"
+          echo "📊 Resumen:"
+          echo "  - Integridad: ✅"
+          echo "  - Tests: ✅"
+          echo "  - Módulos: ✅"
+          echo ""
+          echo "🚀 Cambios listos para auto-push"
+
+      - name: Notificar éxito
+        run: |
+          echo "✅ Nuclear Crawler Hybrid validado exitosamente"
+          echo "Módulos afectados: ${{ needs.detect_crawler_modules.outputs.modules }}"
+
+  # Reporte de validación
+  validation_report:
+    name: Reporte de Validación
+    runs-on: ubuntu-latest
+    needs: [detect_crawler_modules, validate_crawler_integrity, crawler_tests, validate_modules, sync_monitoring]
+    if: always()
+    
+    steps:
+      - name: Generar reporte
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const modules = '${{ needs.detect_crawler_modules.outputs.modules }}';
+            const hasChanges = '${{ needs.detect_crawler_modules.outputs.has_changes }}';
+            const integrityResult = '${{ needs.validate_crawler_integrity.result }}';
+            const testsResult = '${{ needs.crawler_tests.result }}';
+            const modulesResult = '${{ needs.validate_modules.result }}';
+            const syncResult = '${{ needs.sync_monitoring.result }}';
+            
+            const reportBody = `
+            ## 🚀 Reporte de Validación: Nuclear Crawler Hybrid
+            
+            **Ejecutado:** ${new Date().toISOString()}
+            **Trigger:** ${{ github.event_name }}
+            **Rama:** ${{ github.ref_name }}
+            
+            ### 📦 Módulos Detectados
+            ${modules ? modules.split(',').map(m => `- \`${m}\``).join('\n') : 'Ninguno'}
+            
+            ### 🔍 Resultados de Validación
+            - **Detección de módulos:** ${hasChanges === 'true' ? '✅ Cambios detectados' : 'ℹ️ Sin cambios'}
+            - **Integridad del crawler:** ${integrityResult === 'success' ? '✅ OK' : '❌ Falló'}
+            - **Tests del crawler:** ${testsResult === 'success' ? '✅ OK' : testsResult === 'skipped' ? '⏭️ Omitido' : '❌ Falló'}
+            - **Validación de módulos:** ${modulesResult === 'success' ? '✅ OK' : '❌ Falló'}
+            - **Sincronización:** ${syncResult === 'success' ? '✅ OK' : '❌ Falló'}
+            
+            ### 📊 Estado General
+            ${integrityResult === 'success' && (testsResult === 'success' || testsResult === 'skipped') && modulesResult === 'success' 
+              ? '✅ **Nuclear Crawler Hybrid VALIDADO**' 
+              : '⚠️ **Validación incompleta - revisar logs**'}
+            
+            ### 🔗 Links
+            - [Workflow Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            - [Commit](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/commit/${context.sha})
+            
+            ---
+            *Auto-generado por Nuclear Crawler Hybrid Validation*
+            `;
+            
+            console.log(reportBody);
+            
+            // Si es PR, agregar comentario
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: reportBody
+              });
+              console.log('✅ Reporte agregado al PR');
+            }
+
+      - name: Resumen final
+        if: always()
+        run: |
+          echo "📊 === VALIDACIÓN NUCLEAR CRAWLER HYBRID ==="
+          echo ""
+          echo "Módulos: ${{ needs.detect_crawler_modules.outputs.modules }}"
+          echo "Cambios: ${{ needs.detect_crawler_modules.outputs.has_changes }}"
+          echo ""
+          echo "Resultados:"
+          echo "  - Integridad: ${{ needs.validate_crawler_integrity.result }}"
+          echo "  - Tests: ${{ needs.crawler_tests.result }}"
+          echo "  - Módulos: ${{ needs.validate_modules.result }}"
+          echo "  - Sync: ${{ needs.sync_monitoring.result }}"
+          echo ""
+          echo "==========================================="

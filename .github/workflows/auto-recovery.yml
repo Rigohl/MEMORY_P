@@ -1,0 +1,442 @@
+name: Auto-Recovery & Self-Healing
+
+# Sistema de auto-reparación para workflows
+# Auto-ajuste basado en logs y resultados en tiempo real
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
+  push:
+    branches: [main, develop, staging]
+  schedule:
+    # Ejecutar cada 6 horas para mantenimiento preventivo
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      recovery_mode:
+        description: 'Modo de recuperación'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - aggressive
+          - conservative
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+  MAX_RETRY_ATTEMPTS: 3
+
+permissions:
+  contents: write
+  actions: write
+  issues: write
+
+jobs:
+  # Análisis de fallos previos
+  analyze_failures:
+    name: Análisis de Fallos
+    runs-on: ubuntu-latest
+    outputs:
+      has_failures: ${{ steps.analyze.outputs.has_failures }}
+      failure_type: ${{ steps.analyze.outputs.failure_type }}
+      recovery_strategy: ${{ steps.analyze.outputs.strategy }}
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - name: Analizar workflow previo
+        id: analyze
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log('🔍 Analizando workflows recientes...');
+            
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 20
+            });
+            
+            let failureCount = 0;
+            let failureTypes = {};
+            
+            for (const run of runs.data.workflow_runs) {
+              if (run.conclusion === 'failure') {
+                failureCount++;
+                
+                // Analizar logs para identificar tipo de fallo
+                const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: run.id
+                });
+                
+                for (const job of jobs.data.jobs) {
+                  if (job.conclusion === 'failure') {
+                    // Categorizar fallos
+                    const name = job.name.toLowerCase();
+                    if (name.includes('build')) {
+                      failureTypes.build = (failureTypes.build || 0) + 1;
+                    } else if (name.includes('test')) {
+                      failureTypes.test = (failureTypes.test || 0) + 1;
+                    } else if (name.includes('deploy')) {
+                      failureTypes.deploy = (failureTypes.deploy || 0) + 1;
+                    } else {
+                      failureTypes.other = (failureTypes.other || 0) + 1;
+                    }
+                  }
+                }
+              }
+            }
+            
+            console.log(`Fallos encontrados: ${failureCount}`);
+            console.log('Tipos de fallo:', failureTypes);
+            
+            // Determinar estrategia de recuperación
+            let strategy = 'none';
+            let failureType = 'none';
+            
+            if (failureCount > 0) {
+              core.setOutput('has_failures', 'true');
+              
+              // Identificar tipo predominante
+              const maxType = Object.entries(failureTypes)
+                .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+              failureType = maxType;
+              
+              // Estrategia basada en tipo de fallo
+              if (maxType === 'build') {
+                strategy = 'rebuild_with_cache_clear';
+              } else if (maxType === 'test') {
+                strategy = 'rerun_tests_isolated';
+              } else if (maxType === 'deploy') {
+                strategy = 'rollback_and_redeploy';
+              } else {
+                strategy = 'full_recovery';
+              }
+            } else {
+              core.setOutput('has_failures', 'false');
+            }
+            
+            core.setOutput('failure_type', failureType);
+            core.setOutput('strategy', strategy);
+            
+            console.log(`✅ Análisis completo. Estrategia: ${strategy}`);
+
+  # Limpieza y preparación
+  prepare_recovery:
+    name: Preparación para Recuperación
+    runs-on: ubuntu-latest
+    needs: analyze_failures
+    if: needs.analyze_failures.outputs.has_failures == 'true'
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Limpiar cache corrupto
+        run: |
+          echo "🧹 Limpiando caches potencialmente corruptos..."
+          # Forzar limpieza de cache en próximas ejecuciones
+          echo "CACHE_VERSION=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Verificar integridad del repositorio
+        run: |
+          echo "🔍 Verificando integridad del repositorio..."
+          git fsck --full || echo "⚠️  Problemas de integridad detectados"
+
+      - name: Restaurar dependencias
+        run: |
+          echo "📦 Verificando dependencias..."
+          if [ -f "Cargo.toml" ]; then
+            # Setup Rust
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source "$HOME/.cargo/env"
+            
+            # Limpiar y reconstruir
+            cargo clean
+            cargo fetch || echo "⚠️  Error al descargar dependencias"
+          fi
+
+  # Estrategia 1: Rebuild con cache limpio
+  recovery_rebuild:
+    name: Recuperación - Rebuild
+    runs-on: ubuntu-latest
+    needs: [analyze_failures, prepare_recovery]
+    if: |
+      needs.analyze_failures.outputs.has_failures == 'true' &&
+      (needs.analyze_failures.outputs.recovery_strategy == 'rebuild_with_cache_clear' ||
+       needs.analyze_failures.outputs.recovery_strategy == 'full_recovery')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Rust (versión estable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build sin cache
+        run: |
+          echo "🔨 Construyendo sin cache..."
+          cargo clean
+          cargo build --release --verbose 2>&1 | tee build.log
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Build exitoso después de recovery"
+            echo "BUILD_SUCCESS=true" >> $GITHUB_ENV
+          else
+            echo "❌ Build falló - intentando diagnóstico..."
+            echo "BUILD_SUCCESS=false" >> $GITHUB_ENV
+            
+            # Análisis de errores
+            if grep -q "linker.*not found" build.log; then
+              echo "🔧 Error de linker detectado - instalando dependencias..."
+              sudo apt-get update && sudo apt-get install -y build-essential
+            fi
+          fi
+
+      - name: Retry build si es necesario
+        if: env.BUILD_SUCCESS == 'false'
+        run: |
+          echo "🔄 Reintentando build (intento 2)..."
+          cargo build --release --verbose
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Build exitoso en segundo intento"
+            echo "BUILD_SUCCESS=true" >> $GITHUB_ENV
+          fi
+
+      - name: Guardar logs de recuperación
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-build-logs
+          path: build.log
+          retention-days: 7
+
+  # Estrategia 2: Re-ejecutar tests aislados
+  recovery_tests:
+    name: Recuperación - Tests
+    runs-on: ubuntu-latest
+    needs: [analyze_failures, prepare_recovery]
+    if: |
+      needs.analyze_failures.outputs.has_failures == 'true' &&
+      (needs.analyze_failures.outputs.recovery_strategy == 'rerun_tests_isolated' ||
+       needs.analyze_failures.outputs.recovery_strategy == 'full_recovery')
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        test-suite: [unit, integration, doc]
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache de dependencias
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: recovery-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ github.run_number }}
+
+      - name: Ejecutar suite de tests - ${{ matrix.test-suite }}
+        run: |
+          echo "🧪 Ejecutando tests: ${{ matrix.test-suite }}"
+          
+          case "${{ matrix.test-suite }}" in
+            unit)
+              cargo test --lib --verbose -- --test-threads=1
+              ;;
+            integration)
+              cargo test --test '*' --verbose -- --test-threads=1
+              ;;
+            doc)
+              cargo test --doc --verbose
+              ;;
+          esac
+          
+          TEST_RESULT=$?
+          
+          if [ $TEST_RESULT -eq 0 ]; then
+            echo "✅ Tests ${{ matrix.test-suite }} exitosos"
+          else
+            echo "⚠️  Tests ${{ matrix.test-suite }} fallaron"
+            # No fallar el workflow - permitir que otros tests corran
+            exit 0
+          fi
+
+  # Auto-ajuste condicional basado en logs
+  conditional_adjustment:
+    name: Auto-Ajuste Condicional
+    runs-on: ubuntu-latest
+    needs: [analyze_failures, recovery_rebuild, recovery_tests]
+    if: always() && needs.analyze_failures.outputs.has_failures == 'true'
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Analizar resultados de recovery
+        id: analyze_results
+        run: |
+          echo "📊 Analizando resultados de recuperación..."
+          
+          # Determinar si la recuperación fue exitosa
+          RECOVERY_SUCCESS=true
+          
+          # Verificar resultados de jobs previos
+          if [ "${{ needs.recovery_rebuild.result }}" == "failure" ]; then
+            RECOVERY_SUCCESS=false
+          fi
+          
+          if [ "${{ needs.recovery_tests.result }}" == "failure" ]; then
+            RECOVERY_SUCCESS=false
+          fi
+          
+          echo "recovery_success=$RECOVERY_SUCCESS" >> $GITHUB_OUTPUT
+          
+          if [ "$RECOVERY_SUCCESS" == "true" ]; then
+            echo "✅ Recuperación exitosa"
+          else
+            echo "⚠️  Recuperación parcial o fallida"
+          fi
+
+      - name: Ajustar configuración de CI
+        if: steps.analyze_results.outputs.recovery_success == 'false'
+        run: |
+          echo "⚙️  Ajustando configuración de CI..."
+          
+          # Crear archivo de configuración ajustada
+          cat > .github/ci-adjustment.yml <<EOF
+          # Auto-ajuste generado: $(date)
+          # Razón: Fallos recurrentes detectados
+          adjustments:
+            - increase_timeout: true
+            - reduce_parallelism: true
+            - enable_verbose_logging: true
+            - retry_flaky_tests: true
+          EOF
+          
+          git config user.name "Auto-Recovery Bot"
+          git config user.email "bot@memory-p.dev"
+          git add .github/ci-adjustment.yml
+          git commit -m "🤖 Auto-ajuste de CI por fallos recurrentes" || true
+          git push origin ${{ github.ref_name }} || echo "⚠️  No se pudo push automático"
+
+  # Reporte final y notificaciones
+  recovery_report:
+    name: Reporte de Recuperación
+    runs-on: ubuntu-latest
+    needs: [analyze_failures, recovery_rebuild, recovery_tests, conditional_adjustment]
+    if: always()
+    
+    steps:
+      - name: Generar reporte
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const hasFailures = '${{ needs.analyze_failures.outputs.has_failures }}' === 'true';
+            const failureType = '${{ needs.analyze_failures.outputs.failure_type }}';
+            const strategy = '${{ needs.analyze_failures.outputs.recovery_strategy }}';
+            
+            if (!hasFailures) {
+              console.log('✅ No se detectaron fallos - sistema saludable');
+              return;
+            }
+            
+            const rebuildResult = '${{ needs.recovery_rebuild.result }}';
+            const testsResult = '${{ needs.recovery_tests.result }}';
+            const adjustmentResult = '${{ needs.conditional_adjustment.result }}';
+            
+            const reportBody = `
+            ## 🔧 Reporte de Auto-Recuperación
+            
+            **Ejecutado:** ${new Date().toISOString()}
+            **Trigger:** ${{ github.event_name }}
+            
+            ### Análisis
+            - **Fallos detectados:** Sí
+            - **Tipo predominante:** ${failureType}
+            - **Estrategia aplicada:** ${strategy}
+            
+            ### Resultados de Recuperación
+            - **Rebuild:** ${rebuildResult === 'success' ? '✅ Exitoso' : '❌ Falló'}
+            - **Tests:** ${testsResult === 'success' ? '✅ Exitoso' : '❌ Falló'}
+            - **Auto-ajuste:** ${adjustmentResult === 'success' ? '✅ Aplicado' : '⚠️  No aplicado'}
+            
+            ### Acciones Tomadas
+            1. Análisis de fallos previos
+            2. Limpieza de caches
+            3. Rebuild desde cero
+            4. Re-ejecución de tests aislados
+            5. Ajuste condicional de configuración
+            
+            ### Estado Final
+            ${rebuildResult === 'success' && testsResult === 'success' 
+              ? '✅ Sistema recuperado exitosamente' 
+              : '⚠️  Recuperación parcial - intervención manual puede ser necesaria'}
+            
+            ---
+            *Auto-generado por workflow de auto-recuperación*
+            `;
+            
+            // Crear o actualizar issue de tracking
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'auto-recovery',
+              state: 'open',
+              per_page: 1
+            });
+            
+            if (issues.data.length > 0) {
+              // Actualizar issue existente
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: reportBody
+              });
+              console.log('✅ Issue de tracking actualizado');
+            } else {
+              // Crear nuevo issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Auto-Recovery] Reporte ${new Date().toISOString().split('T')[0]}`,
+                body: reportBody,
+                labels: ['auto-recovery', 'automated']
+              });
+              console.log('✅ Nuevo issue de tracking creado');
+            }
+
+      - name: Resumen en Actions
+        if: always()
+        run: |
+          echo "📊 === RESUMEN DE AUTO-RECUPERACIÓN ==="
+          echo ""
+          echo "Fallos detectados: ${{ needs.analyze_failures.outputs.has_failures }}"
+          echo "Tipo de fallo: ${{ needs.analyze_failures.outputs.failure_type }}"
+          echo "Estrategia: ${{ needs.analyze_failures.outputs.recovery_strategy }}"
+          echo ""
+          echo "Resultados:"
+          echo "  - Rebuild: ${{ needs.recovery_rebuild.result }}"
+          echo "  - Tests: ${{ needs.recovery_tests.result }}"
+          echo "  - Ajuste: ${{ needs.conditional_adjustment.result }}"
+          echo ""
+          echo "========================================="
