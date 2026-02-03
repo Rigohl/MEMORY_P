@@ -67,3 +67,7 @@ ffi-jax = []
 ffi-mojo = []
 ffi-pony = []
 ffi-all = ["ffi-zig", "ffi-julia", "ffi-jax", "ffi-mojo", "ffi-pony"]
+
+[[example]]
+name = "nuclear_crawler_demo"
+path = "examples/nuclear_crawler_demo.rs"
