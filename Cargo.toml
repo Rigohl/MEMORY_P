@@ -14,6 +14,7 @@ axum = { version = "0.7", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }
 futures = "0.3.31"
 reqwest = { version = "0.11", features = ["json"] }
+async-trait = "0.1"
 
 # Parallelism & Concurrency
 rayon = "1.11"

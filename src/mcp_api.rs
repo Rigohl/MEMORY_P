@@ -306,6 +306,83 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                     }),
                     annotations: None,
                 },
+                // === TOOL 6: map_search (Vector Search Avanzado) ===
+                Tool {
+                    name: "map_search".to_string(),
+                    description: "🔍 Búsqueda vectorial avanzada con embeddings, filtros por metadata y múltiples métricas de distancia (cosine, euclidean, dot product).".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "query": { "type": "string", "description": "Texto de búsqueda (se convierte a embedding)" },
+                            "limit": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 10, "description": "Número máximo de resultados" },
+                            "filters": {
+                                "type": "object",
+                                "description": "Filtros por metadata",
+                                "properties": {
+                                    "must": { "type": "object", "description": "Condiciones que deben cumplirse" },
+                                    "must_not": { "type": "object", "description": "Condiciones de exclusión" },
+                                    "timestamp_range": { "type": "array", "items": { "type": "integer" }, "description": "[start, end] timestamp range" }
+                                }
+                            },
+                            "model": { "type": "string", "enum": ["MiniLM-L6", "MiniLM-L12", "BGE-Small", "BGE-Base", "E5-Small"], "default": "MiniLM-L6" },
+                            "metric": { "type": "string", "enum": ["cosine", "euclidean", "dotproduct", "manhattan"], "default": "cosine" }
+                        },
+                        "required": ["query"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 7: index_documents (Indexación con Embeddings) ===
+                Tool {
+                    name: "index_documents".to_string(),
+                    description: "📚 Indexa documentos con embeddings automáticos. Soporta batch processing y cache en Redis.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "documents": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string", "description": "ID único del documento" },
+                                        "text": { "type": "string", "description": "Texto del documento" },
+                                        "metadata": { "type": "object", "description": "Metadata asociada" }
+                                    },
+                                    "required": ["id", "text"]
+                                },
+                                "minItems": 1
+                            },
+                            "model": { "type": "string", "default": "MiniLM-L6" },
+                            "batch_size": { "type": "integer", "minimum": 1, "maximum": 256, "default": 32 }
+                        },
+                        "required": ["documents"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 8: similar_docs (Búsqueda de Documentos Similares) ===
+                Tool {
+                    name: "similar_docs".to_string(),
+                    description: "🔗 Encuentra documentos similares a uno dado usando búsqueda vectorial HNSW.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "document_id": { "type": "string", "description": "ID del documento de referencia" },
+                            "limit": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 },
+                            "filters": { "type": "object", "description": "Filtros por metadata" }
+                        },
+                        "required": ["document_id"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 9: vector_stats (Estadísticas del Motor Vectorial) ===
+                Tool {
+                    name: "vector_stats".to_string(),
+                    description: "📊 Obtiene estadísticas del motor de búsqueda vectorial: documentos indexados, queries, cache hits, etc.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {}
+                    }),
+                    annotations: None,
+                },
             ];
             Some(json!({ "tools": tools }))
         }
@@ -550,6 +627,120 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                                 json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
                             ),
                         }
+                }
+                // === HANDLER 6: map_search (Vector Search) ===
+                "map_search" => {
+                    use crate::mcp::vector_handlers::{MapSearchRequest, map_search_handler};
+                    
+                    let query = arguments.get("query").and_then(|v| v.as_str()).unwrap_or("");
+                    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+                    let filters = arguments.get("filters").cloned();
+                    let model = arguments.get("model").and_then(|v| v.as_str()).map(String::from);
+                    let metric = arguments.get("metric").and_then(|v| v.as_str()).map(String::from);
+                    
+                    let req = MapSearchRequest {
+                        query: query.to_string(),
+                        limit,
+                        filters: filters.and_then(|f| serde_json::from_value(f).ok()),
+                        model,
+                        metric,
+                    };
+                    
+                    match map_search_handler(Json(req)).await {
+                        Ok(Json(response)) => Some(json!({
+                            "content": [{
+                                "type": "text",
+                                "text": format!(
+                                    "🔍 Vector Search Results\n\n⏱️ Query time: {}ms\n📊 Results: {}\n🤖 Model: {}\n\n{}",
+                                    response.query_time_ms,
+                                    response.total,
+                                    response.model_used,
+                                    response.results.iter()
+                                        .map(|r| format!("• [{}] Score: {:.4}\n  Metadata: {}", r.id, r.score, r.metadata))
+                                        .collect::<Vec<_>>()
+                                        .join("\n\n")
+                                )
+                            }]
+                        })),
+                        Err((_, msg)) => Some(json!({
+                            "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
+                        })),
+                    }
+                }
+                // === HANDLER 7: index_documents ===
+                "index_documents" => {
+                    use crate::mcp::vector_handlers::{IndexDocumentsRequest, index_documents_handler};
+                    
+                    match serde_json::from_value::<IndexDocumentsRequest>(arguments.clone()) {
+                        Ok(req) => {
+                            match index_documents_handler(Json(req)).await {
+                                Ok(Json(response)) => Some(json!({
+                                    "content": [{
+                                        "type": "text",
+                                        "text": format!(
+                                            "📚 Indexing Complete\n\n✅ Indexed: {}\n❌ Failed: {}\n⏱️ Time: {}ms",
+                                            response.indexed_count,
+                                            response.failed_count,
+                                            response.index_time_ms
+                                        )
+                                    }]
+                                })),
+                                Err((_, msg)) => Some(json!({
+                                    "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
+                                })),
+                            }
+                        }
+                        Err(e) => Some(json!({
+                            "content": [{ "type": "text", "text": format!("❌ Invalid request: {}", e) }]
+                        })),
+                    }
+                }
+                // === HANDLER 8: similar_docs ===
+                "similar_docs" => {
+                    use crate::mcp::vector_handlers::{SimilarDocsRequest, similar_docs_handler};
+                    
+                    let document_id = arguments.get("document_id").and_then(|v| v.as_str()).unwrap_or("");
+                    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
+                    let filters = arguments.get("filters").cloned();
+                    
+                    let req = SimilarDocsRequest {
+                        document_id: document_id.to_string(),
+                        limit,
+                        filters: filters.and_then(|f| serde_json::from_value(f).ok()),
+                    };
+                    
+                    match similar_docs_handler(Json(req)).await {
+                        Ok(Json(response)) => Some(json!({
+                            "content": [{
+                                "type": "text",
+                                "text": format!(
+                                    "🔗 Similar Documents\n\n📄 Reference: {}\n📊 Found: {} similar docs\n⏱️ Time: {}ms\n\n{}",
+                                    document_id,
+                                    response.total,
+                                    response.query_time_ms,
+                                    response.results.iter()
+                                        .map(|r| format!("• [{}] Similarity: {:.4}\n  {}", r.id, r.score, r.metadata))
+                                        .collect::<Vec<_>>()
+                                        .join("\n\n")
+                                )
+                            }]
+                        })),
+                        Err((_, msg)) => Some(json!({
+                            "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
+                        })),
+                    }
+                }
+                // === HANDLER 9: vector_stats ===
+                "vector_stats" => {
+                    use crate::mcp::vector_handlers::vector_stats_handler;
+                    
+                    let Json(stats) = vector_stats_handler().await;
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!("📊 Vector Engine Statistics\n\n{}", serde_json::to_string_pretty(&stats).unwrap())
+                        }]
+                    }))
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
