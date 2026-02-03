@@ -27,6 +27,8 @@ mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
+mod prediction_engine; // Motor de predicción con Julia + Mojo
+mod shared_memory; // Sistema de memoria compartida entre agentes
 mod workspace;
 
 #[tokio::main]
@@ -83,6 +85,22 @@ async fn http_server_mode() -> crate::error::Result<()> {
         tracing::warn!("⚠️  Continuando sin KPI tracking");
     }
     
+    // 3. Iniciar sistema de memoria compartida
+    let shared_memory = Arc::new(shared_memory::SharedMemory::new());
+    tracing::info!("🧠 Sistema de memoria compartida inicializado");
+    
+    // 4. Iniciar motor de predicción
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
+        prediction_engine::PredictionConfig::default()
+    ));
+    tracing::info!("🔮 Motor de predicción inicializado");
+    
+    // 5. Iniciar tarea de limpieza de memoria en background
+    let memory_clone = shared_memory.clone();
+    tokio::spawn(async move {
+        shared_memory::start_cleanup_task(memory_clone, 300).await; // Cada 5 minutos
+    });
+    
     tracing::info!("✅ Sistema auto-gestionado activo");
     tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");
     tracing::info!("   • Health checks: cada 30s");
@@ -90,13 +108,17 @@ async fn http_server_mode() -> crate::error::Result<()> {
     tracing::info!("   • Zero-touch operation: activo");
     tracing::info!("   • KPI Tracking: Six Sigma always-on");
     tracing::info!("   • Mediciones: cada 10s");
+    tracing::info!("   • Memoria compartida: activa");
+    tracing::info!("   • Predicción automática: activa");
     
-    // 3. Construir router con auto-manager y kpi-tracker
+    // 6. Construir router con todos los componentes
     let app = Router::new()
         .merge(mcp_api::routes())
         .fallback(error_404)
         .layer(axum::Extension(auto_manager.clone()))
-        .layer(axum::Extension(kpi_tracker.clone()));
+        .layer(axum::Extension(kpi_tracker.clone()))
+        .layer(axum::Extension(shared_memory.clone()))
+        .layer(axum::Extension(prediction_engine.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
 
