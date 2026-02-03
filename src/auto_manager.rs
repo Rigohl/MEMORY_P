@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 /// Estado de salud de un componente
 #[derive(Debug, Clone, Copy, PartialEq)]
