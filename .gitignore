@@ -64,6 +64,10 @@
 # Docker
 !docker-compose.yml
 
+# Config files
+!config/
+!config/**
+
 # Ignorar binarios y builds en FFI
 FFI/lib/*.so
 FFI/lib/*.dylib

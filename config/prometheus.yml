@@ -1,0 +1,98 @@
+# Prometheus Configuration for Nuclear Crawler Monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'memory-p-nuclear-crawler'
+    environment: 'production'
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts/*.yml"
+
+scrape_configs:
+  # MEMORY_P Main Application
+  - job_name: 'memory-p-app'
+    static_configs:
+      - targets: ['memory-p:4040']
+        labels:
+          service: 'memory-p'
+          component: 'main'
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+  
+  # Nuclear Crawler Metrics
+  - job_name: 'nuclear-crawler'
+    static_configs:
+      - targets: ['memory-p:4040']
+        labels:
+          service: 'nuclear-crawler'
+          component: 'crawler'
+    metrics_path: '/metrics/nuclear-crawler'
+    scrape_interval: 5s
+  
+  # Qdrant Vector Search
+  - job_name: 'qdrant'
+    static_configs:
+      - targets: ['qdrant:6333']
+        labels:
+          service: 'vector-search'
+          engine: 'qdrant'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+  
+  # MeiliSearch
+  - job_name: 'meilisearch'
+    static_configs:
+      - targets: ['meilisearch:7700']
+        labels:
+          service: 'text-search'
+          engine: 'meilisearch'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+  
+  # LNX Cluster Nodes
+  - job_name: 'lnx-cluster'
+    static_configs:
+      - targets: 
+          - 'lnx-node1:9200'
+          - 'lnx-node2:9200'
+          - 'lnx-node3:9200'
+        labels:
+          service: 'distributed-search'
+          engine: 'lnx'
+    metrics_path: '/metrics'
+    scrape_interval: 20s
+  
+  # PostgreSQL with pgvector
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+        labels:
+          service: 'database'
+          type: 'postgres'
+    scrape_interval: 30s
+  
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'cache'
+          type: 'redis'
+    scrape_interval: 20s
+  
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'monitoring'
+          component: 'prometheus'
