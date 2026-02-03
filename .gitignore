@@ -47,6 +47,10 @@
 !MERGE_SUMMARY.md
 !INTEGRATION_COMPLETE.md
 
+# Workflow documentation
+!WORKFLOW_QUICKREF.md
+!WORKFLOW_IMPLEMENTATION_SUMMARY.md
+
 # Configuraciones
 !.windsurf/
 !.windsurf/**
