@@ -1,0 +1,71 @@
+# ==========================================
+# Prometheus Configuration for MEMORY_P
+# ==========================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'memory-p-cluster'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "alerts.yml"
+
+# Scrape configurations
+scrape_configs:
+  # MEMORY_P Main Application
+  - job_name: 'memory-p'
+    static_configs:
+      - targets: ['memory-p:9091']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Qdrant Vector Search
+  - job_name: 'qdrant'
+    static_configs:
+      - targets: ['qdrant:6333']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # MeiliSearch
+  - job_name: 'meilisearch'
+    static_configs:
+      - targets: ['meilisearch:7700']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # LNX Cluster Nodes
+  - job_name: 'lnx-cluster'
+    static_configs:
+      - targets: 
+        - 'lnx-node1:9200'
+        - 'lnx-node2:9200'
+        - 'lnx-node3:9200'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
