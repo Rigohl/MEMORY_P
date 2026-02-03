@@ -46,6 +46,12 @@ lazy_static = "1.4"
 memmap2 = "0.9.9"
 mimalloc = "0.1.48"
 
+# Database & Async Traits (for Memory MCP)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
+async-trait = "0.1"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
 [dev-dependencies]
 mockall = "0.14"
 
