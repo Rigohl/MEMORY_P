@@ -426,7 +426,84 @@ impl AutoManager {
             "overall_health": format!("{:?}", self.get_overall_health()),
             "engines": engines,
             "ffi_modules": ffi_modules,
+            "ci_integration": {
+                "auto_push_enabled": true,
+                "auto_recovery_enabled": true,
+                "nuclear_crawler_monitoring": true,
+                "dynamic_tests_enabled": true,
+                "recurring_scan_enabled": true,
+            },
+            "workflows": {
+                "auto_push": "Active - Pre-authorized branches",
+                "auto_recovery": "Active - Self-healing every 6h",
+                "nuclear_crawler": "Active - Daily validation at 2 AM UTC",
+                "dynamic_tests": "Active - Adaptive test strategy",
+                "recurring_scan": "Active - Daily at 3 AM UTC, Weekly deep scan"
+            }
         })
+    }
+    
+    /// Reporta métricas de salud a GitHub Actions (para integración CI/CD)
+    pub fn export_github_metrics(&self) -> String {
+        let overall = self.get_overall_health();
+        let unhealthy_engines = self.engine_health.iter()
+            .filter(|e| e.value().status == HealthStatus::Unhealthy)
+            .count();
+        let unhealthy_ffi = self.ffi_health.iter()
+            .filter(|e| e.value().status == HealthStatus::Unhealthy)
+            .count();
+        
+        format!(
+            "OVERALL_HEALTH={:?}\nUNHEALTHY_ENGINES={}\nUNHEALTHY_FFI={}\nAUTO_MANAGED=true\n",
+            overall, unhealthy_engines, unhealthy_ffi
+        )
+    }
+    
+    /// Verifica si el sistema está listo para auto-push
+    pub fn is_ready_for_auto_push(&self) -> bool {
+        let overall = self.get_overall_health();
+        matches!(overall, HealthStatus::Healthy | HealthStatus::Degraded)
+    }
+    
+    /// Genera reporte para workflow de recuperación
+    pub fn generate_recovery_report(&self) -> String {
+        let overall = self.get_overall_health();
+        let mut report = String::new();
+        
+        report.push_str(&format!("## Auto-Manager Health Report\n\n"));
+        report.push_str(&format!("**Overall Status**: {:?}\n\n", overall));
+        
+        report.push_str("### Search Engines\n");
+        for entry in self.engine_health.iter() {
+            let (name, health) = entry.pair();
+            let emoji = match health.status {
+                HealthStatus::Healthy => "✅",
+                HealthStatus::Degraded => "⚠️",
+                HealthStatus::Unhealthy => "❌",
+                HealthStatus::Recovering => "🔄",
+            };
+            report.push_str(&format!(
+                "- {} **{}**: {:?} (errors: {})\n",
+                emoji, name, health.status, health.error_count
+            ));
+        }
+        
+        report.push_str("\n### FFI Modules\n");
+        for entry in self.ffi_health.iter() {
+            let (name, health) = entry.pair();
+            let emoji = match health.status {
+                HealthStatus::Healthy => "✅",
+                HealthStatus::Degraded => "⚠️",
+                HealthStatus::Unhealthy => "❌",
+                HealthStatus::Recovering => "🔄",
+            };
+            report.push_str(&format!(
+                "- {} **{}**: {:?} (errors: {})\n",
+                emoji, name, health.status, health.error_count
+            ));
+        }
+        
+        report
     }
 }
 
