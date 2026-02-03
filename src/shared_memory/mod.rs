@@ -16,6 +16,7 @@ pub mod context;
 pub mod sync;
 pub mod monitor;
 pub mod cleanup;
+pub mod engine_integration;
 
 pub use types::{
     SharedContext, AgentContext, ContextMetadata, 
@@ -26,6 +27,7 @@ pub use context::ContextManager;
 pub use sync::SyncCoordinator;
 pub use monitor::MemoryMonitor;
 pub use cleanup::CleanupManager;
+pub use engine_integration::{EngineIntegration, EngineIntegrationConfig, IntegrationStats};
 
 use crate::error::{MemoryPError, Result};
 use dashmap::DashMap;
@@ -51,6 +53,9 @@ pub struct SharedMemorySystem {
     /// Gestor de limpieza
     cleanup_manager: Arc<CleanupManager>,
     
+    /// Integración con motores de búsqueda
+    engine_integration: Arc<EngineIntegration>,
+    
     /// Cache de contextos activos (AgentId -> Context)
     active_contexts: Arc<DashMap<AgentId, SharedContext>>,
     
@@ -68,6 +73,7 @@ impl SharedMemorySystem {
         let sync_coordinator = Arc::new(SyncCoordinator::new().await?);
         let monitor = Arc::new(MemoryMonitor::new());
         let cleanup_manager = Arc::new(CleanupManager::new());
+        let engine_integration = Arc::new(EngineIntegration::new(EngineIntegrationConfig::default()));
         let active_contexts = Arc::new(DashMap::new());
         
         Ok(Self {
@@ -76,6 +82,7 @@ impl SharedMemorySystem {
             sync_coordinator,
             monitor,
             cleanup_manager,
+            engine_integration,
             active_contexts,
             initialized: Arc::new(RwLock::new(false)),
         })
@@ -96,6 +103,9 @@ impl SharedMemorySystem {
         
         // Inicializar coordinador de sincronización
         self.sync_coordinator.initialize().await?;
+        
+        // Inicializar integración con motores
+        self.engine_integration.initialize().await?;
         
         // Inicializar monitor
         self.monitor.start().await;
@@ -147,6 +157,9 @@ impl SharedMemorySystem {
         // Persistir
         self.context_manager.update(context.clone()).await?;
         
+        // Indexar en motores de búsqueda
+        self.engine_integration.index_context(&context).await?;
+        
         // Notificar a otros agentes
         self.sync_coordinator.broadcast_update(agent_id, context).await?;
         
@@ -177,9 +190,49 @@ impl SharedMemorySystem {
             .await
     }
     
+    /// Busca contextos similares usando vector search
+    pub async fn search_similar_contexts(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SharedContext>> {
+        self.engine_integration
+            .search_similar_contexts(query, limit)
+            .await
+    }
+    
+    /// Busca contextos por texto usando full-text search
+    pub async fn search_contexts_by_text(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SharedContext>> {
+        self.engine_integration
+            .search_contexts_by_text(query, limit)
+            .await
+    }
+    
+    /// Pre-carga contextos relevantes para un agente
+    pub async fn preload_relevant_contexts(
+        &self,
+        agent_id: &AgentId,
+    ) -> Result<Vec<SharedContext>> {
+        self.engine_integration
+            .preload_relevant_contexts(agent_id)
+            .await
+    }
+    
+    /// Obtiene estadísticas de integración con motores
+    pub async fn get_integration_stats(&self) -> IntegrationStats {
+        self.engine_integration.get_integration_stats().await
+    }
+    
     /// Finaliza el sistema de memoria compartida
     pub async fn shutdown(&self) -> Result<()> {
         info!("🔧 Finalizando sistema de memoria compartida");
+        
+        // Detener integración con motores
+        self.engine_integration.shutdown().await?;
         
         // Detener limpieza automática
         self.cleanup_manager.stop().await;
