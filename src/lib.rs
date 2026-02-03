@@ -19,6 +19,7 @@ pub mod mega_simulator;
 // Need to refactor using enum dispatch or async-trait with Box<dyn Future>
 // pub mod motores;
 pub mod parallel_engine;
+pub mod shared_memory; // Sistema de memoria compartida para coordinación de agentes
 pub mod workspace;
 
 // pub use motores::*;
