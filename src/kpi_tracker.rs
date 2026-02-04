@@ -35,6 +35,7 @@ pub struct SixSigmaMetric {
     pub target: f64,
     pub upper_spec_limit: f64, // USL
     pub lower_spec_limit: f64, // LSL
+    #[serde(skip, default = "Instant::now")]
     pub timestamp: Instant,
     pub unit: String,
 }
@@ -94,6 +95,7 @@ pub struct MetricAggregation {
 /// KPI Dashboard
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KpiDashboard {
+    #[serde(skip, default = "Instant::now")]
     pub timestamp: Instant,
     pub overall_sigma_level: f64,
     pub categories: Vec<CategoryMetrics>,
@@ -114,6 +116,7 @@ pub struct KpiAlert {
     pub severity: AlertSeverity,
     pub category: KpiCategory,
     pub message: String,
+    #[serde(skip, default = "Instant::now")]
     pub timestamp: Instant,
 }
 
