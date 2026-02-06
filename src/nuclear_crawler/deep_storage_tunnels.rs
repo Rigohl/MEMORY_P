@@ -33,7 +33,7 @@ impl DeepStorageTunnels {
     /// Crea un nuevo túnel
     pub async fn create_tunnel(&self, depth: usize, capacity: usize) -> Result<String> {
         let tunnel_id = format!("tunnel_{}", uuid::Uuid::new_v4());
-        
+
         let tunnel = StorageTunnel {
             id: tunnel_id.clone(),
             depth,
@@ -42,10 +42,12 @@ impl DeepStorageTunnels {
         };
 
         self.tunnels.write().await.push(tunnel);
-        
-        info!("🚇 Túnel creado: {} (profundidad: {}, capacidad: {})", 
-            tunnel_id, depth, capacity);
-        
+
+        info!(
+            "🚇 Túnel creado: {} (profundidad: {}, capacidad: {})",
+            tunnel_id, depth, capacity
+        );
+
         Ok(tunnel_id)
     }
 
@@ -72,14 +74,17 @@ impl DeepStorageTunnels {
         let tunnels = self.tunnels.read().await;
         let total_capacity: usize = tunnels.iter().map(|t| t.capacity).sum();
         let total_used: usize = tunnels.iter().map(|t| t.current_size).sum();
-        
+
         let usage = if total_capacity > 0 {
             (total_used as f64 / total_capacity as f64) * 100.0
         } else {
             0.0
         };
 
-        info!("📊 Uso de túneles: {:.2}% ({}/{})", usage, total_used, total_capacity);
+        info!(
+            "📊 Uso de túneles: {:.2}% ({}/{})",
+            usage, total_used, total_capacity
+        );
 
         Ok(())
     }
@@ -92,7 +97,7 @@ impl DeepStorageTunnels {
 // UUID helper
 mod uuid {
     pub struct Uuid;
-    
+
     impl Uuid {
         pub fn new_v4() -> String {
             use std::time::{SystemTime, UNIX_EPOCH};

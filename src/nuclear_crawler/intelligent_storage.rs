@@ -44,7 +44,7 @@ impl IntelligentStorage {
 
     pub async fn start(&self) -> Result<()> {
         info!("💾 Iniciando Intelligent Storage...");
-        
+
         let mut running = self.running.write().await;
         if *running {
             warn!("Intelligent Storage ya está ejecutándose");
@@ -62,10 +62,10 @@ impl IntelligentStorage {
 
     pub async fn stop(&self) -> Result<()> {
         info!("🛑 Deteniendo Intelligent Storage...");
-        
+
         let mut running = self.running.write().await;
         *running = false;
-        
+
         info!("✅ Intelligent Storage detenido");
         Ok(())
     }
@@ -91,7 +91,8 @@ impl IntelligentStorage {
                 if usage_percent > 80.0 {
                     let new_capacity = current_capacity * 2;
                     *capacity.write().await = new_capacity;
-                    info!("📈 Almacenamiento expandido: {} MB -> {} MB",
+                    info!(
+                        "📈 Almacenamiento expandido: {} MB -> {} MB",
                         current_capacity / 1024 / 1024,
                         new_capacity / 1024 / 1024
                     );
@@ -104,11 +105,11 @@ impl IntelligentStorage {
                         .filter(|e| e.value().priority == StoragePriority::Low)
                         .map(|e| e.key().clone())
                         .collect();
-                    
+
                     for key in to_remove {
                         items.remove(&key);
                     }
-                    
+
                     info!("🧹 Limpieza de almacenamiento completada");
                 }
 

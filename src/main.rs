@@ -58,49 +58,49 @@ async fn http_server_mode() -> crate::error::Result<()> {
     // ========================================================
     // MCP PROTOCOL 2026 - ALWAYS-ON AUTO-MANAGED SYSTEM
     // ========================================================
-    
+
     tracing::info!("╔══════════════════════════════════════════════════╗");
     tracing::info!("║  MEMORY_P MCP Server 2026 - ALWAYS-ON EDITION   ║");
     tracing::info!("╚══════════════════════════════════════════════════╝");
-    
+
     // 1. Auto-iniciar sistema de gestión
     let auto_manager = Arc::new(auto_manager::AutoManager::new(
-        auto_manager::ManagerConfig::default()
+        auto_manager::ManagerConfig::default(),
     ));
-    
+
     tracing::info!("🔧 Iniciando sistema de auto-gestión...");
     if let Err(e) = auto_manager.auto_start().await {
         tracing::error!("❌ Error al iniciar AutoManager: {}", e);
         tracing::warn!("⚠️  Continuando sin auto-gestión completa");
     }
-    
+
     // 2. Auto-iniciar KPI Tracker (Six Sigma + Automation)
     let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(
-        kpi_tracker::KpiConfig::default()
+        kpi_tracker::KpiConfig::default(),
     ));
-    
+
     tracing::info!("📊 Iniciando KPI Tracker (Six Sigma)...");
     if let Err(e) = kpi_tracker.start().await {
         tracing::error!("❌ Error al iniciar KPI Tracker: {}", e);
         tracing::warn!("⚠️  Continuando sin KPI tracking");
     }
-    
+
     // 3. Iniciar sistema de memoria compartida
     let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new());
     tracing::info!("🧠 Sistema de memoria compartida inicializado");
-    
+
     // 4. Iniciar motor de predicción
     let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
-        prediction_engine::PredictionConfig::default()
+        prediction_engine::PredictionConfig::default(),
     ));
     tracing::info!("🔮 Motor de predicción inicializado");
-    
+
     // 5. Iniciar tarea de limpieza de memoria en background (deshabilitada)
     // let memory_clone = shared_memory.clone();
     // tokio::spawn(async move {
     //     // shared_memory::start_cleanup_task(memory_clone, 300).await; // Cada 5 minutos
     // });
-    
+
     tracing::info!("✅ Sistema auto-gestionado activo");
     tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");
     tracing::info!("   • Health checks: cada 30s");
@@ -110,7 +110,7 @@ async fn http_server_mode() -> crate::error::Result<()> {
     tracing::info!("   • Mediciones: cada 10s");
     tracing::info!("   • Memoria compartida: activa");
     tracing::info!("   • Predicción automática: activa");
-    
+
     // 6. Construir router con todos los componentes
     let app = Router::new()
         .merge(mcp_api::routes())
@@ -142,7 +142,7 @@ async fn http_server_mode() -> crate::error::Result<()> {
     // Cleanup al salir
     kpi_tracker.stop().await;
     auto_manager.stop().await;
-    
+
     Ok(())
 }
 
