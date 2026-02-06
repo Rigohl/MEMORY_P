@@ -31,7 +31,7 @@ jobs:
           components: rustfmt, clippy
       
       - name: Cache Rust dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/bin/
@@ -83,7 +83,7 @@ jobs:
           version: '1.10'
       
       - name: Cache Julia packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.julia
           key: ${{ runner.os }}-julia-${{ hashFiles('FFI/src/julia_math.jl') }}
@@ -120,7 +120,7 @@ jobs:
           python-version: '3.11'
       
       - name: Cache Python packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('FFI/src/jax_inference.py') }}

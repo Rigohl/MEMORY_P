@@ -206,7 +206,7 @@ jobs:
           cargo update --aggressive || true
           
       - name: Create PR with fixes
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: 'chore: auto-fix security vulnerabilities'
           title: '🔒 Security: Auto-fix vulnerabilities'
