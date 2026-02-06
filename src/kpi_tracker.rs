@@ -252,7 +252,7 @@ impl KpiTracker {
 
     /// Inicia mediciones automáticas
     async fn start_auto_measurement(&self) {
-        let metrics = self.metrics.clone();
+        let _metrics = self.metrics.clone();
         let running = self.running.clone();
         let interval = self.config.measurement_interval;
 

@@ -15,6 +15,7 @@ tokio = { version = "1", features = ["full"] }
 futures = "0.3.31"
 reqwest = { version = "0.11", features = ["json"] }
 async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Parallelism & Concurrency
 rayon = "1.11"

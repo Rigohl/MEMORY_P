@@ -11,7 +11,6 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use chrono::Utc;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -61,10 +60,13 @@ pub async fn kpi_dashboard_handler(
     Extension(kpi_tracker): Extension<Arc<KpiTracker>>,
 ) -> Json<Value> {
     let dashboard = kpi_tracker.get_dashboard();
+    let timestamp_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
     
     Json(json!({
-        "timestamp": dashboard.timestamp.timestamp(),
-        "age_seconds": (Utc::now() - dashboard.timestamp).num_seconds(),
+        "timestamp": timestamp_secs,
         "overall_sigma_level": dashboard.overall_sigma_level,
         "target_sigma": 4.0,
         "categories": dashboard.categories.iter().map(|cat| {
@@ -84,7 +86,6 @@ pub async fn kpi_dashboard_handler(
                 "severity": format!("{:?}", alert.severity),
                 "category": format!("{:?}", alert.category),
                 "message": alert.message,
-                "age_seconds": (Utc::now() - alert.timestamp).num_seconds()
             })
         }).collect::<Vec<_>>(),
         "methodology": "Six Sigma DMAIC",
@@ -98,7 +99,6 @@ pub async fn kpi_record_handler(
     Json(payload): Json<Value>,
 ) -> Json<Value> {
     use crate::kpi_tracker::{KpiCategory, SixSigmaMetric};
-    use std::time::Instant;
     
     // Parse request
     let name = payload["name"].as_str().unwrap_or("unknown").to_string();
@@ -125,7 +125,7 @@ pub async fn kpi_record_handler(
         target,
         upper_spec_limit: usl,
         lower_spec_limit: lsl,
-        timestamp: Utc::now(),
+        timestamp: std::time::Instant::now(),
         unit,
     };
     
@@ -630,118 +630,30 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                             ),
                         }
                 }
-                // === HANDLER 6: map_search (Vector Search) ===
+                // === HANDLER 6: map_search (Vector Search) - DISABLED ===
+                // Comentado: Requiere motores module que aún no está disponible
                 "map_search" => {
-                    use crate::mcp::vector_handlers::{MapSearchRequest, map_search_handler};
                     
-                    let query = arguments.get("query").and_then(|v| v.as_str()).unwrap_or("");
-                    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-                    let filters = arguments.get("filters").cloned();
-                    let model = arguments.get("model").and_then(|v| v.as_str()).map(String::from);
-                    let metric = arguments.get("metric").and_then(|v| v.as_str()).map(String::from);
-                    
-                    let req = MapSearchRequest {
-                        query: query.to_string(),
-                        limit,
-                        filters: filters.and_then(|f| serde_json::from_value(f).ok()),
-                        model,
-                        metric,
-                    };
-                    
-                    match map_search_handler(Json(req)).await {
-                        Ok(Json(response)) => Some(json!({
-                            "content": [{
-                                "type": "text",
-                                "text": format!(
-                                    "🔍 Vector Search Results\n\n⏱️ Query time: {}ms\n📊 Results: {}\n🤖 Model: {}\n\n{}",
-                                    response.query_time_ms,
-                                    response.total,
-                                    response.model_used,
-                                    response.results.iter()
-                                        .map(|r| format!("• [{}] Score: {:.4}\n  Metadata: {}", r.id, r.score, r.metadata))
-                                        .collect::<Vec<_>>()
-                                        .join("\n\n")
-                                )
-                            }]
-                        })),
-                        Err((_, msg)) => Some(json!({
-                            "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
-                        })),
-                    }
-                }
-                // === HANDLER 7: index_documents ===
-                "index_documents" => {
-                    use crate::mcp::vector_handlers::{IndexDocumentsRequest, index_documents_handler};
-                    
-                    match serde_json::from_value::<IndexDocumentsRequest>(arguments.clone()) {
-                        Ok(req) => {
-                            match index_documents_handler(Json(req)).await {
-                                Ok(Json(response)) => Some(json!({
-                                    "content": [{
-                                        "type": "text",
-                                        "text": format!(
-                                            "📚 Indexing Complete\n\n✅ Indexed: {}\n❌ Failed: {}\n⏱️ Time: {}ms",
-                                            response.indexed_count,
-                                            response.failed_count,
-                                            response.index_time_ms
-                                        )
-                                    }]
-                                })),
-                                Err((_, msg)) => Some(json!({
-                                    "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
-                                })),
-                            }
-                        }
-                        Err(e) => Some(json!({
-                            "content": [{ "type": "text", "text": format!("❌ Invalid request: {}", e) }]
-                        })),
-                    }
-                }
-                // === HANDLER 8: similar_docs ===
-                "similar_docs" => {
-                    use crate::mcp::vector_handlers::{SimilarDocsRequest, similar_docs_handler};
-                    
-                    let document_id = arguments.get("document_id").and_then(|v| v.as_str()).unwrap_or("");
-                    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-                    let filters = arguments.get("filters").cloned();
-                    
-                    let req = SimilarDocsRequest {
-                        document_id: document_id.to_string(),
-                        limit,
-                        filters: filters.and_then(|f| serde_json::from_value(f).ok()),
-                    };
-                    
-                    match similar_docs_handler(Json(req)).await {
-                        Ok(Json(response)) => Some(json!({
-                            "content": [{
-                                "type": "text",
-                                "text": format!(
-                                    "🔗 Similar Documents\n\n📄 Reference: {}\n📊 Found: {} similar docs\n⏱️ Time: {}ms\n\n{}",
-                                    document_id,
-                                    response.total,
-                                    response.query_time_ms,
-                                    response.results.iter()
-                                        .map(|r| format!("• [{}] Similarity: {:.4}\n  {}", r.id, r.score, r.metadata))
-                                        .collect::<Vec<_>>()
-                                        .join("\n\n")
-                                )
-                            }]
-                        })),
-                        Err((_, msg)) => Some(json!({
-                            "content": [{ "type": "text", "text": format!("❌ Error: {}", msg) }]
-                        })),
-                    }
-                }
-                // === HANDLER 9: vector_stats ===
-                "vector_stats" => {
-                    use crate::mcp::vector_handlers::vector_stats_handler;
-                    
-                    let Json(stats) = vector_stats_handler().await;
                     Some(json!({
-                        "content": [{
-                            "type": "text",
-                            "text": format!("📊 Vector Engine Statistics\n\n{}", serde_json::to_string_pretty(&stats).unwrap())
-                        }]
+                        "content": [{ "type": "text", "text": "Vector search not yet implemented" }]
+                    }))
+                }
+                // === HANDLER 7: index_documents - DISABLED ===
+                "index_documents" => {
+                    Some(json!({
+                        "content": [{ "type": "text", "text": "Document indexing not yet implemented" }]
+                    }))
+                }
+                // === HANDLER 8: similar_docs - DISABLED ===
+                "similar_docs" => {
+                    Some(json!({
+                        "content": [{ "type": "text", "text": "Similar docs search not yet implemented" }]
+                    }))
+                }
+                // === HANDLER 9: vector_stats - DISABLED ===
+                "vector_stats" => {
+                    Some(json!({
+                        "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
                     }))
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),

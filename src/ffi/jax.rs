@@ -153,7 +153,7 @@ impl EmbeddingGenerator {
     }
 
     /// Genera embedding raw sin cache
-    fn generate_raw_embedding(&self, text: &str) -> Result<Vec<f32>> {
+    fn generate_raw_embedding(&self, _text: &str) -> Result<Vec<f32>> {
         #[cfg(feature = "ffi-jax")]
         {
             tracing::debug!(

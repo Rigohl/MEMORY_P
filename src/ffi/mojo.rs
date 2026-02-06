@@ -27,7 +27,7 @@ pub fn shutdown() {
 }
 
 /// Calcula dot product con SIMD (35000x más rápido que Python)
-pub fn dot_product(a: &[f64], b: &[f64]) -> Result<f64> {
+pub fn dot_product(_a: &[f64], _b: &[f64]) -> Result<f64> {
     #[cfg(feature = "ffi-mojo")]
     {
         if a.len() != b.len() {
@@ -50,7 +50,7 @@ pub fn dot_product(a: &[f64], b: &[f64]) -> Result<f64> {
 }
 
 /// Calcula similitud coseno con SIMD
-pub fn cosine_similarity(a: &[f64], b: &[f64]) -> Result<f64> {
+pub fn cosine_similarity(_a: &[f64], _b: &[f64]) -> Result<f64> {
     #[cfg(feature = "ffi-mojo")]
     {
         if a.len() != b.len() {
@@ -76,7 +76,7 @@ pub fn cosine_similarity(a: &[f64], b: &[f64]) -> Result<f64> {
 }
 
 /// Calcula similitudes coseno en batch (query vs corpus)
-pub fn cosine_similarity_batch(query: &[f64], corpus: &[Vec<f64>]) -> Result<Vec<f64>> {
+pub fn cosine_similarity_batch(_query: &[f64], _corpus: &[Vec<f64>]) -> Result<Vec<f64>> {
     #[cfg(feature = "ffi-mojo")]
     {
         tracing::debug!("Batch cosine similarity con Mojo para {} documentos", corpus.len());

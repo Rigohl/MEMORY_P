@@ -196,7 +196,7 @@ impl EngineIntegration {
     pub async fn search_similar_contexts(
         &self,
         query: &str,
-        limit: usize,
+        _limit: usize,
     ) -> Result<Vec<SharedContext>> {
         debug!("Buscando contextos similares: '{}'", query);
         
@@ -213,7 +213,7 @@ impl EngineIntegration {
     pub async fn search_contexts_by_text(
         &self,
         query: &str,
-        limit: usize,
+        _limit: usize,
     ) -> Result<Vec<SharedContext>> {
         debug!("Buscando contextos por texto: '{}'", query);
         

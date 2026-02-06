@@ -45,8 +45,7 @@
 //! bridge::shutdown();
 //! ```
 
-use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_double, c_int};
+use std::os::raw::{c_double};
 
 pub mod bridge;
 pub mod error;
@@ -62,7 +61,8 @@ mod benchmarks;
 pub use error::{FfiError, Result as FfiResult};
 
 // Re-export bridge types para uso público
-pub use bridge::{Language, dispatch_fast, dispatch_batch, get_metrics, reset_metrics};
+// Nota: Language, dispatch_fast, dispatch_batch, get_metrics, reset_metrics
+// se definen en el módulo bridge cuando las características correspondientes estén compiladas
 
 /// Inicializa el sistema FFI completo
 pub fn init() -> crate::error::Result<()> {

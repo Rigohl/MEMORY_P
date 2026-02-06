@@ -28,7 +28,7 @@ pub fn shutdown() {
 }
 
 /// Ejecuta búsqueda distribuida con actores Pony
-pub async fn distributed_search(query: &str, _indices: &[String]) -> Result<Vec<String>> {
+pub async fn distributed_search(_query: &str, _indices: &[String]) -> Result<Vec<String>> {
     #[cfg(feature = "ffi-pony")]
     {
         tracing::debug!("Búsqueda distribuida con Pony para: '{}'", query);

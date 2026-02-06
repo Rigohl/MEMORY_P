@@ -1,7 +1,6 @@
 //! ffi/bridge.rs - Zig FFI Bridge Integration
 
 use super::error::{FfiError, Result};
-use std::ffi::CString;
 
 /// Estructura de información del buffer desde Zig
 #[repr(C)]

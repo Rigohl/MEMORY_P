@@ -125,7 +125,7 @@ impl SharedMemoryToolHandler {
     
     /// Limpia contextos inactivos
     pub async fn cleanup_inactive_contexts(&self, params: CleanupParams) -> Result<Value> {
-        let cleaned = self.system.cleanup_inactive(params.max_age_seconds).await?;
+        let cleaned: usize = self.system.cleanup_inactive(params.max_age_seconds).await?;
         
         Ok(serde_json::json!({
             "success": true,

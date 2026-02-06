@@ -7,6 +7,7 @@
 
 pub mod analyzer;
 pub mod auto_manager; // Sistema de auto-gestión MCP 2026
+pub mod cli; // CLI stub para JAR
 pub mod config;
 pub mod error;
 pub mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)

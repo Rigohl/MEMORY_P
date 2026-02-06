@@ -3,20 +3,19 @@
 //! REAL FFI IMPLEMENTATION using Julia C API
 
 use super::error::{FfiError, Result};
-use std::os::raw::{c_double, c_int};
 
 // Julia FFI functions
 #[cfg(feature = "ffi-julia")]
 #[link(name = "julia_ffi", kind = "dylib")]
 extern "C" {
-    fn julia_init() -> c_int;
-    fn julia_shutdown() -> c_int;
+    fn julia_init() -> std::ffi::c_int;
+    fn julia_shutdown() -> std::ffi::c_int;
     fn julia_optimize_weights_ffi(
-        data: *const c_double,
-        len: c_int,
-        result: *mut c_double,
-    ) -> c_int;
-    fn julia_chaos_analysis_ffi(data: *const c_double, len: c_int) -> c_double;
+        data: *const std::ffi::c_double,
+        len: std::ffi::c_int,
+        result: *mut std::ffi::c_double,
+    ) -> std::ffi::c_int;
+    fn julia_chaos_analysis_ffi(data: *const std::ffi::c_double, len: std::ffi::c_int) -> std::ffi::c_double;
 }
 
 /// Inicializa el runtime de Julia

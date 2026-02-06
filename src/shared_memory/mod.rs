@@ -19,7 +19,7 @@ pub mod cleanup;
 pub mod engine_integration;
 
 pub use types::{
-    SharedContext, AgentContext, ContextMetadata, 
+    SharedContext, ContextMetadata, 
     ContextId, AgentId, MemoryStats
 };
 pub use buffer::SharedMemoryBuffer;

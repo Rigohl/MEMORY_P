@@ -86,7 +86,7 @@ async fn http_server_mode() -> crate::error::Result<()> {
     }
     
     // 3. Iniciar sistema de memoria compartida
-    let shared_memory = Arc::new(shared_memory::SharedMemory::new());
+    let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new());
     tracing::info!("🧠 Sistema de memoria compartida inicializado");
     
     // 4. Iniciar motor de predicción
@@ -95,11 +95,11 @@ async fn http_server_mode() -> crate::error::Result<()> {
     ));
     tracing::info!("🔮 Motor de predicción inicializado");
     
-    // 5. Iniciar tarea de limpieza de memoria en background
-    let memory_clone = shared_memory.clone();
-    tokio::spawn(async move {
-        shared_memory::start_cleanup_task(memory_clone, 300).await; // Cada 5 minutos
-    });
+    // 5. Iniciar tarea de limpieza de memoria en background (deshabilitada)
+    // let memory_clone = shared_memory.clone();
+    // tokio::spawn(async move {
+    //     // shared_memory::start_cleanup_task(memory_clone, 300).await; // Cada 5 minutos
+    // });
     
     tracing::info!("✅ Sistema auto-gestionado activo");
     tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");

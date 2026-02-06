@@ -17,7 +17,7 @@ use dashmap::DashMap;
 use tracing::{debug, info, warn};
 
 use crate::ffi;
-use crate::error::{Error, Result};
+use crate::error::{MemoryPError, Result};
 
 /// Tipo de predicción
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -411,8 +411,10 @@ impl PredictionEngine {
         history.push(result);
         
         // Limitar tamaño del historial
-        if history.len() > self.config.max_history_entries {
-            history.drain(0..history.len() - self.config.max_history_entries);
+        let max_entries = self.config.max_history_entries;
+        if history.len() > max_entries {
+            let remove_count = history.len() - max_entries;
+            history.drain(0..remove_count);
         }
         
         debug!("📝 Resultado registrado para acción: {}", action_type);
