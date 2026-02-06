@@ -45,12 +45,12 @@
 //! bridge::shutdown();
 //! ```
 
-use std::os::raw::{c_int};
+use std::os::raw::c_int;
 
 pub mod bridge;
 pub mod error;
-pub mod julia;
 pub mod jax;
+pub mod julia;
 pub mod mojo;
 pub mod pony;
 
@@ -108,4 +108,3 @@ mod tests {
         shutdown();
     }
 }
-

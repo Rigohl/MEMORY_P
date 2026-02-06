@@ -33,7 +33,7 @@ impl PredictiveNodes {
 
     pub async fn start(&self) -> Result<()> {
         info!("🧠 Iniciando Predictive Nodes...");
-        
+
         let mut running = self.running.write().await;
         if *running {
             warn!("Predictive Nodes ya está ejecutándose");
@@ -51,10 +51,10 @@ impl PredictiveNodes {
 
     pub async fn stop(&self) -> Result<()> {
         info!("🛑 Deteniendo Predictive Nodes...");
-        
+
         let mut running = self.running.write().await;
         *running = false;
-        
+
         info!("✅ Predictive Nodes detenido");
         Ok(())
     }
@@ -78,10 +78,10 @@ impl PredictiveNodes {
                         .iter()
                         .filter(|e| e.value().confidence > 0.7)
                         .count();
-                    
+
                     let rate = successful as f64 / total as f64;
                     *success_rate.write().await = rate;
-                    
+
                     info!("📊 Tasa de éxito predictiva: {:.2}%", rate * 100.0);
                 }
 
@@ -94,7 +94,10 @@ impl PredictiveNodes {
     pub async fn predict_and_search(&self, query: &str) -> Result<Vec<String>> {
         // Verificar si hay predicción previa
         if let Some(prediction) = self.predictions.get(query) {
-            info!("🔮 Usando predicción para: {} -> {}", query, prediction.corrected_query);
+            info!(
+                "🔮 Usando predicción para: {} -> {}",
+                query, prediction.corrected_query
+            );
             return self.execute_search(&prediction.corrected_query).await;
         }
 
@@ -111,7 +114,7 @@ impl PredictiveNodes {
 
         for corrected in corrections {
             info!("🔄 Intentando con: {}", corrected);
-            
+
             match self.execute_search(&corrected).await {
                 Ok(results) if !results.is_empty() => {
                     // Guardar predicción exitosa
@@ -123,7 +126,7 @@ impl PredictiveNodes {
                             confidence: 0.8,
                         },
                     );
-                    
+
                     info!("✅ Auto-corrección exitosa: {} -> {}", query, corrected);
                     return Ok(results);
                 }
@@ -131,9 +134,10 @@ impl PredictiveNodes {
             }
         }
 
-        Err(MemoryPError::Other(
-            format!("No se pudo auto-corregir búsqueda: {}", query)
-        ))
+        Err(MemoryPError::Other(format!(
+            "No se pudo auto-corregir búsqueda: {}",
+            query
+        )))
     }
 
     /// Genera correcciones predictivas
@@ -151,7 +155,7 @@ impl PredictiveNodes {
             query
                 .chars()
                 .filter(|c| c.is_alphanumeric() || c.is_whitespace())
-                .collect()
+                .collect(),
         );
 
         corrections
@@ -161,7 +165,7 @@ impl PredictiveNodes {
     async fn execute_search(&self, query: &str) -> Result<Vec<String>> {
         // En implementación real: buscar en índices reales
         info!("🔍 Ejecutando búsqueda: {}", query);
-        
+
         // Simular resultados
         Ok(vec![
             format!("resultado_1_{}", query),
