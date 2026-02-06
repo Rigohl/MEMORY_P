@@ -11,6 +11,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use chrono::Utc;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -62,7 +63,8 @@ pub async fn kpi_dashboard_handler(
     let dashboard = kpi_tracker.get_dashboard();
     
     Json(json!({
-        "timestamp": dashboard.timestamp.elapsed().as_secs(),
+        "timestamp": dashboard.timestamp.timestamp(),
+        "age_seconds": (Utc::now() - dashboard.timestamp).num_seconds(),
         "overall_sigma_level": dashboard.overall_sigma_level,
         "target_sigma": 4.0,
         "categories": dashboard.categories.iter().map(|cat| {
@@ -82,7 +84,7 @@ pub async fn kpi_dashboard_handler(
                 "severity": format!("{:?}", alert.severity),
                 "category": format!("{:?}", alert.category),
                 "message": alert.message,
-                "age_seconds": alert.timestamp.elapsed().as_secs()
+                "age_seconds": (Utc::now() - alert.timestamp).num_seconds()
             })
         }).collect::<Vec<_>>(),
         "methodology": "Six Sigma DMAIC",
@@ -123,7 +125,7 @@ pub async fn kpi_record_handler(
         target,
         upper_spec_limit: usl,
         lower_spec_limit: lsl,
-        timestamp: Instant::now(),
+        timestamp: Utc::now(),
         unit,
     };
     
