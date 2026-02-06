@@ -42,13 +42,13 @@ impl Default for HealthInfo {
 pub struct AutoManager {
     /// Estado de salud de motores de búsqueda
     engine_health: Arc<DashMap<String, HealthInfo>>,
-    
+
     /// Estado de salud de módulos FFI
     ffi_health: Arc<DashMap<String, HealthInfo>>,
-    
+
     /// Configuración
     config: ManagerConfig,
-    
+
     /// Estado de ejecución
     running: Arc<RwLock<bool>>,
 }
@@ -57,13 +57,13 @@ pub struct AutoManager {
 pub struct ManagerConfig {
     /// Intervalo de health checks (segundos)
     pub check_interval: Duration,
-    
+
     /// Máximo de errores antes de recovery
     pub max_errors: u32,
-    
+
     /// Timeout para recovery
     pub recovery_timeout: Duration,
-    
+
     /// Auto-restart habilitado
     pub auto_restart: bool,
 }
@@ -93,7 +93,7 @@ impl AutoManager {
     /// Inicia el sistema de auto-gestión (auto-ejecutado en startup)
     pub async fn auto_start(&self) -> Result<()> {
         info!("🚀 Iniciando AutoManager - MCP Protocol 2026");
-        
+
         let mut running = self.running.write().await;
         if *running {
             warn!("AutoManager ya está ejecutándose");
@@ -104,16 +104,16 @@ impl AutoManager {
 
         // 1. Inicializar todos los módulos FFI automáticamente
         self.auto_init_ffi().await?;
-        
+
         // 2. Inicializar motores de búsqueda automáticamente
         self.auto_init_engines().await?;
-        
+
         // 3. Iniciar health checks en background
         self.start_health_monitor().await;
-        
+
         // 4. Iniciar auto-recovery en background
         self.start_auto_recovery().await;
-        
+
         info!("✅ AutoManager iniciado - Sistema Always-On activo");
         Ok(())
     }
@@ -121,14 +121,15 @@ impl AutoManager {
     /// Auto-inicializa todos los módulos FFI
     async fn auto_init_ffi(&self) -> Result<()> {
         info!("🔧 Auto-inicializando módulos FFI...");
-        
+
         let ffi_modules = vec!["julia", "jax", "mojo", "pony", "zig"];
-        
+
         for module in ffi_modules {
             match self.init_ffi_module(module).await {
                 Ok(_) => {
                     info!("  ✅ FFI {}: inicializado", module);
-                    self.ffi_health.insert(module.to_string(), HealthInfo::default());
+                    self.ffi_health
+                        .insert(module.to_string(), HealthInfo::default());
                 }
                 Err(e) => {
                     warn!("  ⚠️  FFI {}: error - {} (continuando...)", module, e);
@@ -139,7 +140,7 @@ impl AutoManager {
                 }
             }
         }
-        
+
         Ok(())
     }
 
@@ -161,14 +162,17 @@ impl AutoManager {
                     Err(MemoryPError::Other("Zig FFI init failed".into()))
                 }
             }
-            _ => Err(MemoryPError::Other(format!("Unknown FFI module: {}", module))),
+            _ => Err(MemoryPError::Other(format!(
+                "Unknown FFI module: {}",
+                module
+            ))),
         }
     }
 
     /// Auto-inicializa motores de búsqueda
     async fn auto_init_engines(&self) -> Result<()> {
         info!("🔍 Auto-inicializando motores de búsqueda...");
-        
+
         let engines = vec![
             "qdrant",
             "faiss",
@@ -180,13 +184,14 @@ impl AutoManager {
             "julia_nlp",
             "memory_bank",
         ];
-        
+
         for engine in engines {
             // En una implementación real, aquí inicializaríamos cada motor
             info!("  ✅ Motor {}: listo", engine);
-            self.engine_health.insert(engine.to_string(), HealthInfo::default());
+            self.engine_health
+                .insert(engine.to_string(), HealthInfo::default());
         }
-        
+
         Ok(())
     }
 
@@ -199,7 +204,7 @@ impl AutoManager {
 
         tokio::spawn(async move {
             info!("❤️  Health monitor iniciado (cada {:?})", check_interval);
-            
+
             loop {
                 // Verificar si aún estamos ejecutando
                 if !*running.read().await {
@@ -209,10 +214,10 @@ impl AutoManager {
                 // Check engines
                 for mut entry in engine_health.iter_mut() {
                     let (name, health) = entry.pair_mut();
-                    
+
                     // Simular health check
                     let is_healthy = true; // En implementación real: engine.health_check().await
-                    
+
                     if is_healthy {
                         health.status = HealthStatus::Healthy;
                         health.error_count = 0;
@@ -223,19 +228,22 @@ impl AutoManager {
                         } else {
                             HealthStatus::Degraded
                         };
-                        warn!("⚠️  Motor {} degradado (errores: {})", name, health.error_count);
+                        warn!(
+                            "⚠️  Motor {} degradado (errores: {})",
+                            name, health.error_count
+                        );
                     }
-                    
+
                     health.last_check = Instant::now();
                 }
 
                 // Check FFI modules
                 for mut entry in ffi_health.iter_mut() {
                     let (name, health) = entry.pair_mut();
-                    
+
                     // Simular FFI health check
                     let is_healthy = true; // En implementación real: ffi::check_module(name)
-                    
+
                     if is_healthy {
                         health.status = HealthStatus::Healthy;
                         health.error_count = 0;
@@ -246,15 +254,18 @@ impl AutoManager {
                         } else {
                             HealthStatus::Degraded
                         };
-                        warn!("⚠️  FFI {} degradado (errores: {})", name, health.error_count);
+                        warn!(
+                            "⚠️  FFI {} degradado (errores: {})",
+                            name, health.error_count
+                        );
                     }
-                    
+
                     health.last_check = Instant::now();
                 }
 
                 tokio::time::sleep(check_interval).await;
             }
-            
+
             info!("❤️  Health monitor detenido");
         });
     }
@@ -272,7 +283,7 @@ impl AutoManager {
 
         tokio::spawn(async move {
             info!("🔄 Auto-recovery iniciado");
-            
+
             loop {
                 if !*running.read().await {
                     break;
@@ -289,18 +300,18 @@ impl AutoManager {
                         }
                     })
                     .collect();
-                
+
                 for name in engine_names {
                     info!("🔄 Auto-recovery: reiniciando motor {}", name);
-                    
+
                     // Marcar como recovering
                     if let Some(mut health) = engine_health.get_mut(&name) {
                         health.status = HealthStatus::Recovering;
                     }
-                    
+
                     // Simular recovery
                     tokio::time::sleep(recovery_timeout).await;
-                    
+
                     // Marcar como healthy
                     if let Some(mut health) = engine_health.get_mut(&name) {
                         health.status = HealthStatus::Healthy;
@@ -320,17 +331,17 @@ impl AutoManager {
                         }
                     })
                     .collect();
-                
+
                 for name in ffi_names {
                     info!("🔄 Auto-recovery: reiniciando FFI {}", name);
-                    
+
                     if let Some(mut health) = ffi_health.get_mut(&name) {
                         health.status = HealthStatus::Recovering;
                     }
-                    
+
                     // Simular recovery
                     tokio::time::sleep(recovery_timeout).await;
-                    
+
                     if let Some(mut health) = ffi_health.get_mut(&name) {
                         health.status = HealthStatus::Healthy;
                         health.error_count = 0;
@@ -340,7 +351,7 @@ impl AutoManager {
 
                 tokio::time::sleep(Duration::from_secs(10)).await;
             }
-            
+
             info!("🔄 Auto-recovery detenido");
         });
     }
@@ -350,10 +361,10 @@ impl AutoManager {
         info!("🛑 Deteniendo AutoManager...");
         let mut running = self.running.write().await;
         *running = false;
-        
+
         // Shutdown FFI modules
         ffi::shutdown();
-        
+
         info!("✅ AutoManager detenido");
     }
 
@@ -442,37 +453,41 @@ impl AutoManager {
             }
         })
     }
-    
+
     /// Reporta métricas de salud a GitHub Actions (para integración CI/CD)
     pub fn export_github_metrics(&self) -> String {
         let overall = self.get_overall_health();
-        let unhealthy_engines = self.engine_health.iter()
+        let unhealthy_engines = self
+            .engine_health
+            .iter()
             .filter(|e| e.value().status == HealthStatus::Unhealthy)
             .count();
-        let unhealthy_ffi = self.ffi_health.iter()
+        let unhealthy_ffi = self
+            .ffi_health
+            .iter()
             .filter(|e| e.value().status == HealthStatus::Unhealthy)
             .count();
-        
+
         format!(
             "OVERALL_HEALTH={:?}\nUNHEALTHY_ENGINES={}\nUNHEALTHY_FFI={}\nAUTO_MANAGED=true\n",
             overall, unhealthy_engines, unhealthy_ffi
         )
     }
-    
+
     /// Verifica si el sistema está listo para auto-push
     pub fn is_ready_for_auto_push(&self) -> bool {
         let overall = self.get_overall_health();
         matches!(overall, HealthStatus::Healthy | HealthStatus::Degraded)
     }
-    
+
     /// Genera reporte para workflow de recuperación
     pub fn generate_recovery_report(&self) -> String {
         let overall = self.get_overall_health();
         let mut report = String::new();
-        
+
         report.push_str(&format!("## Auto-Manager Health Report\n\n"));
         report.push_str(&format!("**Overall Status**: {:?}\n\n", overall));
-        
+
         report.push_str("### Search Engines\n");
         for entry in self.engine_health.iter() {
             let (name, health) = entry.pair();
@@ -487,7 +502,7 @@ impl AutoManager {
                 emoji, name, health.status, health.error_count
             ));
         }
-        
+
         report.push_str("\n### FFI Modules\n");
         for entry in self.ffi_health.iter() {
             let (name, health) = entry.pair();
@@ -502,7 +517,7 @@ impl AutoManager {
                 emoji, name, health.status, health.error_count
             ));
         }
-        
+
         report
     }
 }
