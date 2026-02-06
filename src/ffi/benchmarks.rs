@@ -377,11 +377,7 @@ mod tests {
             let result = bridge::dispatch_fast(Language::Zig, "test", &mut data);
 
             #[cfg(feature = "ffi-zig")]
-            assert!(
-                result.is_ok(),
-                "FFI call should succeed for size: {}",
-                name
-            );
+            assert!(result.is_ok(), "FFI call should succeed for size: {}", name);
 
             #[cfg(not(feature = "ffi-zig"))]
             assert!(result.is_err(), "FFI should fail without feature");
@@ -473,11 +469,7 @@ mod tests {
         }
 
         let avg_ns = total_ns / iterations as u128;
-        println!(
-            "   Average: {}ns ({:.2}µs)",
-            avg_ns,
-            avg_ns as f64 / 1000.0
-        );
+        println!("   Average: {}ns ({:.2}µs)", avg_ns, avg_ns as f64 / 1000.0);
         println!("   Min:     {}ns ({:.2}µs)", min_ns, min_ns as f64 / 1000.0);
         println!("   Max:     {}ns ({:.2}µs)", max_ns, max_ns as f64 / 1000.0);
 
@@ -498,11 +490,7 @@ mod tests {
             let elapsed = start.elapsed();
 
             let successful = results.iter().filter(|r| r.is_ok()).count();
-            println!(
-                "   Processed: {}/{} successful",
-                successful,
-                requests.len()
-            );
+            println!("   Processed: {}/{} successful", successful, requests.len());
             println!("   Total time: {:?}", elapsed);
             println!(
                 "   Per request: {:.2}µs",
