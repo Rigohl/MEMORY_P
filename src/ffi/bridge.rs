@@ -1,103 +1,26 @@
-//! ffi/bridge.rs - Ultra-Low-Latency Zig FFI Bridge (<1µs target)
-//!
-//! Optimizaciones implementadas:
-//! - Zero-copy data transfer usando slices directas
-//! - Stack allocation para llamadas pequeñas (<64 elementos)
-//! - Dispatch sin allocations usando enums
-//! - Inline hints agresivos para hot path
-//! - Memory-mapped shared buffer pool
-//! - Lock-free ring buffer para batch calls
+//! ffi/bridge.rs - Zig FFI Bridge Integration
 
 use super::error::{FfiError, Result};
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::time::Instant;
+use std::ffi::CString;
 
-/// Límite para usar stack allocation vs heap
-const STACK_ALLOC_THRESHOLD: usize = 64;
-
-/// Performance metrics globales
-static CALL_COUNT: AtomicU64 = AtomicU64::new(0);
-static TOTAL_LATENCY_NS: AtomicU64 = AtomicU64::new(0);
-
-/// Enum de lenguajes FFI (compatible con Zig)
-#[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Language {
-    Julia = 0,
-    Jax = 1,
-    Mojo = 2,
-    Pony = 3,
-    Zig = 4,
-}
-
-/// Estructura FFI zero-copy para vectores (compatible con Zig)
+/// Estructura de información del buffer desde Zig
 #[repr(C)]
 #[derive(Debug)]
-pub struct FfiVec {
-    data: *mut f64,
-    len: usize,
-    cap: usize,
-}
-
-impl FfiVec {
-    /// Crea FfiVec desde slice sin copiar (zero-copy)
-    #[inline(always)]
-    pub fn from_slice_mut(slice: &mut [f64]) -> Self {
-        Self {
-            data: slice.as_mut_ptr(),
-            len: slice.len(),
-            cap: slice.len(),
-        }
-    }
-
-    /// Crea FfiVec vacío (para outputs)
-    #[inline(always)]
-    pub const fn empty() -> Self {
-        Self {
-            data: std::ptr::null_mut(),
-            len: 0,
-            cap: 0,
-        }
-    }
-
-    /// Convierte a slice (solo si es válido)
-    #[inline(always)]
-    pub unsafe fn as_slice(&self) -> Option<&[f64]> {
-        if self.data.is_null() || self.len == 0 {
-            None
-        } else {
-            Some(std::slice::from_raw_parts(self.data, self.len))
-        }
-    }
-}
-
-/// Resultado de operación FFI
-#[repr(C)]
-pub struct FfiResult {
-    success: bool,
-    data: FfiVec,
-    error_msg: *const u8,
-}
-
-impl Drop for FfiResult {
-    fn drop(&mut self) {
-        #[cfg(feature = "ffi-zig")]
-        {
-            if self.success && !self.data.data.is_null() {
-                unsafe {
-                    ffi_free_result(self as *mut FfiResult);
-                }
-            }
-        }
-    }
+pub struct BufferInfo {
+    pub capacity: usize,
+    pub used: usize,
+    pub available: usize,
+    pub ref_count: u32,
+    pub initialized: bool,
 }
 
 /// Inicializa el Zig FFI bridge
-#[inline]
 pub fn init() -> bool {
     #[cfg(feature = "ffi-zig")]
     {
-        unsafe { ffi_init() }
+        unsafe {
+            ffi_init()
+        }
     }
 
     #[cfg(not(feature = "ffi-zig"))]
@@ -108,7 +31,6 @@ pub fn init() -> bool {
 }
 
 /// Finaliza el Zig FFI bridge
-#[inline]
 pub fn shutdown() {
     #[cfg(feature = "ffi-zig")]
     {
@@ -116,125 +38,94 @@ pub fn shutdown() {
             ffi_shutdown();
         }
     }
-
-    // Log performance metrics
-    let calls = CALL_COUNT.load(Ordering::Relaxed);
-    let total_ns = TOTAL_LATENCY_NS.load(Ordering::Relaxed);
-    if calls > 0 {
-        let avg_ns = total_ns / calls;
-        tracing::info!(
-            "📊 FFI Performance: {} calls, avg latency {}ns ({:.2}µs)",
-            calls,
-            avg_ns,
-            avg_ns as f64 / 1000.0
-        );
-    }
 }
 
-/// Dispatch ultra-rápido a Zig FFI
-///
-/// OPTIMIZACIONES:
-/// - Usa stack allocation para arrays pequeños
-/// - Zero-copy cuando es posible
-/// - Inline aggressive para eliminar call overhead
-/// - Mide latencia automáticamente
-#[inline]
-pub fn dispatch_fast(lang: Language, operation: &str, input: &mut [f64]) -> Result<Vec<f64>> {
-    let start = Instant::now();
-
-    #[cfg(feature = "ffi-zig")]
-    {
-        // Zero-copy input vector
-        let ffi_input = FfiVec::from_slice_mut(input);
-
-        // Convert operation to C string (stack-allocated para strings cortas)
-        let op_cstr = std::ffi::CString::new(operation)
-            .map_err(|_| FfiError::CallFailed("Invalid operation string".to_string()))?;
-
-        // Call FFI (hot path - inline!)
-        let result = unsafe { ffi_dispatch(lang, op_cstr.as_ptr(), ffi_input) };
-
-        // Medir latencia
-        let elapsed_ns = start.elapsed().as_nanos() as u64;
-        CALL_COUNT.fetch_add(1, Ordering::Relaxed);
-        TOTAL_LATENCY_NS.fetch_add(elapsed_ns, Ordering::Relaxed);
-
-        if result.success {
-            // Convertir resultado (evitar copy si es posible)
-            let output = unsafe {
-                if let Some(slice) = result.data.as_slice() {
-                    Vec::from(slice)
-                } else {
-                    Vec::new()
-                }
-            };
-
-            Ok(output)
+/// Crea un nuevo buffer de memoria compartida
+#[cfg(feature = "ffi-zig")]
+pub fn create_shared_buffer(capacity: usize) -> Option<*mut std::ffi::c_void> {
+    unsafe {
+        let ptr = shared_memory_buffer_new(capacity);
+        if ptr.is_null() {
+            None
         } else {
-            let err_msg = if result.error_msg.is_null() {
-                "Unknown FFI error".to_string()
-            } else {
-                unsafe {
-                    let c_str = std::ffi::CStr::from_ptr(result.error_msg as *const i8);
-                    c_str.to_string_lossy().into_owned()
-                }
-            };
-            Err(FfiError::CallFailed(err_msg))
+            Some(ptr)
         }
     }
+}
 
-    #[cfg(not(feature = "ffi-zig"))]
-    {
-        Err(FfiError::NotAvailable(
-            "Zig FFI not compiled".to_string(),
-        ))
+#[cfg(not(feature = "ffi-zig"))]
+pub fn create_shared_buffer(_capacity: usize) -> Option<*mut std::ffi::c_void> {
+    None
+}
+
+/// Escribe datos al buffer compartido
+#[cfg(feature = "ffi-zig")]
+pub fn write_to_buffer(buffer: *mut std::ffi::c_void, data: &[u8]) -> Result<usize> {
+    unsafe {
+        let written = shared_memory_buffer_write(buffer, data.as_ptr(), data.len());
+        if written < 0 {
+            Err(FfiError::ZigError(format!("Error escribiendo al buffer: {}", written)))
+        } else {
+            Ok(written as usize)
+        }
     }
 }
 
-/// Batch dispatch para procesar múltiples operaciones en paralelo
-/// Usa Rayon para paralelizar llamadas FFI
-pub fn dispatch_batch(
-    requests: &[(Language, &str, Vec<f64>)],
-) -> Vec<Result<Vec<f64>>> {
-    #[cfg(feature = "ffi-zig")]
-    {
-        use rayon::prelude::*;
+#[cfg(not(feature = "ffi-zig"))]
+pub fn write_to_buffer(_buffer: *mut std::ffi::c_void, _data: &[u8]) -> Result<usize> {
+    Err(FfiError::ZigError("Zig FFI no disponible".to_string()))
+}
 
-        requests
-            .par_iter()
-            .map(|(lang, op, mut data)| dispatch_fast(*lang, op, &mut data))
-            .collect()
-    }
-
-    #[cfg(not(feature = "ffi-zig"))]
-    {
-        requests
-            .iter()
-            .map(|_| {
-                Err(FfiError::NotAvailable(
-                    "Zig FFI not compiled".to_string(),
-                ))
-            })
-            .collect()
+/// Lee datos del buffer compartido
+#[cfg(feature = "ffi-zig")]
+pub fn read_from_buffer(buffer: *const std::ffi::c_void, offset: usize, len: usize) -> Result<Vec<u8>> {
+    unsafe {
+        let mut buf = vec![0u8; len];
+        let read = shared_memory_buffer_read(buffer, offset, buf.as_mut_ptr(), len);
+        if read < 0 {
+            Err(FfiError::ZigError(format!("Error leyendo del buffer: {}", read)))
+        } else {
+            buf.truncate(read as usize);
+            Ok(buf)
+        }
     }
 }
 
-/// Obtiene métricas de performance del bridge
-pub fn get_metrics() -> (u64, f64) {
-    let calls = CALL_COUNT.load(Ordering::Relaxed);
-    let total_ns = TOTAL_LATENCY_NS.load(Ordering::Relaxed);
-    let avg_us = if calls > 0 {
-        (total_ns as f64 / calls as f64) / 1000.0
-    } else {
-        0.0
-    };
-    (calls, avg_us)
+#[cfg(not(feature = "ffi-zig"))]
+pub fn read_from_buffer(_buffer: *const std::ffi::c_void, _offset: usize, _len: usize) -> Result<Vec<u8>> {
+    Err(FfiError::ZigError("Zig FFI no disponible".to_string()))
 }
 
-/// Reset métricas
-pub fn reset_metrics() {
-    CALL_COUNT.store(0, Ordering::Relaxed);
-    TOTAL_LATENCY_NS.store(0, Ordering::Relaxed);
+/// Obtiene información del buffer
+#[cfg(feature = "ffi-zig")]
+pub fn get_buffer_info(buffer: *const std::ffi::c_void) -> BufferInfo {
+    unsafe {
+        shared_memory_buffer_info(buffer)
+    }
+}
+
+#[cfg(not(feature = "ffi-zig"))]
+pub fn get_buffer_info(_buffer: *const std::ffi::c_void) -> BufferInfo {
+    BufferInfo {
+        capacity: 0,
+        used: 0,
+        available: 0,
+        ref_count: 0,
+        initialized: false,
+    }
+}
+
+/// Libera el buffer compartido
+#[cfg(feature = "ffi-zig")]
+pub fn free_shared_buffer(buffer: *mut std::ffi::c_void) {
+    unsafe {
+        shared_memory_buffer_free(buffer);
+    }
+}
+
+#[cfg(not(feature = "ffi-zig"))]
+pub fn free_shared_buffer(_buffer: *mut std::ffi::c_void) {
+    // No-op
 }
 
 #[cfg(feature = "ffi-zig")]
@@ -242,37 +133,12 @@ pub fn reset_metrics() {
 extern "C" {
     fn ffi_init() -> bool;
     fn ffi_shutdown();
-    fn ffi_dispatch(lang: Language, operation: *const i8, input: FfiVec) -> FfiResult;
-    fn ffi_free_result(result: *mut FfiResult);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_ffi_vec_zero_copy() {
-        let mut data = vec![1.0, 2.0, 3.0];
-        let ffi_vec = FfiVec::from_slice_mut(&mut data);
-        
-        assert_eq!(ffi_vec.len, 3);
-        assert!(!ffi_vec.data.is_null());
-        
-        // Verificar que apunta a la misma memoria
-        unsafe {
-            let slice = ffi_vec.as_slice().unwrap();
-            assert_eq!(slice[0], 1.0);
-        }
-    }
-
-    #[test]
-    fn test_metrics() {
-        reset_metrics();
-        CALL_COUNT.store(100, Ordering::Relaxed);
-        TOTAL_LATENCY_NS.store(50_000, Ordering::Relaxed); // 50µs total
-        
-        let (calls, avg_us) = get_metrics();
-        assert_eq!(calls, 100);
-        assert!((avg_us - 0.5).abs() < 0.01); // ~0.5µs promedio
-    }
+    
+    // Shared memory buffer functions
+    fn shared_memory_buffer_new(capacity: usize) -> *mut std::ffi::c_void;
+    fn shared_memory_buffer_write(buffer: *mut std::ffi::c_void, data: *const u8, len: usize) -> isize;
+    fn shared_memory_buffer_read(buffer: *const std::ffi::c_void, offset: usize, dest: *mut u8, len: usize) -> isize;
+    fn shared_memory_buffer_info(buffer: *const std::ffi::c_void) -> BufferInfo;
+    fn shared_memory_buffer_clear(buffer: *mut std::ffi::c_void);
+    fn shared_memory_buffer_free(buffer: *mut std::ffi::c_void);
 }
