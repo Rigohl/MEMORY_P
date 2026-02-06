@@ -1,5 +1,5 @@
 //! ffi/julia.rs - Julia Mathematical Core Integration
-//! 
+//!
 //! REAL FFI IMPLEMENTATION using Julia C API
 
 use super::error::{FfiError, Result};
@@ -15,7 +15,10 @@ extern "C" {
         len: std::ffi::c_int,
         result: *mut std::ffi::c_double,
     ) -> std::ffi::c_int;
-    fn julia_chaos_analysis_ffi(data: *const std::ffi::c_double, len: std::ffi::c_int) -> std::ffi::c_double;
+    fn julia_chaos_analysis_ffi(
+        data: *const std::ffi::c_double,
+        len: std::ffi::c_int,
+    ) -> std::ffi::c_double;
 }
 
 /// Inicializa el runtime de Julia
@@ -23,7 +26,7 @@ pub fn init() -> Result<()> {
     #[cfg(feature = "ffi-julia")]
     {
         tracing::info!("🧮 Inicializando Julia mathematical core");
-        
+
         unsafe {
             let ret = julia_init();
             if ret == 0 {
@@ -56,7 +59,7 @@ pub fn shutdown() {
 }
 
 /// Optimiza pesos de búsqueda híbrida usando Julia
-/// 
+///
 /// REAL IMPLEMENTATION: Usa Optim.jl via FFI
 pub fn optimize_weights(weights: &[f64]) -> Result<Vec<f64>> {
     #[cfg(feature = "ffi-julia")]
@@ -64,19 +67,19 @@ pub fn optimize_weights(weights: &[f64]) -> Result<Vec<f64>> {
         if weights.is_empty() {
             return Err(FfiError::CallFailed("Empty weights array".to_string()));
         }
-        
+
         tracing::debug!("Optimizando pesos con Julia: {:?}", weights);
-        
+
         // Pre-allocate result buffer
         let mut result = vec![0.0; weights.len()];
-        
+
         unsafe {
             let ret = julia_optimize_weights_ffi(
                 weights.as_ptr(),
                 weights.len() as c_int,
                 result.as_mut_ptr(),
             );
-            
+
             if ret == 0 {
                 // Normalize to ensure sum = 1.0
                 let sum: f64 = result.iter().sum();
@@ -85,7 +88,7 @@ pub fn optimize_weights(weights: &[f64]) -> Result<Vec<f64>> {
                         *w /= sum;
                     }
                 }
-                
+
                 tracing::info!("✅ Julia optimization complete: {:?}", result);
                 Ok(result)
             } else {
@@ -110,7 +113,7 @@ pub fn optimize_weights(weights: &[f64]) -> Result<Vec<f64>> {
 }
 
 /// Analiza complejidad caótica de una serie temporal
-/// 
+///
 /// REAL IMPLEMENTATION: Usa ChaosTools.jl via FFI
 pub fn chaos_analysis(data: &[f64]) -> Result<f64> {
     #[cfg(feature = "ffi-julia")]
@@ -118,12 +121,12 @@ pub fn chaos_analysis(data: &[f64]) -> Result<f64> {
         if data.is_empty() {
             return Err(FfiError::CallFailed("Empty data array".to_string()));
         }
-        
+
         tracing::debug!("Análisis de caos con Julia para {} puntos", data.len());
-        
+
         unsafe {
             let lyapunov = julia_chaos_analysis_ffi(data.as_ptr(), data.len() as c_int);
-            
+
             if lyapunov.is_nan() {
                 Err(FfiError::JuliaException(
                     "Julia chaos_analysis_ffi failed".to_string(),
@@ -153,7 +156,7 @@ mod tests {
     fn test_optimize_weights() {
         let weights = vec![0.33, 0.33, 0.34];
         let result = optimize_weights(&weights);
-        
+
         if let Ok(optimal) = result {
             // Verificar que suman ~1.0
             let sum: f64 = optimal.iter().sum();
@@ -161,12 +164,12 @@ mod tests {
             assert_eq!(optimal.len(), weights.len());
         }
     }
-    
+
     #[test]
     fn test_chaos_analysis() {
         let data: Vec<f64> = (0..100).map(|x| (x as f64 * 0.1).sin()).collect();
         let result = chaos_analysis(&data);
-        
+
         if let Ok(lyapunov) = result {
             // Sinusoide pura debería tener Lyapunov ~0
             assert!(lyapunov >= 0.0);

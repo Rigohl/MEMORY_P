@@ -4,11 +4,11 @@
 //! con soporte para múltiples modelos y cache en Redis.
 
 use super::error::{FfiError, Result};
+use dashmap::DashMap;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use dashmap::DashMap;
 
 lazy_static! {
     /// Cache global de embeddings en memoria (fallback si Redis no disponible)
@@ -134,7 +134,7 @@ impl EmbeddingGenerator {
 
         // Dividir en batches según batch_size
         let batches: Vec<&[String]> = texts.chunks(self.config.batch_size).collect();
-        
+
         let mut all_embeddings = Vec::with_capacity(texts.len());
 
         for batch in batches {
@@ -161,12 +161,12 @@ impl EmbeddingGenerator {
                 self.config.model.model_name(),
                 text
             );
-            
+
             // TODO: Llamada real a JAX/HuggingFace via Python C API
             // Por ahora: stub con vector normalizado pseudo-aleatorio
             let dim = self.config.model.dimension();
             let embedding = self.generate_stub_embedding(text, dim);
-            
+
             Ok(embedding)
         }
 
@@ -188,7 +188,7 @@ impl EmbeddingGenerator {
         // Generar vector pseudo-aleatorio determinístico
         let mut embedding = Vec::with_capacity(dim);
         let mut state = seed;
-        
+
         for _ in 0..dim {
             state = state.wrapping_mul(1103515245).wrapping_add(12345);
             let val = ((state / 65536) % 32768) as f32 / 32768.0 - 0.5;
@@ -214,7 +214,11 @@ impl EmbeddingGenerator {
         let mut hasher = DefaultHasher::new();
         self.config.model.model_name().hash(&mut hasher);
         text.hash(&mut hasher);
-        format!("emb:{}:{:x}", self.config.model.model_name(), hasher.finish())
+        format!(
+            "emb:{}:{:x}",
+            self.config.model.model_name(),
+            hasher.finish()
+        )
     }
 
     /// Obtiene embedding del cache (memoria)
@@ -284,18 +288,20 @@ pub fn generate_embeddings_batch(texts: &[String]) -> Result<Vec<Vec<f32>>> {
 /// Calcula similitud coseno entre dos vectores
 pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> Result<f32> {
     if vec1.len() != vec2.len() {
-        return Err(FfiError::CallFailed("Vector dimensions mismatch".to_string()));
+        return Err(FfiError::CallFailed(
+            "Vector dimensions mismatch".to_string(),
+        ));
     }
-    
+
     // Implementación nativa en Rust (JAX no necesario para esto)
     let dot: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
     let norm1: f32 = vec1.iter().map(|x| x * x).sum::<f32>().sqrt();
     let norm2: f32 = vec2.iter().map(|x| x * x).sum::<f32>().sqrt();
-    
+
     if norm1 < 1e-8 || norm2 < 1e-8 {
         return Ok(0.0);
     }
-    
+
     Ok(dot / (norm1 * norm2))
 }
 
@@ -317,7 +323,7 @@ mod tests {
 
         let text = "Hello world";
         let embedding = generator.generate_embedding(text).await;
-        
+
         if let Ok(emb) = embedding {
             assert_eq!(emb.len(), 384);
             // Verificar normalización
@@ -335,13 +341,13 @@ mod tests {
         let generator = EmbeddingGenerator::new(config);
 
         let text = "Test cache";
-        
+
         // Primera generación
         let emb1 = generator.generate_embedding(text).await.unwrap();
-        
+
         // Segunda generación (debería venir del cache)
         let emb2 = generator.generate_embedding(text).await.unwrap();
-        
+
         assert_eq!(emb1, emb2);
     }
 
@@ -357,7 +363,7 @@ mod tests {
         ];
 
         let embeddings = generator.generate_embeddings_batch(&texts).await.unwrap();
-        
+
         assert_eq!(embeddings.len(), 3);
         assert_eq!(embeddings[0].len(), 384);
     }
@@ -367,10 +373,10 @@ mod tests {
         let vec1 = vec![1.0, 0.0, 0.0];
         let vec2 = vec![0.0, 1.0, 0.0];
         let vec3 = vec![1.0, 0.0, 0.0];
-        
+
         let sim1 = cosine_similarity(&vec1, &vec2).unwrap();
         let sim2 = cosine_similarity(&vec1, &vec3).unwrap();
-        
+
         // Vectores ortogonales -> similitud ~0
         assert!((sim1 - 0.0).abs() < 0.01);
         // Vectores idénticos -> similitud ~1
@@ -399,9 +405,9 @@ mod tests {
     fn test_cosine_similarity() {
         let vec1 = vec![1.0, 0.0, 0.0];
         let vec2 = vec![0.0, 1.0, 0.0];
-        
+
         let result = cosine_similarity(&vec1, &vec2);
-        
+
         if let Ok(sim) = result {
             // Vectores ortogonales -> similitud ~0
             assert!((sim - 0.0).abs() < 0.01);
