@@ -64,7 +64,7 @@ pub async fn kpi_dashboard_handler(
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    
+
     Json(json!({
         "timestamp": timestamp_secs,
         "overall_sigma_level": dashboard.overall_sigma_level,
@@ -99,7 +99,7 @@ pub async fn kpi_record_handler(
     Json(payload): Json<Value>,
 ) -> Json<Value> {
     use crate::kpi_tracker::{KpiCategory, SixSigmaMetric};
-    
+
     // Parse request
     let name = payload["name"].as_str().unwrap_or("unknown").to_string();
     let value = payload["value"].as_f64().unwrap_or(0.0);
@@ -107,7 +107,7 @@ pub async fn kpi_record_handler(
     let usl = payload["upper_spec_limit"].as_f64().unwrap_or(target * 1.2);
     let lsl = payload["lower_spec_limit"].as_f64().unwrap_or(target * 0.8);
     let unit = payload["unit"].as_str().unwrap_or("").to_string();
-    
+
     let category = match payload["category"].as_str().unwrap_or("performance") {
         "quality" => KpiCategory::Quality,
         "performance" => KpiCategory::Performance,
@@ -117,7 +117,7 @@ pub async fn kpi_record_handler(
         "cost" => KpiCategory::Cost,
         _ => KpiCategory::Performance,
     };
-    
+
     let metric = SixSigmaMetric {
         name: name.clone(),
         category,
@@ -128,9 +128,9 @@ pub async fn kpi_record_handler(
         timestamp: std::time::Instant::now(),
         unit,
     };
-    
+
     kpi_tracker.record_metric(metric.clone());
-    
+
     Json(json!({
         "status": "recorded",
         "metric": name,
@@ -581,81 +581,69 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
 
                     // Phase-based mega simulation with actual execution
                     let config = crate::mega_simulator::SimConfig {
-                            phase: phase as u8,
-                            iterations,
-                            modules: arguments
-                                .get("modules")
-                                .and_then(|v| v.as_array())
-                                .map(|arr| {
-                                    arr.iter()
-                                        .filter_map(|v| v.as_str().map(String::from))
-                                        .collect()
+                        phase: phase as u8,
+                        iterations,
+                        modules: arguments
+                            .get("modules")
+                            .and_then(|v| v.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str().map(String::from))
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
+                        use_gpu,
+                        context7_enabled: true,
+                    };
+
+                    match crate::mega_simulator::run_mega_simulation(config) {
+                        Ok(result) => {
+                            // Save results to file
+                            let result_path = format!("phase{}_results.json", phase);
+                            let _ = crate::mega_simulator::save_results(
+                                &result,
+                                std::path::Path::new(&result_path),
+                            );
+
+                            let improvements_summary: Vec<String> = result
+                                .improvements
+                                .iter()
+                                .map(|i| {
+                                    format!("{}: {:.1}% improvement", i.target, i.improvement_pct)
                                 })
-                                .unwrap_or_default(),
-                            use_gpu,
-                            context7_enabled: true,
-                        };
+                                .collect();
 
-                        match crate::mega_simulator::run_mega_simulation(config) {
-                            Ok(result) => {
-                                // Save results to file
-                                let result_path = format!("phase{}_results.json", phase);
-                                let _ = crate::mega_simulator::save_results(
-                                    &result,
-                                    std::path::Path::new(&result_path),
-                                );
-
-                                let improvements_summary: Vec<String> = result
-                                    .improvements
-                                    .iter()
-                                    .map(|i| {
-                                        format!(
-                                            "{}: {:.1}% improvement",
-                                            i.target, i.improvement_pct
-                                        )
-                                    })
-                                    .collect();
-
-                                Some(json!({ "content": [{ "type": "text", "text": format!(
-                                    "🌀 Phase {} Complete!\n⏱️ {}ms | 📊 {}/{} sims\n\n📈 Improvements:\n{}",
-                                    result.phase,
-                                    result.duration_ms,
-                                    result.completed,
-                                    result.total_sims,
-                                    improvements_summary.join("\n")
-                                )}]}))
-                            }
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
-                            ),
+                            Some(json!({ "content": [{ "type": "text", "text": format!(
+                                "🌀 Phase {} Complete!\n⏱️ {}ms | 📊 {}/{} sims\n\n📈 Improvements:\n{}",
+                                result.phase,
+                                result.duration_ms,
+                                result.completed,
+                                result.total_sims,
+                                improvements_summary.join("\n")
+                            )}]}))
                         }
+                        Err(e) => Some(
+                            json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
+                        ),
+                    }
                 }
                 // === HANDLER 6: map_search (Vector Search) - DISABLED ===
                 // Comentado: Requiere motores module que aún no está disponible
-                "map_search" => {
-                    
-                    Some(json!({
-                        "content": [{ "type": "text", "text": "Vector search not yet implemented" }]
-                    }))
-                }
+                "map_search" => Some(json!({
+                    "content": [{ "type": "text", "text": "Vector search not yet implemented" }]
+                })),
                 // === HANDLER 7: index_documents - DISABLED ===
-                "index_documents" => {
-                    Some(json!({
-                        "content": [{ "type": "text", "text": "Document indexing not yet implemented" }]
-                    }))
-                }
+                "index_documents" => Some(json!({
+                    "content": [{ "type": "text", "text": "Document indexing not yet implemented" }]
+                })),
                 // === HANDLER 8: similar_docs - DISABLED ===
-                "similar_docs" => {
-                    Some(json!({
-                        "content": [{ "type": "text", "text": "Similar docs search not yet implemented" }]
-                    }))
-                }
+                "similar_docs" => Some(json!({
+                    "content": [{ "type": "text", "text": "Similar docs search not yet implemented" }]
+                })),
                 // === HANDLER 9: vector_stats - DISABLED ===
-                "vector_stats" => {
-                    Some(json!({
-                        "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
-                    }))
-                }
+                "vector_stats" => Some(json!({
+                    "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
+                })),
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
         }

@@ -2,11 +2,11 @@
 //! Sistema avanzado de crawling con auto-gestión, validación continua y monitoreo
 
 pub mod auto_rebuild;
+pub mod deep_storage_tunnels;
 pub mod deepweb_tor;
 pub mod intelligent_storage;
-pub mod predictive_nodes;
-pub mod deep_storage_tunnels;
 pub mod metrics_exporter;
+pub mod predictive_nodes;
 
 use crate::error::{MemoryPError, Result};
 use std::sync::Arc;
@@ -27,19 +27,19 @@ pub enum CrawlerState {
 pub struct CrawlerConfig {
     /// Habilitar modo Tor para deepweb
     pub enable_tor: bool,
-    
+
     /// Habilitar almacenamiento inteligente
     pub enable_intelligent_storage: bool,
-    
+
     /// Habilitar nodos predictivos
     pub enable_predictive_nodes: bool,
-    
+
     /// Intervalo de auto-rebuild (segundos)
     pub auto_rebuild_interval: u64,
-    
+
     /// Tamaño del buffer paralelo
     pub parallel_buffer_size: usize,
-    
+
     /// Nivel de seguridad (1-5)
     pub security_level: u8,
 }
@@ -91,7 +91,7 @@ impl NuclearCrawler {
     /// Inicia el crawler con auto-gestión
     pub async fn start(&self) -> Result<()> {
         info!("🚀 Iniciando Nuclear Crawler Hybrid System");
-        
+
         let mut state = self.state.write().await;
         if *state == CrawlerState::Running {
             warn!("Nuclear Crawler ya está ejecutándose");
@@ -123,18 +123,18 @@ impl NuclearCrawler {
     /// Detiene el crawler
     pub async fn stop(&self) -> Result<()> {
         info!("🛑 Deteniendo Nuclear Crawler...");
-        
+
         let mut state = self.state.write().await;
         *state = CrawlerState::Idle;
         drop(state);
 
         // Detener componentes
         self.auto_rebuild.stop().await?;
-        
+
         if let Some(tor) = &self.deepweb_tor {
             tor.stop().await?;
         }
-        
+
         self.intelligent_storage.stop().await?;
         self.predictive_nodes.stop().await?;
 
@@ -168,16 +168,20 @@ impl NuclearCrawler {
     pub fn get_stats(&self) -> serde_json::Value {
         // Actualizar métricas antes de exportar
         let state_str = format!("{:?}", *self.state.blocking_read());
-        let tor_connected = self.deepweb_tor.as_ref().map(|t| {
-            // Obtener estado de forma síncrona usando blocking_on
-            tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(t.is_connected())
+        let tor_connected = self
+            .deepweb_tor
+            .as_ref()
+            .map(|t| {
+                // Obtener estado de forma síncrona usando blocking_on
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(t.is_connected())
+                })
             })
-        }).unwrap_or(false);
-        
+            .unwrap_or(false);
+
         let storage_stats = self.intelligent_storage.get_stats();
         let storage_size_mb = storage_stats["total_size_mb"].as_f64().unwrap_or(0.0);
-        
+
         let predictive_stats = self.predictive_nodes.get_stats();
         let predictions_count = predictive_stats["total_predictions"].as_u64().unwrap_or(0);
 

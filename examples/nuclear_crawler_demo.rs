@@ -1,6 +1,6 @@
 //! Ejemplo de uso del Nuclear Crawler Hybrid System
 
-use memory_p::nuclear_crawler::{NuclearCrawler, CrawlerConfig};
+use memory_p::nuclear_crawler::{CrawlerConfig, NuclearCrawler};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -11,17 +11,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 1. Configurar el crawler
     let config = CrawlerConfig {
-        enable_tor: false,                    // Tor deshabilitado para demo
+        enable_tor: false, // Tor deshabilitado para demo
         enable_intelligent_storage: true,
         enable_predictive_nodes: true,
-        auto_rebuild_interval: 60,            // 1 minuto para demo
+        auto_rebuild_interval: 60, // 1 minuto para demo
         parallel_buffer_size: 512,
         security_level: 3,
     };
 
     println!("📋 Configuración:");
     println!("  - Tor: {}", config.enable_tor);
-    println!("  - Intelligent Storage: {}", config.enable_intelligent_storage);
+    println!(
+        "  - Intelligent Storage: {}",
+        config.enable_intelligent_storage
+    );
     println!("  - Predictive Nodes: {}", config.enable_predictive_nodes);
     println!("  - Security Level: {}", config.security_level);
     println!();
@@ -36,7 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 4. Simular operaciones
     println!("🔍 Realizando búsquedas con auto-corrección...");
-    
+
     let queries = vec![
         "rust async programming",
         "machine learning algorithms",

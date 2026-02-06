@@ -1,5 +1,5 @@
 //! Auto-Repair Module
-//! 
+//!
 //! Automatic fixing of common issues.
 
 use anyhow::{Context, Result};
@@ -24,15 +24,17 @@ pub struct RepairAction {
 impl RepairReport {
     pub fn print(&self) {
         println!("\n{}", "=== Repair Report ===".bold().blue());
-        
+
         let successful = self.actions.iter().filter(|a| a.success).count();
         let failed = self.actions.iter().filter(|a| !a.success).count();
-        
-        println!("\n{} Actions taken: {} successful, {} failed", 
-            "🔧".cyan(), 
+
+        println!(
+            "\n{} Actions taken: {} successful, {} failed",
+            "🔧".cyan(),
             successful.to_string().green(),
-            failed.to_string().red());
-        
+            failed.to_string().red()
+        );
+
         for action in &self.actions {
             let status = if action.success {
                 "✅".green()
@@ -40,7 +42,7 @@ impl RepairReport {
                 "❌".red()
             };
             println!("\n{} {}", status, action.action.bold());
-            
+
             if !action.output.is_empty() {
                 let lines: Vec<&str> = action.output.lines().take(5).collect();
                 for line in lines {
@@ -51,7 +53,7 @@ impl RepairReport {
                 }
             }
         }
-        
+
         if !self.errors.is_empty() {
             println!("\n{} Errors:", "❌".red());
             for error in &self.errors {
@@ -63,21 +65,21 @@ impl RepairReport {
 
 /// Auto-repair project issues
 pub fn repair_project(
-    path: &str, 
-    fix_deps: bool, 
-    format: bool, 
+    path: &str,
+    fix_deps: bool,
+    format: bool,
     fix_clippy: bool,
     _regen_schemas: bool,
-    dry_run: bool
+    dry_run: bool,
 ) -> Result<RepairReport> {
     let mut report = RepairReport::default();
     let project_path = Path::new(path);
-    
+
     println!("{} Starting auto-repair for: {}", "🔧".cyan(), path);
     if dry_run {
         println!("{} DRY RUN MODE - No changes will be made", "ℹ️".yellow());
     }
-    
+
     // Fix dependencies
     if fix_deps {
         println!("\n  📦 Fixing Rust dependencies...");
@@ -92,7 +94,7 @@ pub fn repair_project(
         };
         report.actions.push(result);
     }
-    
+
     // Format code
     if format {
         println!("\n  ✨ Formatting code...");
@@ -107,7 +109,7 @@ pub fn repair_project(
         };
         report.actions.push(result);
     }
-    
+
     // Fix clippy warnings
     if fix_clippy {
         println!("\n  🔍 Fixing clippy warnings...");
@@ -122,7 +124,7 @@ pub fn repair_project(
         };
         report.actions.push(result);
     }
-    
+
     Ok(report)
 }
 
@@ -134,14 +136,14 @@ fn run_cargo_update(path: &Path) -> Result<RepairAction> {
         .stderr(Stdio::piped())
         .output()
         .context("Failed to run cargo update")?;
-    
+
     let success = output.status.success();
     let output_str = if success {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         String::from_utf8_lossy(&output.stderr).to_string()
     };
-    
+
     Ok(RepairAction {
         action: "cargo update".to_string(),
         success,
@@ -158,14 +160,14 @@ fn run_cargo_fmt(path: &Path) -> Result<RepairAction> {
         .stderr(Stdio::piped())
         .output()
         .context("Failed to run cargo fmt")?;
-    
+
     let success = output.status.success();
     let output_str = if success {
         "Code formatted successfully".to_string()
     } else {
         String::from_utf8_lossy(&output.stderr).to_string()
     };
-    
+
     Ok(RepairAction {
         action: "cargo fmt --all".to_string(),
         success,
@@ -184,11 +186,11 @@ fn run_cargo_clippy_fix(path: &Path) -> Result<RepairAction> {
         .stderr(Stdio::piped())
         .output()
         .context("Failed to run cargo clippy --fix")?;
-    
+
     let success = output.status.success();
-    let output_str = String::from_utf8_lossy(&output.stdout).to_string() 
+    let output_str = String::from_utf8_lossy(&output.stdout).to_string()
         + &String::from_utf8_lossy(&output.stderr).to_string();
-    
+
     Ok(RepairAction {
         action: "cargo clippy --fix".to_string(),
         success,
