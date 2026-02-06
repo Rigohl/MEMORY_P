@@ -3,9 +3,9 @@
 
 use crate::error::Result;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
-use std::time::Duration;
 
 /// Módulo que puede ser reconstruido
 #[derive(Debug, Clone)]
@@ -59,7 +59,7 @@ impl AutoRebuild {
 
     pub async fn start(&self) -> Result<()> {
         info!("🔄 Iniciando sistema FORCED_REBUILDS");
-        
+
         let mut running = self.running.write().await;
         if *running {
             warn!("AutoRebuild ya está ejecutándose");
@@ -75,7 +75,7 @@ impl AutoRebuild {
 
         tokio::spawn(async move {
             info!("🔧 FORCED_REBUILDS iniciado (cada {} segundos)", interval);
-            
+
             loop {
                 if !*running.read().await {
                     break;
@@ -85,15 +85,17 @@ impl AutoRebuild {
                 let mut modules_guard = modules.write().await;
                 for module in modules_guard.iter_mut() {
                     let elapsed = module.last_rebuild.elapsed().as_secs();
-                    
+
                     // Rebuild si han pasado más del intervalo
                     if elapsed > interval {
-                        info!("🔨 FORCED_REBUILD: módulo '{}' (prioridad: {})", 
-                            module.name, module.priority);
-                        
+                        info!(
+                            "🔨 FORCED_REBUILD: módulo '{}' (prioridad: {})",
+                            module.name, module.priority
+                        );
+
                         // Simular rebuild
                         module.last_rebuild = std::time::Instant::now();
-                        
+
                         // Auto-ajustar estado basado en métricas
                         // En implementación real: analizar métricas y ajustar
                     }
@@ -102,7 +104,7 @@ impl AutoRebuild {
 
                 tokio::time::sleep(Duration::from_secs(60)).await;
             }
-            
+
             info!("🔧 FORCED_REBUILDS detenido");
         });
 
@@ -118,37 +120,43 @@ impl AutoRebuild {
     /// Fuerza rebuild de un módulo específico
     pub async fn force_rebuild(&self, module_name: &str) -> Result<()> {
         let mut modules = self.modules.write().await;
-        
+
         if let Some(module) = modules.iter_mut().find(|m| m.name == module_name) {
             info!("🔨 FORCED_REBUILD manual: módulo '{}'", module_name);
             module.last_rebuild = std::time::Instant::now();
             Ok(())
         } else {
-            Err(crate::error::MemoryPError::Other(
-                format!("Módulo '{}' no encontrado", module_name)
-            ))
+            Err(crate::error::MemoryPError::Other(format!(
+                "Módulo '{}' no encontrado",
+                module_name
+            )))
         }
     }
 
     /// Activa/desactiva un módulo
     pub async fn toggle_module(&self, module_name: &str, active: bool) -> Result<()> {
         let mut modules = self.modules.write().await;
-        
+
         if let Some(module) = modules.iter_mut().find(|m| m.name == module_name) {
             module.active = active;
-            info!("⚙️  Módulo '{}' -> {}", module_name, if active { "ACTIVO" } else { "INACTIVO" });
+            info!(
+                "⚙️  Módulo '{}' -> {}",
+                module_name,
+                if active { "ACTIVO" } else { "INACTIVO" }
+            );
             Ok(())
         } else {
-            Err(crate::error::MemoryPError::Other(
-                format!("Módulo '{}' no encontrado", module_name)
-            ))
+            Err(crate::error::MemoryPError::Other(format!(
+                "Módulo '{}' no encontrado",
+                module_name
+            )))
         }
     }
 
     pub fn get_stats(&self) -> serde_json::Value {
         let modules = self.modules.blocking_read();
         let active_count = modules.iter().filter(|m| m.active).count();
-        
+
         serde_json::json!({
             "total_modules": modules.len(),
             "active_modules": active_count,

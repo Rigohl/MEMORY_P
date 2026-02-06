@@ -1,8 +1,8 @@
 //! metrics_exporter.rs - Exportador de métricas para Prometheus
 //! Monitoreo en tiempo real del Nuclear Crawler
 
-use std::sync::Arc;
 use dashmap::DashMap;
+use std::sync::Arc;
 use std::time::Instant;
 
 /// Tipo de métrica
@@ -38,7 +38,7 @@ impl MetricsExporter {
     /// Incrementa un contador
     pub fn increment_counter(&self, name: &str, labels: Vec<(&str, &str)>) {
         let key = self.make_key(name, &labels);
-        
+
         self.metrics
             .entry(key.clone())
             .and_modify(|m| m.value += 1.0)
@@ -46,7 +46,10 @@ impl MetricsExporter {
                 name: name.to_string(),
                 value: 1.0,
                 metric_type: MetricType::Counter,
-                labels: labels.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+                labels: labels
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
                 timestamp: Instant::now(),
             });
     }
@@ -54,14 +57,17 @@ impl MetricsExporter {
     /// Establece un gauge
     pub fn set_gauge(&self, name: &str, value: f64, labels: Vec<(&str, &str)>) {
         let key = self.make_key(name, &labels);
-        
+
         self.metrics.insert(
             key,
             Metric {
                 name: name.to_string(),
                 value,
                 metric_type: MetricType::Gauge,
-                labels: labels.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+                labels: labels
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
                 timestamp: Instant::now(),
             },
         );
@@ -70,7 +76,7 @@ impl MetricsExporter {
     /// Registra un valor en histograma
     pub fn observe_histogram(&self, name: &str, value: f64, labels: Vec<(&str, &str)>) {
         let key = self.make_key(name, &labels);
-        
+
         // Simplificado: solo guarda el último valor
         // En implementación real: mantener buckets
         self.metrics.insert(
@@ -79,7 +85,10 @@ impl MetricsExporter {
                 name: name.to_string(),
                 value,
                 metric_type: MetricType::Histogram,
-                labels: labels.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
+                labels: labels
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.to_string()))
+                    .collect(),
                 timestamp: Instant::now(),
             },
         );
@@ -97,11 +106,11 @@ impl MetricsExporter {
     /// Exporta métricas en formato Prometheus
     pub fn export_prometheus(&self) -> String {
         let mut output = String::new();
-        
+
         // Agrupar por nombre de métrica
-        let mut metrics_by_name: std::collections::HashMap<String, Vec<Metric>> = 
+        let mut metrics_by_name: std::collections::HashMap<String, Vec<Metric>> =
             std::collections::HashMap::new();
-        
+
         for entry in self.metrics.iter() {
             let metric = entry.value();
             metrics_by_name
@@ -115,23 +124,25 @@ impl MetricsExporter {
             if let Some(first) = metrics.first() {
                 // HELP y TYPE
                 output.push_str(&format!("# HELP {} Nuclear Crawler metric\n", name));
-                output.push_str(&format!("# TYPE {} {:?}\n", name, first.metric_type).to_lowercase());
-                
+                output
+                    .push_str(&format!("# TYPE {} {:?}\n", name, first.metric_type).to_lowercase());
+
                 // Valores
                 for metric in metrics {
                     let labels_str = if metric.labels.is_empty() {
                         String::new()
                     } else {
-                        let labels: Vec<String> = metric.labels
+                        let labels: Vec<String> = metric
+                            .labels
                             .iter()
                             .map(|(k, v)| format!("{}=\"{}\"", k, v))
                             .collect();
                         format!("{{{}}}", labels.join(","))
                     };
-                    
+
                     output.push_str(&format!("{}{} {}\n", name, labels_str, metric.value));
                 }
-                
+
                 output.push('\n');
             }
         }
@@ -162,11 +173,7 @@ impl MetricsExporter {
         );
 
         // Almacenamiento
-        self.set_gauge(
-            "nuclear_crawler_storage_size_mb",
-            storage_size_mb,
-            vec![],
-        );
+        self.set_gauge("nuclear_crawler_storage_size_mb", storage_size_mb, vec![]);
 
         // Predicciones
         self.set_gauge(
@@ -195,32 +202,32 @@ mod tests {
     #[test]
     fn test_counter_increment() {
         let exporter = MetricsExporter::new();
-        
+
         exporter.increment_counter("test_counter", vec![("label", "value")]);
         exporter.increment_counter("test_counter", vec![("label", "value")]);
-        
+
         assert_eq!(exporter.metrics_count(), 1);
     }
 
     #[test]
     fn test_gauge_set() {
         let exporter = MetricsExporter::new();
-        
+
         exporter.set_gauge("test_gauge", 42.0, vec![]);
         exporter.set_gauge("test_gauge", 100.0, vec![]);
-        
+
         assert_eq!(exporter.metrics_count(), 1);
     }
 
     #[test]
     fn test_prometheus_export() {
         let exporter = MetricsExporter::new();
-        
+
         exporter.increment_counter("requests_total", vec![("method", "GET")]);
         exporter.set_gauge("cpu_usage", 75.5, vec![]);
-        
+
         let output = exporter.export_prometheus();
-        
+
         assert!(output.contains("# HELP"));
         assert!(output.contains("# TYPE"));
         assert!(output.contains("requests_total"));
