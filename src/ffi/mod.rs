@@ -45,7 +45,7 @@
 //! bridge::shutdown();
 //! ```
 
-use std::os::raw::{c_double};
+use std::os::raw::{c_int};
 
 pub mod bridge;
 pub mod error;

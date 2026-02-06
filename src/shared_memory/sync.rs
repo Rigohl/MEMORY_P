@@ -1,7 +1,7 @@
 //! shared_memory/sync.rs - Coordinador de sincronización entre agentes
 
 use super::types::{SharedContext, AgentId, ContextId};
-use crate::error::{MemoryPError, Result};
+use crate::error::Result;
 use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::broadcast;

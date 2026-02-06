@@ -220,7 +220,7 @@ fn check_dead_code_patterns(path: &Path) -> Result<Vec<String>> {
     let mut suspects = Vec::new();
     
     // Look for unused function patterns (simplified heuristic)
-    let unused_fn_re = Regex::new(r"(?m)^[\s]*(?:pub\s+)?fn\s+([a-z_][a-z0-9_]*)\s*\(").unwrap();
+    let _unused_fn_re = Regex::new(r"(?m)^[\s]*(?:pub\s+)?fn\s+([a-z_][a-z0-9_]*)\s*\(").unwrap();
     
     for entry in WalkDir::new(path)
         .skip_hidden(false)

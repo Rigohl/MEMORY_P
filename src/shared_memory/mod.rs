@@ -29,7 +29,7 @@ pub use monitor::MemoryMonitor;
 pub use cleanup::CleanupManager;
 pub use engine_integration::{EngineIntegration, EngineIntegrationConfig, IntegrationStats};
 
-use crate::error::{MemoryPError, Result};
+use crate::error::Result;
 use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

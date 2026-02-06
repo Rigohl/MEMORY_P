@@ -5,7 +5,7 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
 use regex::Regex;
-use sqlparser::ast::Statement;
+
 use sqlparser::dialect::GenericDialect;
 use sqlparser::parser::Parser;
 use std::collections::HashMap;
