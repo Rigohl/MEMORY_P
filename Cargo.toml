@@ -41,16 +41,23 @@ jwalk = "0.8"
 ignore = "0.4"
 regex = "1.10"
 
+# CLI & Parsing
+clap = { version = "4.5", features = ["derive", "cargo"] }
+colored = "2.1"
+sqlparser = "0.50"
+
 # Workspace & Memory
 lazy_static = "1.4"
 memmap2 = "0.9.9"
 mimalloc = "0.1.48"
 
-# Database & Async Traits (for Memory MCP)
-sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"] }
-async-trait = "0.1"
-uuid = { version = "1.0", features = ["v4", "serde"] }
-chrono = { version = "0.4", features = ["serde"] }
+[[bin]]
+name = "memory_p"
+path = "src/main.rs"
+
+[[bin]]
+name = "jar"
+path = "src/bin/jar.rs"
 
 [dev-dependencies]
 mockall = "0.14"

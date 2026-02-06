@@ -277,6 +277,37 @@ curl -X POST http://localhost:3000/mcp/memory/predict \
 
 **Key Insight**: Hybrid fusion achieves best-in-class relevance while maintaining competitive latency.
 
+## 🔧 DevOps CLI Tool
+
+**JAR (Just Auto-Repair)** - Intelligent CLI for project validation and automation:
+
+```bash
+# Install
+cargo build --release --bin jar
+
+# Validate project
+jar validate --scan-todos --check-dead-code --validate-mcp
+
+# Detect SQL issues
+jar detect-sql --path . --validate-syntax --detect-issues
+
+# Auto-repair
+jar repair --format --fix-deps --fix-clippy
+
+# Check CI health
+jar ci-check
+```
+
+**Features**:
+- 🔍 Project structure validation
+- 📝 TODO/FIXME/HACK scanning
+- 🗄️ SQL query detection and validation
+- 🔧 Auto-repair (formatting, dependencies, clippy)
+- 🤖 GitHub Actions integration
+- 📊 Colorful, structured reports
+
+📖 **Full documentation**: [docs/JAR_CLI.md](docs/JAR_CLI.md) | [docs/JAR_INTEGRATION.md](docs/JAR_INTEGRATION.md)
+
 ## 📁 Project Structure
 
 ```text
@@ -287,6 +318,13 @@ MEMORY_P/
 │   ├── parallel_engine.rs   # Rayon-powered processing
 │   ├── analyzer.rs          # Code analysis engine
 │   ├── workspace.rs         # Workspace context manager
+│   ├── cli/                 # ← JAR DevOps CLI
+│   │   ├── commands.rs      # CLI command definitions
+│   │   ├── validators.rs    # Project validation
+│   │   ├── sql_detector.rs  # SQL analysis
+│   │   └── auto_repair.rs   # Auto-repair logic
+│   ├── bin/
+│   │   └── jar.rs           # ← JAR binary entry point
 │   └── ffi/
 │       └── memory_bank.rs   # FFI bridge to multi-lang
 ├── FFI/
@@ -298,7 +336,16 @@ MEMORY_P/
 │   │   ├── jax_inference.py # JAX ML inference
 │   │   └── search_actor.pony # Pony actor system
 │   └── lib/                 # Compiled FFI libraries
+├── .github/
+│   ├── workflows/           # ← CI/CD automation
+│   │   ├── ci.yml           # Main CI pipeline
+│   │   ├── auto-repair.yml  # Auto-fix on PRs
+│   │   └── sql-check.yml    # SQL validation
+│   └── agents/              # Custom GitHub Copilot agents
+│       └── jar-cli-specialist.agent.md  # JAR specialist
 ├── docs/
+│   ├── JAR_CLI.md           # ← JAR CLI user guide
+│   ├── JAR_INTEGRATION.md   # ← JAR integration guide
 │   ├── TUTORIAL_START.md    # Getting started guide
 │   ├── HOWTO_REPAIR.md      # Repair tool guide
 │   └── REFERENCE_TOOLS.md   # Complete API reference
@@ -490,6 +537,12 @@ We welcome contributions! Please see our contribution guidelines:
 4. **Performance**: Include benchmarks for performance-critical changes
 
 ```bash
+# Build the project
+cargo build --release
+
+# Build JAR CLI separately
+cargo build --release --bin jar
+
 # Run tests
 cargo test --all-features
 
@@ -501,6 +554,9 @@ cargo fmt --check
 
 # Run clippy
 cargo clippy --all-features
+
+# Validate project with JAR
+./target/release/jar validate --scan-todos
 ```
 
 ## 🔐 Security
