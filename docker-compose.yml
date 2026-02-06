@@ -8,9 +8,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        JULIA_VERSION: "1.10.0"  # Set to enable Julia support
     container_name: memory-p-app
     ports:
       - "4040:4040"
+      - "9091:9091"  # Metrics endpoint
     environment:
       - RUST_LOG=info
       - MEMORY_P_CONFIG=/app/config/docker.toml
@@ -24,23 +27,40 @@ services:
       - MEILISEARCH_URL=http://meilisearch:7700
       - MEILISEARCH_KEY=masterKey123
       # Specialized Engines
-      - JULIA_ENABLED=false  # Set to true if Julia installed
+      - JULIA_ENABLED=true  # Enable Julia mathematical brain
+      - JULIA_THREADS=4
       - MEMORYBANK_ENABLED=true
     volumes:
       - ./indices:/app/indices
       - ./config:/app/config
       - ./PAYLOAD_BANK:/app/PAYLOAD_BANK
+      - ./JULIA_BRAIN:/app/JULIA_BRAIN:ro  # Julia scripts (read-only)
     depends_on:
-      - postgres
-      - redis
-      - qdrant
-      - meilisearch
-      - lnx-node1
-      - lnx-node2
-      - lnx-node3
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
     networks:
       - memory-p-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4040/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
 
   # ==========================================
   # Vector Search Engines (3)
@@ -55,11 +75,21 @@ services:
       - "6334:6334"  # gRPC
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=64
+      - QDRANT__STORAGE__OPTIMIZERS__INDEXING_THRESHOLD=20000
     volumes:
       - qdrant_storage:/qdrant/storage
     networks:
       - memory-p-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
       interval: 30s
@@ -220,12 +250,23 @@ services:
       - POSTGRES_USER=memory_p
       - POSTGRES_PASSWORD=memory_p_password
       - POSTGRES_DB=memory_p
+      - POSTGRES_SHARED_BUFFERS=256MB
+      - POSTGRES_MAX_CONNECTIONS=200
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - memory-p-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U memory_p"]
       interval: 30s
@@ -238,12 +279,20 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru --tcp-backlog 511
     volumes:
       - redis_data:/data
     networks:
       - memory-p-network
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2.5G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s

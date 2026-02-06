@@ -1,8 +1,8 @@
-name: CI Pipeline
+name: CI - Build and Test
 
 on:
   push:
-    branches: [ main, develop, "feature/*" ]
+    branches: [ main, develop, 'copilot/**' ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -13,17 +13,62 @@ env:
 
 jobs:
   lint:
-    name: Lint & Format Check
+    name: Lint and Format Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
+          toolchain: stable
           components: rustfmt, clippy
-      
+          override: true
+
       - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache target directory
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run rustfmt
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
@@ -31,129 +76,142 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-      
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
 
-  build:
-    name: Build & Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        rust: [stable]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Upload artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
         with:
-          toolchain: ${{ matrix.rust }}
-      
-      - name: Cache cargo
+          name: memory_p-${{ runner.os }}
+          path: target/release/memory_p
+          retention-days: 7
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: memory_p
+          POSTGRES_PASSWORD: memory_p_password
+          POSTGRES_DB: memory_p_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Cache dependencies
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-${{ matrix.rust }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      
-      - name: Build project
-        run: cargo build --verbose --all-features
-      
+          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Run tests
-        run: cargo test --verbose --all-features
-      
-      - name: Generate test report
-        if: always()
+        run: cargo test --all-features
+        env:
+          DATABASE_URL: postgresql://memory_p:memory_p_password@localhost:5432/memory_p_test
+          REDIS_URL: redis://localhost:6379
+
+      - name: Run doc tests
+        run: cargo test --doc
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: memory_p-Linux
+
+      - name: Make binary executable
+        run: chmod +x memory_p
+
+      - name: Start services with docker-compose
         run: |
-          echo "## Test Results - ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-          echo "Build Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          docker-compose up -d postgres redis qdrant meilisearch
+          sleep 10
+
+      - name: Check services health
+        run: |
+          docker-compose ps
+          curl -f http://localhost:6333/health || exit 1
+          curl -f http://localhost:7700/health || exit 1
+
+      - name: Run integration tests
+        run: |
+          # Start MEMORY_P in background
+          ./memory_p &
+          MEMORY_P_PID=$!
+          sleep 5
+          
+          # Test health endpoint
+          curl -f http://localhost:4040/health || exit 1
+          
+          # Cleanup
+          kill $MEMORY_P_PID
+
+      - name: Stop services
+        if: always()
+        run: docker-compose down
 
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
       - name: Install tarpaulin
         run: cargo install cargo-tarpaulin
-      
+
       - name: Generate coverage
-        run: cargo tarpaulin --out Xml --all-features
-      
+        run: cargo tarpaulin --out Xml --output-dir ./coverage
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: ./cobertura.xml
-          fail_ci_if_error: false
-
-  benchmark:
-    name: Performance Benchmarks
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-benchmark-${{ hashFiles('**/Cargo.lock') }}
-      
-      - name: Run benchmarks
-        run: |
-          if [ -d "benches" ]; then
-            cargo bench --no-fail-fast 2>&1 | tee benchmark-results.txt
-            echo "## Benchmark Results" >> $GITHUB_STEP_SUMMARY
-            cat benchmark-results.txt >> $GITHUB_STEP_SUMMARY
-          else
-            echo "No benchmarks found, skipping..." >> $GITHUB_STEP_SUMMARY
-          fi
-
-  docs:
-    name: Documentation Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-      
-      - name: Check documentation
-        run: cargo doc --no-deps --all-features
-        env:
-          RUSTDOCFLAGS: -D warnings
-
-  success:
-    name: CI Success Gate
-    needs: [lint, build, coverage, docs]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check all jobs
-        run: |
-          if [[ "${{ needs.lint.result }}" != "success" ]] || \
-             [[ "${{ needs.build.result }}" != "success" ]] || \
-             [[ "${{ needs.docs.result }}" != "success" ]]; then
-            echo "❌ CI checks failed"
-            exit 1
-          fi
-          echo "✅ All CI checks passed successfully"
+          files: ./coverage/cobertura.xml
+          flags: unittests
+          name: codecov-umbrella

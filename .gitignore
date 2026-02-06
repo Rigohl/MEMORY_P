@@ -34,9 +34,14 @@
 !FFI/lib/README.md
 !FFI/lib/.gitkeep
 
+# Julia Brain
+!JULIA_BRAIN/
+!JULIA_BRAIN/**
+
 # Documentación básica
 !docs/
 !docs/**
+!DEVOPS.md
 
 # Implementation summaries
 !*IMPLEMENTATION_SUMMARY.md
@@ -54,6 +59,7 @@
 !BRANCH_CLEANUP_GUIDE.md
 !MERGE_SUMMARY.md
 !INTEGRATION_COMPLETE.md
+!DEVOPS_IMPLEMENTATION_SUMMARY.md
 
 # Workflow documentation
 !WORKFLOW_QUICKREF.md
@@ -75,6 +81,13 @@
 
 # Docker
 !docker-compose.yml
+!Dockerfile
+!config/
+!config/**
+
+# Scripts
+!scripts/
+!scripts/**
 
 # Config files
 !config/

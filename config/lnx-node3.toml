@@ -1,0 +1,20 @@
+# LNX Node 3 Configuration
+[node]
+id = "node3"
+bind_address = "0.0.0.0:9200"
+
+[cluster]
+nodes = ["node1", "node2", "node3"]
+
+[raft]
+election_timeout_ms = 300
+heartbeat_interval_ms = 100
+snapshot_interval = 3600
+
+[storage]
+data_path = "/data"
+max_cache_size_mb = 512
+
+[performance]
+worker_threads = 4
+max_query_time_ms = 5000
