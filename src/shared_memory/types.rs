@@ -13,7 +13,7 @@ impl ContextId {
     pub fn new(id: String) -> Self {
         Self(id)
     }
-    
+
     pub fn generate() -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -50,22 +50,22 @@ impl fmt::Display for AgentId {
 pub struct ContextMetadata {
     /// Timestamp de creación
     pub created_at: i64,
-    
+
     /// Timestamp de última actualización
     pub updated_at: i64,
-    
+
     /// Timestamp de último acceso
     pub last_accessed: i64,
-    
+
     /// Número de accesos
     pub access_count: u64,
-    
+
     /// Tags asociados
     pub tags: Vec<String>,
-    
+
     /// Prioridad (0-100)
     pub priority: u8,
-    
+
     /// Versión del contexto
     pub version: u32,
 }
@@ -83,12 +83,12 @@ impl ContextMetadata {
             version: 1,
         }
     }
-    
+
     pub fn touch(&mut self) {
         self.last_accessed = current_timestamp();
         self.access_count += 1;
     }
-    
+
     pub fn update(&mut self) {
         self.updated_at = current_timestamp();
         self.version += 1;
@@ -106,13 +106,13 @@ impl Default for ContextMetadata {
 pub struct AgentContext {
     /// Variables de estado del agente
     pub state: HashMap<String, serde_json::Value>,
-    
+
     /// Memoria de trabajo (últimas N operaciones)
     pub working_memory: Vec<WorkingMemoryEntry>,
-    
+
     /// Referencias a otros contextos
     pub context_refs: Vec<ContextId>,
-    
+
     /// Configuración específica del agente
     pub config: HashMap<String, String>,
 }
@@ -126,10 +126,10 @@ impl AgentContext {
             config: HashMap::new(),
         }
     }
-    
+
     pub fn add_to_working_memory(&mut self, entry: WorkingMemoryEntry) {
         self.working_memory.push(entry);
-        
+
         // Limitar a últimas 100 entradas
         if self.working_memory.len() > 100 {
             self.working_memory.remove(0);
@@ -156,16 +156,16 @@ pub struct WorkingMemoryEntry {
 pub struct SharedContext {
     /// ID del contexto
     pub context_id: ContextId,
-    
+
     /// ID del agente propietario
     pub agent_id: AgentId,
-    
+
     /// Metadata del contexto
     pub metadata: ContextMetadata,
-    
+
     /// Datos del contexto del agente
     pub agent_context: AgentContext,
-    
+
     /// Datos compartidos entre agentes (clave-valor)
     pub shared_data: HashMap<String, serde_json::Value>,
 }
@@ -180,11 +180,11 @@ impl SharedContext {
             shared_data: HashMap::new(),
         }
     }
-    
+
     pub fn touch(&mut self) {
         self.metadata.touch();
     }
-    
+
     pub fn update(&mut self) {
         self.metadata.update();
     }
@@ -195,28 +195,28 @@ impl SharedContext {
 pub struct MemoryStats {
     /// Total de contextos activos
     pub active_contexts: usize,
-    
+
     /// Total de contextos persistidos
     pub persisted_contexts: usize,
-    
+
     /// Cache hits
     pub cache_hits: u64,
-    
+
     /// Cache misses
     pub cache_misses: u64,
-    
+
     /// Tasa de cache hit (0.0 - 1.0)
     pub cache_hit_rate: f64,
-    
+
     /// Total de actualizaciones
     pub total_updates: u64,
-    
+
     /// Memoria total usada (bytes)
     pub memory_usage_bytes: u64,
-    
+
     /// Latencia promedio de operaciones (ms)
     pub avg_latency_ms: f64,
-    
+
     /// Timestamp de las estadísticas
     pub timestamp: i64,
 }
@@ -235,7 +235,7 @@ impl MemoryStats {
             timestamp: current_timestamp(),
         }
     }
-    
+
     pub fn calculate_cache_hit_rate(&mut self) {
         let total = self.cache_hits + self.cache_misses;
         if total > 0 {
@@ -261,7 +261,7 @@ fn current_timestamp() -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_context_id_generation() {
         let id1 = ContextId::generate();
@@ -269,13 +269,13 @@ mod tests {
         let id2 = ContextId::generate();
         assert_ne!(id1, id2);
     }
-    
+
     #[test]
     fn test_agent_id_creation() {
         let agent_id = AgentId::new("test-agent".to_string());
         assert_eq!(agent_id.to_string(), "test-agent");
     }
-    
+
     #[test]
     fn test_shared_context_creation() {
         let agent_id = AgentId::new("test-agent".to_string());
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(context.agent_id, agent_id);
         assert_eq!(context.metadata.version, 1);
     }
-    
+
     #[test]
     fn test_metadata_touch() {
         let mut metadata = ContextMetadata::new();
@@ -291,7 +291,7 @@ mod tests {
         metadata.touch();
         assert_eq!(metadata.access_count, initial_count + 1);
     }
-    
+
     #[test]
     fn test_working_memory_limit() {
         let mut context = AgentContext::new();
