@@ -38,6 +38,14 @@
 !docs/
 !docs/**
 
+# Implementation summaries
+!*IMPLEMENTATION_SUMMARY.md
+!*SUMMARY.md
+
+# Examples
+!examples/
+!examples/**
+
 # GitHub Copilot Agents & Skills
 !.github/
 !.github/**
@@ -67,6 +75,10 @@
 
 # Docker
 !docker-compose.yml
+
+# Config files
+!config/
+!config/**
 
 # Ignorar binarios y builds en FFI
 FFI/lib/*.so

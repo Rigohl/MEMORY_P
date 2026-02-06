@@ -18,8 +18,13 @@ pub mod mega_simulator;
 // The SearchEngine trait has async methods which prevents it from being object-safe
 // Need to refactor using enum dispatch or async-trait with Box<dyn Future>
 // pub mod motores;
+pub mod nuclear_crawler; // Nuclear Crawler Hybrid System
 pub mod parallel_engine;
 pub mod shared_memory; // Sistema de memoria compartida para coordinación de agentes
 pub mod workspace;
 
 // pub use motores::*;
+
+// FORCED_REBUILDS: Sistema de auto-ajuste de módulos
+// Los módulos se activan/desactivan automáticamente según métricas
+// Ver: nuclear_crawler::auto_rebuild para configuración dinámica
