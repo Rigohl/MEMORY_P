@@ -19,19 +19,16 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 mod analyzer;
 mod auto_manager; // Sistema de auto-gestión MCP 2026
-mod autonomous_daemon; // Sistema de daemon autónomo autoejecutable v2.0
 mod config;
-mod context_detector; // Detector dinámico de contextos
 mod error;
 mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
-mod hyper_memory; // Sistema de memoria hiperestructurada
 mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
-mod predictive_engine; // Motor de predicción extendida
-mod workflow_automation; // Sistema de automatización de workflows
+mod prediction_engine; // Motor de predicción con Julia + Mojo
+mod shared_memory; // Sistema de memoria compartida entre agentes
 mod workspace;
 
 #[tokio::main]
@@ -59,11 +56,11 @@ async fn main() {
 
 async fn http_server_mode() -> crate::error::Result<()> {
     // ========================================================
-    // MCP PROTOCOL 2026 - ALWAYS-ON AUTO-MANAGED SYSTEM v2.0
+    // MCP PROTOCOL 2026 - ALWAYS-ON AUTO-MANAGED SYSTEM
     // ========================================================
     
     tracing::info!("╔══════════════════════════════════════════════════╗");
-    tracing::info!("║  MEMORY_P MCP Server 2026 - AUTONOMOUS EDITION  ║");
+    tracing::info!("║  MEMORY_P MCP Server 2026 - ALWAYS-ON EDITION   ║");
     tracing::info!("╚══════════════════════════════════════════════════╝");
     
     // 1. Auto-iniciar sistema de gestión
@@ -88,52 +85,50 @@ async fn http_server_mode() -> crate::error::Result<()> {
         tracing::warn!("⚠️  Continuando sin KPI tracking");
     }
     
-    // 3. NUEVO: Iniciar Daemon Autónomo
-    let daemon_config = autonomous_daemon::DaemonConfig::default();
-    let autonomous_daemon = Arc::new(autonomous_daemon::AutonomousDaemon::new(daemon_config));
+    // 3. Iniciar sistema de memoria compartida
+    let shared_memory = Arc::new(shared_memory::SharedMemory::new());
+    tracing::info!("🧠 Sistema de memoria compartida inicializado");
     
-    tracing::info!("🤖 Iniciando Daemon Autónomo v2.0...");
-    if let Err(e) = autonomous_daemon.clone().start().await {
-        tracing::error!("❌ Error al iniciar Daemon Autónomo: {}", e);
-        tracing::warn!("⚠️  Continuando sin daemon autónomo");
-    }
+    // 4. Iniciar motor de predicción
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
+        prediction_engine::PredictionConfig::default()
+    ));
+    tracing::info!("🔮 Motor de predicción inicializado");
     
-    // 4. NUEVO: Iniciar HyperMemory Manager
-    let hyper_memory = Arc::new(hyper_memory::HyperMemoryManager::new(384)); // 384-dim embeddings
+    // 5. Iniciar tarea de limpieza de memoria en background
+    let memory_clone = shared_memory.clone();
+    tokio::spawn(async move {
+        shared_memory::start_cleanup_task(memory_clone, 300).await; // Cada 5 minutos
+    });
     
-    tracing::info!("🧠 Sistema HyperMemory iniciado (dim=384)");
-    
-    tracing::info!("✅ Sistema auto-gestionado autónomo activo");
+    tracing::info!("✅ Sistema auto-gestionado activo");
     tracing::info!("   • FFI: Julia, JAX, Mojo, Pony, Zig");
     tracing::info!("   • Health checks: cada 30s");
     tracing::info!("   • Auto-recovery: habilitado");
     tracing::info!("   • Zero-touch operation: activo");
     tracing::info!("   • KPI Tracking: Six Sigma always-on");
     tracing::info!("   • Mediciones: cada 10s");
-    tracing::info!("   • Daemon Autónomo: activo");
-    tracing::info!("   • Context Detection: cada 10s");
-    tracing::info!("   • Predictive Engine: habilitado");
-    tracing::info!("   • HyperMemory: búsqueda vectorial + textual");
+    tracing::info!("   • Memoria compartida: activa");
+    tracing::info!("   • Predicción automática: activa");
     
-    // 5. Construir router con todos los componentes
+    // 6. Construir router con todos los componentes
     let app = Router::new()
         .merge(mcp_api::routes())
         .fallback(error_404)
         .layer(axum::Extension(auto_manager.clone()))
         .layer(axum::Extension(kpi_tracker.clone()))
-        .layer(axum::Extension(autonomous_daemon.clone()))
-        .layer(axum::Extension(hyper_memory.clone()));
+        .layer(axum::Extension(shared_memory.clone()))
+        .layer(axum::Extension(prediction_engine.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
 
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     tracing::info!("🚀 Servidor iniciado");
     tracing::info!("📡 Escuchando en http://{}:{}", addr.ip(), addr.port());
-    tracing::info!("📋 Protocolo: MCP 2026.2.0-AUTONOMOUS");
+    tracing::info!("📋 Protocolo: MCP 2026.1.0-ALWAYS-ON");
     tracing::info!("🔌 Transports: HTTP, WebSocket, stdio");
     tracing::info!("🌐 Compatible: Cursor, Windsurf, Claude Desktop, VS Code");
     tracing::info!("📊 KPIs: Six Sigma + Automation (DMAIC)");
-    tracing::info!("🤖 Daemon: Autónomo + Predictivo + Auto-recuperación");
     tracing::info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     let listener = TcpListener::bind(addr)
@@ -145,13 +140,8 @@ async fn http_server_mode() -> crate::error::Result<()> {
         .map_err(|e| crate::error::MemoryPError::Io(e))?;
 
     // Cleanup al salir
-    tracing::info!("🛑 Deteniendo servicios...");
-    if let Err(e) = autonomous_daemon.stop().await {
-        tracing::warn!("⚠️  Error al detener daemon: {}", e);
-    }
     kpi_tracker.stop().await;
     auto_manager.stop().await;
-    tracing::info!("✅ Servicios detenidos correctamente");
     
     Ok(())
 }

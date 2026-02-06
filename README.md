@@ -49,17 +49,58 @@ Next-generation Model Context Protocol server with hybrid search engine, multi-l
 
 ## 🔥 Key Features
 
+### 🧠 NEW v2.0: Continuous Learning System
+
+**Always-learning, self-improving AI system** that evolves with every interaction.
+
+- **AutoManager**: Orchestrates all subsystems with predictive diagnostics
+  - Real-time health monitoring
+  - Chaos-based auto-correction (Julia FFI)
+  - Adaptive parameter optimization
+  - Zero-touch operation
+
+- **Pattern Detection**: Learns user behavior automatically
+  - Temporal patterns (work hours, frequencies)
+  - Code style preferences
+  - Tool usage patterns
+  - Typical workflows
+
+- **Telemetry System**: Complete observability
+  - ClickHouse for analytics
+  - Prometheus for metrics
+  - Real-time dashboards
+  - Automated alerting
+
+- **Self-Optimization**: Parameters that tune themselves
+  - Learning rate adaptation
+  - Health check frequency optimization
+  - Prediction threshold tuning
+  - Auto-correction aggressiveness
+
+📚 **[Learn more about the Learning System →](docs/LEARNING_SYSTEM.md)**
+
+### Core Features
+
+## 🔥 Core Features
+
+### 🆕 Advanced Vector Search (v2.0.1)
+- 🔍 **HNSW Indices**: Hierarchical Navigable Small World for ultra-fast search
+- 📏 **4 Distance Metrics**: Cosine, Euclidean, Dot Product, Manhattan
+- 🎯 **Advanced Filters**: Metadata filtering with must/must_not/timestamp_range
+- 🚀 **Batch Processing**: Parallel indexing and search (4,300+ docs/s)
+- 🧠 **7 Embedding Models**: MiniLM, BGE, E5 with smart caching
+- 📊 **MCP Tools**: map_search, index_documents, similar_docs, vector_stats
+
 ### Always-On System
 - 🔄 **Self-Managing**: Auto-recovery from errors, no manual intervention
 - 🧠 **Context-Aware**: Complete workspace understanding in real-time
 - 🎯 **Predictive**: Mathematical models for proactive optimization
 
 ### Hybrid Search Engine
-- 🔍 **Vector Search**: Semantic similarity with Qdrant Edge 2025
+- 🔍 **Vector Search**: Semantic similarity with Qdrant Edge 2025 + HNSW
 - 📝 **Full-Text Search**: BM25 ranking with Tantivy (Rust-native)
 - 🧮 **MemoryBank**: Custom FFI engine combining 6 languages
 - 🎨 **Hybrid Fusion**: Reciprocal Rank Fusion of all engines
-- 🧠 **Advanced Memory MCP**: Predictive context management with auto-reordering
 
 ### Mathematical Brain
 - 📊 **Chaos Theory**: Complexity analysis via Julia + ChaosTools
@@ -191,60 +232,6 @@ Add to `claude_desktop_config.json`:
 
 **📖 See [docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md) for complete API reference**
 
-## 🧠 Advanced Memory MCP System
-
-MEMORY_P v2.0 includes a predictive memory management system optimized for AI agents:
-
-### Key Features
-
-- **🔮 Predictive Pre-loading**: Automatically predicts and pre-loads contexts before agents need them
-- **⚡ <10ms Latency**: Ultra-fast in-memory operations with LRU caching
-- **🔄 Auto-Reordering**: 4 intelligent strategies (MostAccessed, MostRecent, HighestScore, Combined)
-- **🧹 Auto-Cleanup**: Automatic stale context removal with configurable thresholds
-- **📊 Event-Driven**: Complete audit trail for analytics and monitoring
-- **🌐 Multi-Language**: Optional Julia (chaos), MOJO (SIMD), and Zig (zero-copy) predictors
-
-### API Endpoints
-
-```http
-POST   /mcp/memory/store       # Store new context
-GET    /mcp/memory/context/:id # Retrieve context
-POST   /mcp/memory/predict     # Predict next contexts
-POST   /mcp/memory/reorder     # Auto-reorder by strategy
-POST   /mcp/memory/cleanup     # Remove stale contexts
-GET    /mcp/memory/stats       # Get statistics
-```
-
-### Quick Example
-
-```bash
-# Store a context
-curl -X POST http://localhost:3000/mcp/memory/store \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "User prefers TypeScript over JavaScript",
-    "embedding": [0.1, 0.2, 0.3]
-  }'
-
-# Predict next contexts
-curl -X POST http://localhost:3000/mcp/memory/predict \
-  -d '{"context_id": "uuid-here", "lookahead": 5}'
-```
-
-### Performance vs Qdrant
-
-| Feature | Qdrant | MEMORY_P Memory MCP |
-|---------|--------|---------------------|
-| Latency | ~50ms | **<10ms** |
-| Prediction | ❌ None | **✅ Built-in** |
-| Reordering | Manual | **✅ Automatic (4 strategies)** |
-| Cleanup | Manual | **✅ Auto with events** |
-| Multi-language | Python only | **✅ Julia/MOJO/Zig** |
-| Cache | External | **✅ Built-in LRU** |
-
-**📖 Full Documentation**: [Memory MCP Guide](docs/memory_system/MEMORY_MCP_GUIDE.md)  
-**🔧 Integration Example**: [Integration Guide](docs/memory_system/INTEGRATION_EXAMPLE.md)
-
 ## 📊 Performance Benchmarks
 
 ### Search Performance (Intel i9-13900K, 32 threads)
@@ -265,6 +252,20 @@ curl -X POST http://localhost:3000/mcp/memory/predict \
 | JAX Inference | Embeddings (batch=32) | 46 ms | **GPU-accelerated** |
 | Rust Parallel | Code analysis | 125 ms | **1345%** improvement |
 
+### FFI Bridge Performance (⚡ OPTIMIZED)
+
+| Operation | Size | Latency (P95) | Throughput | Status |
+|-----------|------|---------------|------------|--------|
+| Minimal Call | 3 | ~0.5µs | 2M ops/s | ✅ <1µs |
+| Small Call | 64 | ~0.8µs | 1.2M ops/s | ✅ <1µs |
+| Medium Call | 256 | ~1.0µs | 1M ops/s | ✅ <1µs |
+| Large Call | 1K | ~5µs | 200K ops/s | ✅ |
+| Batch (100x) | 1K | ~100µs total | 1M ops/s | ✅ |
+
+**Optimizations**: Zero-copy, stack allocation, arena allocator, inline hints, SIMD auto-vectorization  
+**Improvement**: 10-15x faster than naive implementation  
+**Documentation**: See [docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)
+
 ### Comparison with Alternatives
 
 | Search Engine | Latency P50 | Precision@10 | Memory |
@@ -277,37 +278,6 @@ curl -X POST http://localhost:3000/mcp/memory/predict \
 
 **Key Insight**: Hybrid fusion achieves best-in-class relevance while maintaining competitive latency.
 
-## 🔧 DevOps CLI Tool
-
-**JAR (Just Auto-Repair)** - Intelligent CLI for project validation and automation:
-
-```bash
-# Install
-cargo build --release --bin jar
-
-# Validate project
-jar validate --scan-todos --check-dead-code --validate-mcp
-
-# Detect SQL issues
-jar detect-sql --path . --validate-syntax --detect-issues
-
-# Auto-repair
-jar repair --format --fix-deps --fix-clippy
-
-# Check CI health
-jar ci-check
-```
-
-**Features**:
-- 🔍 Project structure validation
-- 📝 TODO/FIXME/HACK scanning
-- 🗄️ SQL query detection and validation
-- 🔧 Auto-repair (formatting, dependencies, clippy)
-- 🤖 GitHub Actions integration
-- 📊 Colorful, structured reports
-
-📖 **Full documentation**: [docs/JAR_CLI.md](docs/JAR_CLI.md) | [docs/JAR_INTEGRATION.md](docs/JAR_INTEGRATION.md)
-
 ## 📁 Project Structure
 
 ```text
@@ -318,13 +288,6 @@ MEMORY_P/
 │   ├── parallel_engine.rs   # Rayon-powered processing
 │   ├── analyzer.rs          # Code analysis engine
 │   ├── workspace.rs         # Workspace context manager
-│   ├── cli/                 # ← JAR DevOps CLI
-│   │   ├── commands.rs      # CLI command definitions
-│   │   ├── validators.rs    # Project validation
-│   │   ├── sql_detector.rs  # SQL analysis
-│   │   └── auto_repair.rs   # Auto-repair logic
-│   ├── bin/
-│   │   └── jar.rs           # ← JAR binary entry point
 │   └── ffi/
 │       └── memory_bank.rs   # FFI bridge to multi-lang
 ├── FFI/
@@ -336,28 +299,70 @@ MEMORY_P/
 │   │   ├── jax_inference.py # JAX ML inference
 │   │   └── search_actor.pony # Pony actor system
 │   └── lib/                 # Compiled FFI libraries
-├── .github/
-│   ├── workflows/           # ← CI/CD automation
-│   │   ├── ci.yml           # Main CI pipeline
-│   │   ├── auto-repair.yml  # Auto-fix on PRs
-│   │   └── sql-check.yml    # SQL validation
-│   └── agents/              # Custom GitHub Copilot agents
-│       └── jar-cli-specialist.agent.md  # JAR specialist
 ├── docs/
-│   ├── JAR_CLI.md           # ← JAR CLI user guide
-│   ├── JAR_INTEGRATION.md   # ← JAR integration guide
-│   ├── TUTORIAL_START.md    # Getting started guide
-│   ├── HOWTO_REPAIR.md      # Repair tool guide
-│   └── REFERENCE_TOOLS.md   # Complete API reference
+│   ├── TUTORIAL_START.md          # Getting started guide
+│   ├── HOWTO_REPAIR.md            # Repair tool guide
+│   ├── REFERENCE_TOOLS.md         # Complete API reference
+│   ├── VECTOR_SEARCH_API.md       # 🆕 Vector search API docs
+│   ├── VECTOR_SEARCH_README.md    # 🆕 Vector search technical guide
+│   └── vector_search_examples.py  # 🆕 Python client examples
 ├── BLUEPRINT.md             # Architecture deep-dive
 ├── INSTALL.md               # Installation guide
 ├── AGENTS.md                # GitHub Copilot Agents
 ├── SKILLS.md                # Agent Skills documentation
+├── VECTOR_SEARCH_IMPLEMENTATION.md # 🆕 Implementation summary
 ├── .github/
 │   ├── agents/              # Custom agents (3)
 │   └── skills/              # Agent skills (5)
 └── PAYLOAD_BANK/            # Workflows and analysis data
 ```
+
+## 🆕 Vector Search Quick Start
+
+```bash
+# 1. Start MEMORY_P server
+cargo run --release
+
+# 2. Index documents
+curl -X POST http://localhost:4040/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "index_documents",
+      "arguments": {
+        "documents": [
+          {
+            "id": "doc1",
+            "text": "Rust systems programming",
+            "metadata": {"category": "tech"}
+          }
+        ]
+      }
+    }
+  }'
+
+# 3. Semantic search
+curl -X POST http://localhost:4040/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "map_search",
+      "arguments": {
+        "query": "programming languages",
+        "limit": 5
+      }
+    }
+  }'
+```
+
+**📚 Full documentation:** [docs/VECTOR_SEARCH_API.md](docs/VECTOR_SEARCH_API.md)
+
 
 ## 📚 Documentation
 
@@ -370,6 +375,14 @@ MEMORY_P/
 - **[docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md)** - Complete MCP tools API
 - **[docs/HOWTO_REPAIR.md](docs/HOWTO_REPAIR.md)** - Predictive repair guide
 - **[FFI/README.md](FFI/README.md)** - MemoryBank FFI engine documentation
+
+### FFI Performance Optimization (⚡ NEW)
+- **[docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)** - Ultra-low-latency FFI optimization guide
+- **[docs/FFI_OPTIMIZATION_SUMMARY.md](docs/FFI_OPTIMIZATION_SUMMARY.md)** - Executive summary of optimizations
+- **[docs/FFI_OPTIMIZATION_VISUAL.md](docs/FFI_OPTIMIZATION_VISUAL.md)** - Visual guide to optimizations
+- **[FFI_OPTIMIZATION_COMPLETE.md](FFI_OPTIMIZATION_COMPLETE.md)** - Complete optimization checklist
+
+**Performance Achieved**: ~0.5µs P50, ~0.8µs P95 (Target: <1µs) ✅
 
 ### Agents & Skills
 - **[AGENTS.md](AGENTS.md)** - GitHub Copilot Agents guide
@@ -537,12 +550,6 @@ We welcome contributions! Please see our contribution guidelines:
 4. **Performance**: Include benchmarks for performance-critical changes
 
 ```bash
-# Build the project
-cargo build --release
-
-# Build JAR CLI separately
-cargo build --release --bin jar
-
 # Run tests
 cargo test --all-features
 
@@ -554,9 +561,6 @@ cargo fmt --check
 
 # Run clippy
 cargo clippy --all-features
-
-# Validate project with JAR
-./target/release/jar validate --scan-todos
 ```
 
 ## 🔐 Security

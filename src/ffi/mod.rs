@@ -5,9 +5,45 @@
 //! - JAX: ML inference
 //! - Mojo: SIMD kernels
 //! - Pony: Actor system
-//! - Zig: FFI bridge
+//! - Zig: FFI bridge (ultra-low-latency <1µs)
 //!
 //! Rust coordina todas las llamadas FFI y garantiza memory safety.
+//!
+//! ## Optimizaciones de Performance
+//!
+//! El FFI bridge está optimizado para latencia ultra-baja:
+//! - Zero-copy data transfer usando slices directas
+//! - Stack allocation para arrays pequeños (<256 elementos)
+//! - Arena allocator en Zig para reducir overhead
+//! - Dispatch inline sin allocations
+//! - Batch processing paralelo con Rayon
+//! - Métricas automáticas de latencia
+//!
+//! ## Uso
+//!
+//! ```rust
+//! use memory_p::ffi::bridge::{self, Language};
+//!
+//! // Inicializar
+//! bridge::init();
+//!
+//! // Llamada simple
+//! let mut data = vec![1.0, 2.0, 3.0];
+//! let result = bridge::dispatch_fast(Language::Zig, "process", &mut data)?;
+//!
+//! // Batch paralelo
+//! let requests = vec![
+//!     (Language::Zig, "op1", vec![1.0, 2.0]),
+//!     (Language::Zig, "op2", vec![3.0, 4.0]),
+//! ];
+//! let results = bridge::dispatch_batch(&requests);
+//!
+//! // Métricas
+//! let (calls, avg_us) = bridge::get_metrics();
+//!
+//! // Cleanup
+//! bridge::shutdown();
+//! ```
 
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_double, c_int};
@@ -19,8 +55,14 @@ pub mod jax;
 pub mod mojo;
 pub mod pony;
 
+#[cfg(test)]
+mod benchmarks;
+
 // Re-export FFI error types
 pub use error::{FfiError, Result as FfiResult};
+
+// Re-export bridge types para uso público
+pub use bridge::{Language, dispatch_fast, dispatch_batch, get_metrics, reset_metrics};
 
 /// Inicializa el sistema FFI completo
 pub fn init() -> crate::error::Result<()> {

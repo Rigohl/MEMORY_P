@@ -1217,6 +1217,7 @@ name = "memory_p"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "clap",
  "colored",
