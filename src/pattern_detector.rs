@@ -38,10 +38,10 @@ pub struct UserPatterns {
 /// Patrones temporales
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemporalPatterns {
-    pub working_hours: Vec<u8>,           // Horas del día (0-23)
-    pub preferred_days: Vec<u8>,          // Días de la semana (1-7)
-    pub activity_distribution: Vec<f64>,  // Distribución horaria
-    pub session_duration_avg: f64,        // Duración promedio de sesión (minutos)
+    pub working_hours: Vec<u8>,          // Horas del día (0-23)
+    pub preferred_days: Vec<u8>,         // Días de la semana (1-7)
+    pub activity_distribution: Vec<f64>, // Distribución horaria
+    pub session_duration_avg: f64,       // Duración promedio de sesión (minutos)
     pub commits_per_week: f64,
 }
 
@@ -200,9 +200,7 @@ impl PatternDetector {
         debug!("🔍 Detectando patrones para usuario: {}", user_id);
 
         let history = self.action_history.read().await;
-        let user_actions = history.get(user_id)
-            .cloned()
-            .unwrap_or_default();
+        let user_actions = history.get(user_id).cloned().unwrap_or_default();
 
         if user_actions.is_empty() {
             // Retornar patrones por defecto si no hay historial
@@ -246,7 +244,10 @@ impl PatternDetector {
         let mut cache = self.patterns_cache.write().await;
         cache.insert(user_id.to_string(), patterns.clone());
 
-        info!("✅ Patrones detectados para {} (confidence: {:.2})", user_id, confidence);
+        info!(
+            "✅ Patrones detectados para {} (confidence: {:.2})",
+            user_id, confidence
+        );
 
         Ok(patterns)
     }
@@ -269,19 +270,22 @@ impl PatternDetector {
 
         // Calcular distribución de actividad
         let total_actions = actions.len() as f64;
-        let activity_distribution: Vec<f64> = hour_counts.iter()
+        let activity_distribution: Vec<f64> = hour_counts
+            .iter()
             .map(|&count| count as f64 / total_actions)
             .collect();
 
         // Identificar horas de trabajo (>5% de actividad)
-        let working_hours: Vec<u8> = hour_counts.iter()
+        let working_hours: Vec<u8> = hour_counts
+            .iter()
             .enumerate()
             .filter(|(_, &count)| count as f64 / total_actions > 0.05)
             .map(|(hour, _)| hour as u8)
             .collect();
 
         // Identificar días preferidos (>10% de actividad)
-        let preferred_days: Vec<u8> = day_counts.iter()
+        let preferred_days: Vec<u8> = day_counts
+            .iter()
             .enumerate()
             .filter(|(_, &count)| count as f64 / total_actions > 0.1)
             .map(|(day, _)| (day + 1) as u8) // 1-7 instead of 0-6
@@ -325,11 +329,13 @@ impl PatternDetector {
         // Convertir a distribuciones
         let total_actions = actions.len() as f64;
 
-        let editor_distribution: HashMap<String, f64> = tool_counts.iter()
+        let editor_distribution: HashMap<String, f64> = tool_counts
+            .iter()
             .map(|(tool, &count)| (tool.clone(), count as f64 / total_actions))
             .collect();
 
-        let language_distribution: HashMap<String, f64> = lang_counts.iter()
+        let language_distribution: HashMap<String, f64> = lang_counts
+            .iter()
             .map(|(lang, &count)| (lang.clone(), count as f64 / total_actions))
             .collect();
 
@@ -356,9 +362,7 @@ impl PatternDetector {
         let mut sequences: HashMap<Vec<String>, usize> = HashMap::new();
 
         for window in actions.windows(3) {
-            let sequence: Vec<String> = window.iter()
-                .map(|a| a.action_type.clone())
-                .collect();
+            let sequence: Vec<String> = window.iter().map(|a| a.action_type.clone()).collect();
             *sequences.entry(sequence).or_insert(0) += 1;
         }
 
@@ -369,7 +373,7 @@ impl PatternDetector {
                     sequence,
                     frequency,
                     avg_duration_secs: 120.0, // Estimación
-                    success_rate: 0.85, // Estimación
+                    success_rate: 0.85,       // Estimación
                 });
             }
         }
@@ -449,14 +453,19 @@ mod tests {
 
         // Record some actions
         for i in 0..10 {
-            detector.record_action("test_user", UserAction {
-                timestamp: Utc::now(),
-                action_type: "edit".to_string(),
-                tool: "vscode".to_string(),
-                language: Some("rust".to_string()),
-                success: true,
-                duration_secs: 60.0,
-            }).await;
+            detector
+                .record_action(
+                    "test_user",
+                    UserAction {
+                        timestamp: Utc::now(),
+                        action_type: "edit".to_string(),
+                        tool: "vscode".to_string(),
+                        language: Some("rust".to_string()),
+                        success: true,
+                        duration_secs: 60.0,
+                    },
+                )
+                .await;
         }
 
         let patterns = detector.detect_patterns("test_user").await.unwrap();
@@ -468,14 +477,19 @@ mod tests {
     async fn test_pattern_caching() {
         let detector = PatternDetector::new();
 
-        detector.record_action("user1", UserAction {
-            timestamp: Utc::now(),
-            action_type: "test".to_string(),
-            tool: "test".to_string(),
-            language: None,
-            success: true,
-            duration_secs: 1.0,
-        }).await;
+        detector
+            .record_action(
+                "user1",
+                UserAction {
+                    timestamp: Utc::now(),
+                    action_type: "test".to_string(),
+                    tool: "test".to_string(),
+                    language: None,
+                    success: true,
+                    duration_secs: 1.0,
+                },
+            )
+            .await;
 
         let _ = detector.detect_patterns("user1").await;
         let cached = detector.get_cached_patterns("user1").await;

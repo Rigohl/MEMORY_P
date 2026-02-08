@@ -3,13 +3,13 @@
 //! Inspirado en Qdrant, enfocado en precisión y velocidad extrema
 //! con buffers de baja latencia implementados en Zig
 
+use dashmap::DashMap;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use dashmap::DashMap;
 use tracing::{debug, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
+use crate::error::{MemoryPError as Error, Result};
 
 /// Identificador único de memoria
 pub type MemoryId = String;
@@ -136,7 +136,10 @@ pub struct HyperMemoryManager {
 impl HyperMemoryManager {
     /// Crea un nuevo gestor de memoria hiperestructurada
     pub fn new(embedding_dimension: usize) -> Self {
-        info!("🧠 Inicializando HyperMemory Manager (dim={})", embedding_dimension);
+        info!(
+            "🧠 Inicializando HyperMemory Manager (dim={})",
+            embedding_dimension
+        );
 
         Self {
             storage: Arc::new(DashMap::new()),
@@ -176,7 +179,8 @@ impl HyperMemoryManager {
         let mut text_index = self.text_index.write().await;
 
         // Tokenizar contenido de forma simple
-        let tokens: Vec<String> = entry.content
+        let tokens: Vec<String> = entry
+            .content
             .to_lowercase()
             .split_whitespace()
             .filter(|s| s.len() > 2) // Ignorar palabras muy cortas
@@ -195,7 +199,11 @@ impl HyperMemoryManager {
     }
 
     /// Busca entradas por similitud vectorial
-    pub async fn search_by_vector(&self, query_vector: &[f32], k: usize) -> Result<Vec<HyperMemoryEntry>> {
+    pub async fn search_by_vector(
+        &self,
+        query_vector: &[f32],
+        k: usize,
+    ) -> Result<Vec<HyperMemoryEntry>> {
         let start = std::time::Instant::now();
 
         debug!("🔍 Búsqueda vectorial (k={})", k);
@@ -211,7 +219,9 @@ impl HyperMemoryManager {
             if let Some(entry_ref) = self.storage.get(&id) {
                 let mut entry = entry_ref.clone();
                 // Almacenar similitud en metadata
-                entry.metadata.insert("similarity".to_string(), format!("{:.4}", similarity));
+                entry
+                    .metadata
+                    .insert("similarity".to_string(), format!("{:.4}", similarity));
                 entries.push(entry);
             }
         }
@@ -220,7 +230,11 @@ impl HyperMemoryManager {
         let elapsed = start.elapsed().as_micros() as f64;
         self.record_search_time(elapsed).await;
 
-        info!("✅ Búsqueda vectorial completada: {} resultados en {:.2}μs", entries.len(), elapsed);
+        info!(
+            "✅ Búsqueda vectorial completada: {} resultados en {:.2}μs",
+            entries.len(),
+            elapsed
+        );
 
         Ok(entries)
     }
@@ -261,7 +275,9 @@ impl HyperMemoryManager {
             .filter_map(|(id, score)| {
                 self.storage.get(&id).map(|entry_ref| {
                     let mut entry = entry_ref.clone();
-                    entry.metadata.insert("text_score".to_string(), score.to_string());
+                    entry
+                        .metadata
+                        .insert("text_score".to_string(), score.to_string());
                     entry
                 })
             })
@@ -270,13 +286,22 @@ impl HyperMemoryManager {
         let elapsed = start.elapsed().as_micros() as f64;
         self.record_search_time(elapsed).await;
 
-        info!("✅ Búsqueda textual completada: {} resultados en {:.2}μs", entries.len(), elapsed);
+        info!(
+            "✅ Búsqueda textual completada: {} resultados en {:.2}μs",
+            entries.len(),
+            elapsed
+        );
 
         Ok(entries)
     }
 
     /// Búsqueda híbrida (vectorial + textual)
-    pub async fn search_hybrid(&self, query_text: &str, query_vector: Option<&[f32]>, k: usize) -> Result<Vec<HyperMemoryEntry>> {
+    pub async fn search_hybrid(
+        &self,
+        query_text: &str,
+        query_vector: Option<&[f32]>,
+        k: usize,
+    ) -> Result<Vec<HyperMemoryEntry>> {
         debug!("🔍 Búsqueda híbrida");
 
         let mut all_results: HashMap<MemoryId, HyperMemoryEntry> = HashMap::new();
@@ -331,7 +356,10 @@ impl HyperMemoryManager {
 
     /// Limpia entradas antiguas o de baja prioridad
     pub async fn cleanup_old_entries(&self, max_age_seconds: u64) -> Result<usize> {
-        info!("🧹 Limpiando entradas antiguas (max_age={}s)", max_age_seconds);
+        info!(
+            "🧹 Limpiando entradas antiguas (max_age={}s)",
+            max_age_seconds
+        );
 
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -339,7 +367,8 @@ impl HyperMemoryManager {
             .as_secs();
 
         let mut removed_count = 0;
-        let ids_to_remove: Vec<String> = self.storage
+        let ids_to_remove: Vec<String> = self
+            .storage
             .iter()
             .filter(|entry| {
                 let age = now - entry.last_accessed;
@@ -366,7 +395,8 @@ impl HyperMemoryManager {
     async fn update_stats(&self) {
         let mut stats = self.stats.write().await;
         stats.total_entries = self.storage.len();
-        stats.entries_with_embeddings = self.storage
+        stats.entries_with_embeddings = self
+            .storage
             .iter()
             .filter(|entry| entry.embedding.is_some())
             .count();

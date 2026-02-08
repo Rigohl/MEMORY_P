@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use tokio::fs;
 use tracing::{debug, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
+use crate::error::{MemoryPError as Error, Result};
 
 /// Tipo de contexto detectado
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -98,14 +98,19 @@ impl ContextDetector {
             .map_err(|e| Error::Other(format!("No se pudo obtener directorio actual: {}", e)))?;
 
         let mut data = HashMap::new();
-        data.insert("path".to_string(), current_dir.to_string_lossy().to_string());
+        data.insert(
+            "path".to_string(),
+            current_dir.to_string_lossy().to_string(),
+        );
 
         // Detectar tipo de proyecto
         let project_type = if current_dir.join("Cargo.toml").exists() {
             "Rust"
         } else if current_dir.join("package.json").exists() {
             "Node.js"
-        } else if current_dir.join("pyproject.toml").exists() || current_dir.join("setup.py").exists() {
+        } else if current_dir.join("pyproject.toml").exists()
+            || current_dir.join("setup.py").exists()
+        {
             "Python"
         } else if current_dir.join("go.mod").exists() {
             "Go"
@@ -150,7 +155,10 @@ impl ContextDetector {
 
         Ok(Context {
             context_type: ContextType::Configuration,
-            description: format!("Archivos de configuración encontrados: {}", found_configs.len()),
+            description: format!(
+                "Archivos de configuración encontrados: {}",
+                found_configs.len()
+            ),
             data,
             relevance: 80,
         })
@@ -236,7 +244,8 @@ impl ContextDetector {
 
         Ok(Context {
             context_type: ContextType::System,
-            description: format!("Sistema: {} ({}), {} CPUs",
+            description: format!(
+                "Sistema: {} ({}), {} CPUs",
                 std::env::consts::OS,
                 std::env::consts::ARCH,
                 cpu_count
@@ -258,22 +267,24 @@ impl ContextDetector {
             .filter(|ctx| {
                 match operation {
                     op if op.contains("build") => {
-                        ctx.context_type == ContextType::Dependencies ||
-                        ctx.context_type == ContextType::Configuration
+                        ctx.context_type == ContextType::Dependencies
+                            || ctx.context_type == ContextType::Configuration
                     }
-                    op if op.contains("git") => {
-                        ctx.context_type == ContextType::Git
-                    }
+                    op if op.contains("git") => ctx.context_type == ContextType::Git,
                     op if op.contains("analyze") => {
-                        ctx.context_type == ContextType::Workspace ||
-                        ctx.context_type == ContextType::File
+                        ctx.context_type == ContextType::Workspace
+                            || ctx.context_type == ContextType::File
                     }
-                    _ => true // Por defecto, incluir todos
+                    _ => true, // Por defecto, incluir todos
                 }
             })
             .collect();
 
-        info!("✅ {} contextos relevantes para '{}'", relevant_contexts.len(), operation);
+        info!(
+            "✅ {} contextos relevantes para '{}'",
+            relevant_contexts.len(),
+            operation
+        );
         Ok(relevant_contexts)
     }
 

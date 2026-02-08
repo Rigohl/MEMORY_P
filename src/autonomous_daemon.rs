@@ -10,12 +10,12 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Instant};
-use tracing::{info, warn, error, debug};
+use tracing::{debug, error, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
-use crate::predictive_engine::PredictiveEngine;
-use crate::context_detector::ContextDetector;
 use crate::analyzer::CodeAnalyzer;
+use crate::context_detector::ContextDetector;
+use crate::error::{MemoryPError as Error, Result};
+use crate::predictive_engine::PredictiveEngine;
 use crate::shared_memory::SharedMemorySystem;
 
 /// Estado del daemon autónomo
@@ -156,8 +156,14 @@ impl AutonomousDaemon {
         });
 
         info!("🔄 Tareas de background iniciadas:");
-        info!("   • Health checks: cada {}s", self.config.health_check_interval);
-        info!("   • Context detection: cada {}s", self.config.context_detection_interval);
+        info!(
+            "   • Health checks: cada {}s",
+            self.config.health_check_interval
+        );
+        info!(
+            "   • Context detection: cada {}s",
+            self.config.context_detection_interval
+        );
         info!("   • Auto-optimization: habilitado");
 
         Ok(())
@@ -180,7 +186,7 @@ impl AutonomousDaemon {
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .unwrap()
-                        .as_secs()
+                        .as_secs(),
                 );
             }
 
@@ -232,7 +238,10 @@ impl AutonomousDaemon {
 
         // Intentar recuperación
         for attempt in 1..=self.config.max_recovery_attempts {
-            info!("🔄 Intento de recuperación {}/{}", attempt, self.config.max_recovery_attempts);
+            info!(
+                "🔄 Intento de recuperación {}/{}",
+                attempt, self.config.max_recovery_attempts
+            );
 
             // Simular recuperación (aquí iría lógica real)
             tokio::time::sleep(Duration::from_secs(2)).await;
@@ -259,7 +268,10 @@ impl AutonomousDaemon {
             warn!("⚠️  Intento {} falló, reintentando...", attempt);
         }
 
-        error!("❌ Recuperación falló después de {} intentos", self.config.max_recovery_attempts);
+        error!(
+            "❌ Recuperación falló después de {} intentos",
+            self.config.max_recovery_attempts
+        );
         Err(Error::Other("Recuperación falló".into()))
     }
 
@@ -305,7 +317,12 @@ impl AutonomousDaemon {
 
             // 1. Escanear archivos (Rust por defecto)
             if let Ok(files) = CodeAnalyzer::scan_files(".", "rs", true, false) {
-                let mut ctx = self.shared_memory.get_or_create_context(crate::shared_memory::AgentId::new("autonomous-daemon".to_string())).await?;
+                let mut ctx = self
+                    .shared_memory
+                    .get_or_create_context(crate::shared_memory::AgentId::new(
+                        "autonomous-daemon".to_string(),
+                    ))
+                    .await?;
 
                 for file_path in files {
                     if let Ok(analysis) = CodeAnalyzer::analyze_file(&file_path) {
@@ -319,7 +336,11 @@ impl AutonomousDaemon {
                         }));
 
                         if !analysis.warnings.is_empty() {
-                            info!("⚠️  Detectados {} problemas en {}", analysis.warnings.len(), analysis.file_path);
+                            info!(
+                                "⚠️  Detectados {} problemas en {}",
+                                analysis.warnings.len(),
+                                analysis.file_path
+                            );
 
                             // 2. Registrar alarmas proactivas en memoria compartida
                             for warning in analysis.warnings {
@@ -335,7 +356,9 @@ impl AutonomousDaemon {
                     }
                 }
                 // Actualizar contexto total una vez por escaneo
-                self.shared_memory.update_context(ctx.agent_id.clone(), ctx).await?;
+                self.shared_memory
+                    .update_context(ctx.agent_id.clone(), ctx)
+                    .await?;
             }
         }
     }
