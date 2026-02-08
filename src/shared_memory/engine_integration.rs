@@ -142,10 +142,7 @@ impl EngineIntegration {
 
     /// Indexa un contexto en los motores de búsqueda (Distribución de recuerdos)
     pub async fn index_context(&self, context: &SharedContext) -> Result<()> {
-        debug!(
-            "🧠 Distribuyendo recuerdos del contexto {} en los lóbulos",
-            context.context_id
-        );
+        debug!("🧠 Distribuyendo recuerdos del contexto {} en los lóbulos", context.context_id);
 
         // Memoria Semántica (Qdrant)
         if self.config.semantic_lobe_enabled {
@@ -192,10 +189,7 @@ impl EngineIntegration {
     }
 
     async fn update_short_term_memory(&self, context: &SharedContext) -> Result<()> {
-        debug!(
-            "⚡ Actualizando memoria de corto plazo: {}",
-            context.context_id
-        );
+        debug!("⚡ Actualizando memoria de corto plazo: {}", context.context_id);
         Ok(())
     }
 

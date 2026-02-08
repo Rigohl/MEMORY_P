@@ -367,10 +367,7 @@ impl PredictionEngine {
 
     /// Predice los próximos 2 movimientos del agente
     async fn predict_next_agent_moves(&self, context: &ActionContext) -> Result<Prediction> {
-        info!(
-            "🔮 Prediciendo próximos movimientos para: {}",
-            context.action_type
-        );
+        info!("🔮 Prediciendo próximos movimientos para: {}", context.action_type);
 
         // 1. Obtener patrones de Julia (Análisis de Caos)
         let mut predicted_moves = Vec::new();
@@ -378,9 +375,7 @@ impl PredictionEngine {
         #[cfg(feature = "ffi-julia")]
         if self.config.enable_julia {
             // Convertir historial a serie temporal para Julia
-            let history_values: Vec<f64> = context
-                .history
-                .iter()
+            let history_values: Vec<f64> = context.history.iter()
                 .map(|r| if r.success { 1.0 } else { 0.0 })
                 .collect();
 
@@ -398,19 +393,19 @@ impl PredictionEngine {
             "search" | "map_search" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("edit".to_string());
-            }
+            },
             "analyze" => {
                 predicted_moves.push("repair".to_string());
                 predicted_moves.push("edit".to_string());
-            }
+            },
             "edit" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("workflow".to_string());
-            }
+            },
             "repair" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("simulate".to_string());
-            }
+            },
             _ => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("search".to_string());

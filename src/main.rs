@@ -19,23 +19,23 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 mod analyzer;
 mod auto_manager; // Sistema de auto-gestión MCP 2026
-mod autonomous_daemon;
 mod config;
-mod context_detector;
 mod error;
 mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
-mod hyper_memory;
 mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
-mod pattern_detector;
 mod prediction_engine; // Motor de predicción con Julia + Mojo
-mod predictive_engine;
 mod shared_memory; // Sistema de memoria compartida entre agentes
-mod telemetry;
 mod workspace;
+mod autonomous_daemon;
+mod context_detector;
+mod predictive_engine;
+mod hyper_memory;
+mod pattern_detector;
+mod telemetry;
 
 #[tokio::main]
 async fn main() {

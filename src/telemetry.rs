@@ -299,15 +299,13 @@ mod tests {
         assert!(telemetry.start().await.is_ok());
 
         // Record some events
-        telemetry
-            .record_event(TelemetryEvent {
-                timestamp: 0,
-                event_type: "test".to_string(),
-                component: "test_component".to_string(),
-                metrics: serde_json::json!({}),
-                tags: vec![],
-            })
-            .await;
+        telemetry.record_event(TelemetryEvent {
+            timestamp: 0,
+            event_type: "test".to_string(),
+            component: "test_component".to_string(),
+            metrics: serde_json::json!({}),
+            tags: vec![],
+        }).await;
 
         telemetry.increment_requests(true).await;
         telemetry.record_latency(10.5).await;

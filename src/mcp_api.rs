@@ -666,32 +666,16 @@ pub async fn mcp_json_rpc_handler(
         if let Some(ref mut res_val) = result {
             if let Some(content) = res_val.get_mut("content").and_then(|c| c.as_array_mut()) {
                 // Generar predicción proactiva
-                let tool_name = req
-                    .params
-                    .as_ref()
-                    .and_then(|p| p.get("name"))
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("unknown");
+                let tool_name = req.params.as_ref().and_then(|p| p.get("name")).and_then(|v| v.as_str()).unwrap_or("unknown");
 
                 let action_context = crate::prediction_engine::ActionContext {
                     action_type: tool_name.to_string(),
-                    parameters: req
-                        .params
-                        .as_ref()
-                        .and_then(|p| p.get("arguments"))
-                        .cloned()
-                        .unwrap_or(json!({})),
+                    parameters: req.params.as_ref().and_then(|p| p.get("arguments")).cloned().unwrap_or(json!({})),
                     history: vec![], // TODO: Llenar con historial real de la memoria compartida
                     system_metrics: crate::prediction_engine::SystemMetrics::default(),
                 };
 
-                if let Ok(prediction) = prediction_engine
-                    .predict(
-                        crate::prediction_engine::PredictionType::NextAgentMoves,
-                        &action_context,
-                    )
-                    .await
-                {
+                if let Ok(prediction) = prediction_engine.predict(crate::prediction_engine::PredictionType::NextAgentMoves, &action_context).await {
                     let proactive_text = format!(
                         "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\n{}\n----------------------------------",
                         prediction.recommendation
