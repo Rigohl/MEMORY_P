@@ -23,10 +23,6 @@ pub mod hyper_memory;
 pub mod pattern_detector;
 pub mod telemetry;
 pub mod decision_logic;
-// TODO: Fix trait object safety issues in motores module
-// The SearchEngine trait has async methods which prevents it from being object-safe
-// Need to refactor using enum dispatch or async-trait with Box<dyn Future>
-// pub mod motores;
 pub mod nuclear_crawler; // Nuclear Crawler Hybrid System
 pub mod parallel_engine;
 pub mod shared_memory; // Sistema de memoria compartida para coordinación de agentes

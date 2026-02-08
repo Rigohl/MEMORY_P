@@ -16,6 +16,7 @@ futures = "0.3.31"
 reqwest = { version = "0.11", features = ["json"] }
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Parallelism & Concurrency
 rayon = "1.11"
@@ -52,10 +53,15 @@ sqlparser = "0.50"
 lazy_static = "1.4"
 memmap2 = "0.9.9"
 mimalloc = "0.1.48"
+smallvec = "1.13"
+smartstring = { version = "1.0", features = ["serde"] }
 sled = "0.34"
 polars = { version = "0.41", features = ["lazy", "parquet", "json"] }
 aes-gcm = "0.10"
 rand = "0.8"
+
+# Database (optional for legacy support)
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
 
 [[bin]]
 name = "memory_p"

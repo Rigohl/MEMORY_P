@@ -72,7 +72,15 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Traducción segura entre Rust y otros lenguajes vía C ABI.
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 **Ubicación**: `brain/ffi_bridge.zig`
+=======
+**Ubicación**: `FFI/src/ffi_bridge.zig`
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+**Ubicación**: `FFI/src/ffi_bridge.zig`
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 **Features**:
 - Dispatcher centralizado
@@ -84,7 +92,15 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Optimización matemática, análisis de caos, ecuaciones diferenciales.
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 **Ubicación**: `brain/julia_math.jl`
+=======
+**Ubicación**: `FFI/src/julia_math.jl`
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+**Ubicación**: `FFI/src/julia_math.jl`
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 **Capacidades**:
 - Optimización global (Optim.jl)
@@ -98,7 +114,15 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Embeddings semánticos, inference ML, clasificación.
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 **Ubicación**: `brain/jax_inference.py`
+=======
+**Ubicación**: `FFI/src/jax_inference.py`
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+**Ubicación**: `FFI/src/jax_inference.py`
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 **Capacidades**:
 - Sentence embeddings (MiniLM, BGE)
@@ -112,7 +136,15 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Operaciones vectoriales ultra-rápidas.
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 **Ubicación**: `brain/kernels.mojo`
+=======
+**Ubicación**: `FFI/src/kernels.mojo`
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+**Ubicación**: `FFI/src/kernels.mojo`
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 **Capacidades**:
 - Dot products (12µs para 1M elementos)
@@ -126,7 +158,15 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Concurrencia sin locks, búsqueda distribuida.
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 **Ubicación**: `brain/search_actor.pony`
+=======
+**Ubicación**: `FFI/src/search_actor.pony`
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+**Ubicación**: `FFI/src/search_actor.pony`
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 **Capacidades**:
 - Message passing async
@@ -339,7 +379,15 @@ impl FfiVec {
 - **README.md**: Overview y quick start
 - **INSTALL.md**: Instalación completa multi-lenguaje
 - **BLUEPRINT.md**: Este documento
+<<<<<<< HEAD
+<<<<<<< HEAD
 - **brain/README.md**: Documentación técnica FFI
+=======
+- **FFI/README.md**: Documentación técnica FFI
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+- **FFI/README.md**: Documentación técnica FFI
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 - **AGENTS.md**: GitHub Copilot Agents
 - **SKILLS.md**: Agent Skills
 - **docs/**: Tutoriales y referencia

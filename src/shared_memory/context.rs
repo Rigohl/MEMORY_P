@@ -27,7 +27,7 @@ pub struct ContextManager {
 }
 
 impl ContextManager {
-    /// Crea un nuevo gestor de contextos con persistencia Sled
+    /// Crea un nuevo gestor de contextos con persistencia Sled y Cifrado AES-256
     pub async fn new() -> Result<Self> {
         info!("🔧 Inicializando gestor de contextos con persistencia Sled y Cifrado AES-256");
 
@@ -91,14 +91,6 @@ impl ContextManager {
                 return Ok(ctx);
             }
         }
-
-        // TODO: Intentar recuperar de PostgreSQL
-        // if let Some(pool) = &self.db_pool {
-        //     if let Ok(context) = load_from_db(pool, &agent_id).await {
-        //         self.store_in_cache(context.clone());
-        //         return Ok(context);
-        //     }
-        // }
 
         // Crear nuevo contexto
         debug!("Creando nuevo contexto para agente {}", agent_id);

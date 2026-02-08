@@ -1,0 +1,14 @@
+{
+    "jsonrpc": "2.0",
+    "id": 500,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_analyze",
+        "arguments": {
+            "target_dir": "C:\\Users\\DELL\\Desktop\\PROYECTOS\\MEMORY_P\\src",
+            "file_extension": "rs",
+            "max_tasks": 8,
+            "dry_run": false
+        }
+    }
+}

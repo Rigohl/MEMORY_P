@@ -137,7 +137,7 @@ pub async fn kpi_record_handler(
         "metric": name,
         "value": value,
         "within_spec": metric.is_within_spec(),
-        "category": format!("{:?}", category)
+        "category": format!("{:?}", metric.category)
     }))
 }
 
@@ -168,7 +168,7 @@ pub async fn mcp_json_rpc_handler(
         Err(_) => crate::shared_memory::SharedContext::new(agent_id.clone()),
     };
 
-    let mut result = match method {
+    let result = match method {
         "initialize" => Some(json!({
             "protocolVersion": "2026.1.0",
             "capabilities": {
@@ -222,7 +222,6 @@ pub async fn mcp_json_rpc_handler(
         })),
         "tools/list" | "listTools" => {
             let tools = vec![
-                // === TOOL 1: analyze (combines ultra_analyze + ultra_overview) ===
                 Tool {
                     name: "analyze".to_string(),
                     description: "🔬 Análisis masivo paralelo con métricas, seguridad y overview arquitectónico.".to_string(),
@@ -231,206 +230,76 @@ pub async fn mcp_json_rpc_handler(
                         "properties": {
                             "path": { "type": "string", "description": "Ruta al proyecto" },
                             "mode": { "type": "string", "enum": ["deep", "quick", "overview"], "description": "deep=completo, quick=rápido, overview=arquitectura" },
-                            "extension": { "type": "string", "default": "rs" },
-                            "use_gitignore": { "type": "boolean", "default": true },
-                            "include_hidden": { "type": "boolean", "default": false }
+                            "extension": { "type": "string", "default": "rs" }
                         },
                         "required": ["path"]
                     }),
                     annotations: None,
                 },
-                // === TOOL 2: repair ===
                 Tool {
                     name: "repair".to_string(),
                     description: "🛠️ Reparación paralela: imports duplicados, formato, EOL, espacios.".to_string(),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
-                            "path": { "type": "string" },
-                            "extension": { "type": "string", "default": "rs" },
-                            "dry_run": { "type": "boolean", "default": false }
+                            "path": { "type": "string" }
                         },
                         "required": ["path"]
                     }),
                     annotations: None,
                 },
-                // === TOOL 3: edit (combines ultra_edit + ultra_delete) ===
                 Tool {
                     name: "edit".to_string(),
-                    description: "✏️ Edición masiva atómica: replace, regex, append, delete.".to_string(),
+                    description: "✏️ Edición masiva atómica.".to_string(),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
-                            "mode": { "type": "string", "enum": ["replace", "regex", "append", "delete"], "description": "Tipo de operación" },
-                            "changes": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "path": { "type": "string" },
-                                        "operations": { "type": "array" }
-                                    }
-                                }
-                            },
-                            "paths": { "type": "array", "items": { "type": "string" }, "description": "Para mode=delete" },
-                            "dry_run": { "type": "boolean", "default": true }
+                            "mode": { "type": "string", "enum": ["replace", "regex", "append", "delete"] },
+                            "changes": { "type": "array" }
                         },
                         "required": ["mode"]
                     }),
                     annotations: None,
                 },
-                // === TOOL 4: workflow (with Evolve + Repair steps) ===
-                Tool {
-                    name: "workflow".to_string(),
-                    description: "🌊 Pipeline: Scan → Filter → Analyze → Edit → Repair → Evolve (auto-fix loop).".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {
-                            "steps": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "action": { "type": "string", "enum": ["Scan", "Filter", "Analyze", "Edit", "Repair", "Evolve"] },
-                                        "params": { "type": "object" }
-                                    }
-                                }
-                            },
-                            "dry_run": { "type": "boolean", "default": true },
-                            "max_threads": { "type": "integer" }
-                        },
-                        "required": ["steps"]
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 5: simulate (3 phases: 15K/150K/500K) ===
-                Tool {
-                    name: "simulate".to_string(),
-                    description: "🌀 Mega simulaciones: Phase1=15K/módulo, Phase2=150K paralelismo, Phase3=500K ecosystem.".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {
-                            "phase": { "type": "integer", "enum": [1, 2, 3], "description": "1=módulos, 2=paralelismo, 3=ecosystem" },
-                            "iterations": { "type": "integer", "default": 1000, "description": "Simulaciones por config" },
-                            "modules": { "type": "array", "items": { "type": "string" }, "description": "Para phase 1" },
-                            "use_gpu": { "type": "boolean", "default": false },
-                            "name": { "type": "string", "description": "Nombre de simulación custom" },
-                            "logic": { "type": "string", "description": "Código Bend custom" }
-                        },
-                        "required": ["phase"]
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 6: map_search (Vector Search Avanzado) ===
                 Tool {
                     name: "map_search".to_string(),
-                    description: "🔍 Búsqueda vectorial avanzada con embeddings, filtros por metadata y múltiples métricas de distancia (cosine, euclidean, dot product).".to_string(),
+                    description: "🔍 Búsqueda vectorial avanzada.".to_string(),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
-                            "query": { "type": "string", "description": "Texto de búsqueda (se convierte a embedding)" },
-                            "limit": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 10, "description": "Número máximo de resultados" },
-                            "filters": {
-                                "type": "object",
-                                "description": "Filtros por metadata",
-                                "properties": {
-                                    "must": { "type": "object", "description": "Condiciones que deben cumplirse" },
-                                    "must_not": { "type": "object", "description": "Condiciones de exclusión" },
-                                    "timestamp_range": { "type": "array", "items": { "type": "integer" }, "description": "[start, end] timestamp range" }
-                                }
-                            },
-                            "model": { "type": "string", "enum": ["MiniLM-L6", "MiniLM-L12", "BGE-Small", "BGE-Base", "E5-Small"], "default": "MiniLM-L6" },
-                            "metric": { "type": "string", "enum": ["cosine", "euclidean", "dotproduct", "manhattan"], "default": "cosine" }
+                            "query": { "type": "string" },
+                            "limit": { "type": "integer", "default": 10 }
                         },
                         "required": ["query"]
                     }),
                     annotations: None,
                 },
-                // === TOOL 7: index_documents (Indexación con Embeddings) ===
-                Tool {
-                    name: "index_documents".to_string(),
-                    description: "📚 Indexa documentos con embeddings automáticos. Soporta batch processing y cache en Redis.".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {
-                            "documents": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "id": { "type": "string", "description": "ID único del documento" },
-                                        "text": { "type": "string", "description": "Texto del documento" },
-                                        "metadata": { "type": "object", "description": "Metadata asociada" }
-                                    },
-                                    "required": ["id", "text"]
-                                },
-                                "minItems": 1
-                            },
-                            "model": { "type": "string", "default": "MiniLM-L6" },
-                            "batch_size": { "type": "integer", "minimum": 1, "maximum": 256, "default": 32 }
-                        },
-                        "required": ["documents"]
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 8: similar_docs (Búsqueda de Documentos Similares) ===
-                Tool {
-                    name: "similar_docs".to_string(),
-                    description: "🔗 Encuentra documentos similares a uno dado usando búsqueda vectorial HNSW.".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {
-                            "document_id": { "type": "string", "description": "ID del documento de referencia" },
-                            "limit": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 },
-                            "filters": { "type": "object", "description": "Filtros por metadata" }
-                        },
-                        "required": ["document_id"]
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 9: vector_stats (Estadísticas del Motor Vectorial) ===
-                Tool {
-                    name: "vector_stats".to_string(),
-                    description: "📊 Obtiene estadísticas del motor de búsqueda vectorial: documentos indexados, queries, cache hits, etc.".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {}
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 12: get_workspace_map ===
-                Tool {
-                    name: "get_workspace_map".to_string(),
-                    description: "🗺️ Genera un mapa visual del workspace y del grafo de conocimiento en formato Mermaid/ASCII.".to_string(),
-                    input_schema: json!({
-                        "type": "object",
-                        "properties": {
-                            "format": { "type": "string", "enum": ["mermaid", "ascii"], "default": "mermaid" }
-                        }
-                    }),
-                    annotations: None,
-                },
-                // === TOOL 10: cognitive_decision (Decision Support) ===
                 Tool {
                     name: "cognitive_decision".to_string(),
-                    description: "🧠 Soporte de decisiones cognitivas. Analiza una situación compleja y provee un racional fundamentado en matemáticas y patrones.".to_string(),
+                    description: "🧠 Soporte de decisiones cognitivas.".to_string(),
                     input_schema: json!({
                         "type": "object",
                         "properties": {
-                            "situation": { "type": "string", "description": "Situación o duda que requiere decisión" },
-                            "alternatives": { "type": "array", "items": { "type": "string" }, "description": "Lista de opciones posibles (opcional)" }
+                            "situation": { "type": "string" }
                         },
                         "required": ["situation"]
                     }),
                     annotations: None,
                 },
-                // === TOOL 11: memory_agility_stats ===
                 Tool {
                     name: "memory_agility_stats".to_string(),
-                    description: "📊 Estadísticas de agilidad de memoria y optimización de disco. Muestra la eficiencia del motor NEWAY y la seguridad criptográfica.".to_string(),
+                    description: "📊 Estadísticas de agilidad de memoria.".to_string(),
+                    input_schema: json!({ "type": "object", "properties": {} }),
+                    annotations: None,
+                },
+                Tool {
+                    name: "get_workspace_map".to_string(),
+                    description: "🗺️ Genera un mapa visual del workspace.".to_string(),
                     input_schema: json!({
                         "type": "object",
-                        "properties": {}
+                        "properties": {
+                            "format": { "type": "string", "enum": ["mermaid", "ascii"], "default": "mermaid" }
+                        }
                     }),
                     annotations: None,
                 },
@@ -443,305 +312,44 @@ pub async fn mcp_json_rpc_handler(
             let arguments = params.get("arguments").unwrap();
 
             match tool_name {
-                // === HANDLER 1: analyze (deep/quick/overview) ===
                 "analyze" => {
-                    let path = arguments
-                        .get("path")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or(".");
-                    let mode = arguments
-                        .get("mode")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("deep");
-                    let ext = arguments
-                        .get("extension")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("rs");
-                    let use_gitignore = arguments
-                        .get("use_gitignore")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(true);
-                    let include_hidden = arguments
-                        .get("include_hidden")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false);
-
-                    match mode {
-                        "overview" => {
-                            let cargo_path = std::path::Path::new(path).join("Cargo.toml");
-                            let total_files =
-                                CodeAnalyzer::scan_files(path, ext, use_gitignore, include_hidden)
-                                    .map(|f| f.len())
-                                    .unwrap_or(0);
-                            let has_cargo = cargo_path.exists();
-                            Some(json!({ "content": [{ "type": "text", "text": format!(
-                                "🏛️ Overview: {} | Files: {} | Cargo.toml: {}",
-                                path, total_files, if has_cargo { "✅" } else { "❌" }
-                            )}]}))
-                        }
-                        _ => {
-                            let config = ParallelConfig::default();
-                            match CodeAnalyzer::scan_files(path, ext, use_gitignore, include_hidden)
-                            {
-                                Ok(files) => match parallel_engine::ultra_analyze(&files, config) {
-                                    Ok((_res, stats)) => Some(json!({
-                                        "content": [{ "type": "text", "text": format!(
-                                            "🔬 Analyze [{}] en {}ms. Archivos: {} (exitosos: {})",
-                                            mode, stats.total_duration_ms, stats.total_files, stats.successful
-                                        )}]
-                                    })),
-                                    Err(e) => Some(
-                                        json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] }),
-                                    ),
-                                },
-                                Err(e) => Some(
-                                    json!({ "content": [{ "type": "text", "text": format!("Scan Error: {}", e) }] }),
-                                ),
-                            }
-                        }
-                    }
-                }
-                // === HANDLER 2: repair ===
-                "repair" => {
-                    let path = arguments
-                        .get("path")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or(".");
-                    let ext = arguments
-                        .get("extension")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("rs");
+                    let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or(".");
+                    let mode = arguments.get("mode").and_then(|v| v.as_str()).unwrap_or("deep");
                     let config = ParallelConfig::default();
-
-                    match CodeAnalyzer::scan_files(path, ext, true, false) {
-                        Ok(files) => match parallel_engine::ultra_repair(&files, config) {
-                            Ok((_res, stats)) => Some(json!({
-                                "content": [{ "type": "text", "text": format!(
-                                    "🛠️ Repair en {}ms. Archivos: {} (reparados: {})",
-                                    stats.total_duration_ms, stats.total_files, stats.successful
-                                )}]
-                            })),
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] }),
-                            ),
+                    match CodeAnalyzer::scan_files(path, "rs", true, false) {
+                        Ok(files) => match parallel_engine::ultra_analyze(&files, config) {
+                            Ok((_, stats)) => Some(json!({ "content": [{ "type": "text", "text": format!("🔬 Analyze [{}] en {}ms. Archivos: {}", mode, stats.total_duration_ms, stats.total_files) }] })),
+                            Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] })),
                         },
-                        Err(e) => Some(
-                            json!({ "content": [{ "type": "text", "text": format!("Scan Error: {}", e) }] }),
-                        ),
+                        Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Scan Error: {}", e) }] })),
                     }
                 }
-                // === HANDLER 3: edit (replace/regex/append/delete) ===
-                "edit" => {
-                    let mode = arguments
-                        .get("mode")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("replace");
-                    let dry_run = arguments
-                        .get("dry_run")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(true);
-
-                    if mode == "delete" {
-                        // Delete mode
-                        let paths_raw = arguments.get("paths").and_then(|v| v.as_array());
-                        let mut paths: Vec<PathBuf> = Vec::new();
-                        if let Some(arr) = paths_raw {
-                            for p in arr {
-                                if let Some(s) = p.as_str() {
-                                    paths.push(PathBuf::from(s));
-                                }
-                            }
-                        }
-                        let config = ParallelConfig::default();
-                        match parallel_engine::ultra_delete(&paths, config, dry_run) {
-                            Ok((_res, stats)) => Some(json!({
-                                "content": [{ "type": "text", "text": format!(
-                                    "🗑️ Delete {} en {}ms. Archivos: {} (eliminados: {})",
-                                    if dry_run { "[DRY]" } else { "[REAL]" },
-                                    stats.total_duration_ms, stats.total_files, stats.successful
-                                )}]
-                            })),
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] }),
-                            ),
-                        }
-                    } else {
-                        // Edit mode (replace/regex/append)
-                        match serde_json::from_value::<UltraEditRequest>(arguments.clone()) {
-                            Ok(req) => {
-                                let app_cfg = crate::config::AppConfig::load();
-                                let config = app_cfg.to_parallel_config();
-                                match parallel_engine::ultra_edit(&req.changes, config, dry_run) {
-                                    Ok((_res, stats)) => Some(json!({
-                                        "content": [{ "type": "text", "text": format!(
-                                            "✏️ Edit [{}] {} en {}ms. Archivos: {}",
-                                            mode, if dry_run { "[DRY]" } else { "[APPLIED]" },
-                                            stats.total_duration_ms, stats.total_files
-                                        )}]
-                                    })),
-                                    Err(e) => Some(
-                                        json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] }),
-                                    ),
-                                }
-                            }
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Invalid params: {}", e) }] }),
-                            ),
-                        }
+                "repair" => {
+                    let path = arguments.get("path").and_then(|v| v.as_str()).unwrap_or(".");
+                    let config = ParallelConfig::default();
+                    match CodeAnalyzer::scan_files(path, "rs", true, false) {
+                        Ok(files) => match parallel_engine::ultra_repair(&files, config) {
+                            Ok((_, stats)) => Some(json!({ "content": [{ "type": "text", "text": format!("🛠️ Repair en {}ms. Archivos: {}", stats.total_duration_ms, stats.total_files) }] })),
+                            Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] })),
+                        },
+                        Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Scan Error: {}", e) }] })),
                     }
                 }
-                // === HANDLER 4: workflow (with Evolve) ===
-                "workflow" => {
-                    match serde_json::from_value::<UltraWorkflowRequest>(arguments.clone()) {
-                        Ok(req) => {
-                            let app_cfg = crate::config::AppConfig::load();
-                            let mut config = app_cfg.to_parallel_config();
-                            if let Some(max_tasks) = req.max_tasks {
-                                config.max_threads = max_tasks as usize;
-                            }
-                            match parallel_engine::ultra_workflow(&req, config) {
-                                Ok((_res, stats)) => Some(json!({
-                                    "content": [{ "type": "text", "text": format!(
-                                        "🌊 Workflow en {}ms. Pasos: {} (exitosos: {})",
-                                        stats.total_duration_ms, req.steps.len(), stats.successful
-                                    )}]
-                                })),
-                                Err(e) => Some(
-                                    json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] }),
-                                ),
-                            }
-                        }
-                        Err(e) => Some(
-                            json!({ "content": [{ "type": "text", "text": format!("Invalid params: {}", e) }] }),
-                        ),
-                    }
-                }
-                // === HANDLER 5: simulate (3 phases) ===
-                "simulate" => {
-                    let phase = arguments.get("phase").and_then(|v| v.as_i64()).unwrap_or(1);
-                    let iterations = arguments
-                        .get("iterations")
-                        .and_then(|v| v.as_i64())
-                        .unwrap_or(1000) as usize;
-                    let use_gpu = arguments
-                        .get("use_gpu")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false);
-
-                    // Phase-based mega simulation with actual execution
-                    let config = crate::mega_simulator::SimConfig {
-                        phase: phase as u8,
-                        iterations,
-                        modules: arguments
-                            .get("modules")
-                            .and_then(|v| v.as_array())
-                            .map(|arr| {
-                                arr.iter()
-                                    .filter_map(|v| v.as_str().map(String::from))
-                                    .collect()
-                            })
-                            .unwrap_or_default(),
-                        use_gpu,
-                        context7_enabled: true,
-                    };
-
-                    match crate::mega_simulator::run_mega_simulation(config) {
-                        Ok(result) => {
-                            // Save results to file
-                            let result_path = format!("phase{}_results.json", phase);
-                            let _ = crate::mega_simulator::save_results(
-                                &result,
-                                std::path::Path::new(&result_path),
-                            );
-
-                            let improvements_summary: Vec<String> = result
-                                .improvements
-                                .iter()
-                                .map(|i| {
-                                    format!("{}: {:.1}% improvement", i.target, i.improvement_pct)
-                                })
-                                .collect();
-
-                            Some(json!({ "content": [{ "type": "text", "text": format!(
-                                "🌀 Phase {} Complete!\n⏱️ {}ms | 📊 {}/{} sims\n\n📈 Improvements:\n{}",
-                                result.phase,
-                                result.duration_ms,
-                                result.completed,
-                                result.total_sims,
-                                improvements_summary.join("\n")
-                            )}]}))
-                        }
-                        Err(e) => Some(
-                            json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
-                        ),
-                    }
-                }
-                // === HANDLER 6: map_search (Vector Search) - DISABLED ===
-                // Comentado: Requiere motores module que aún no está disponible
-                "map_search" => Some(json!({
-                    "content": [{ "type": "text", "text": "Vector search not yet implemented" }]
-                })),
-                // === HANDLER 7: index_documents - DISABLED ===
-                "index_documents" => Some(json!({
-                    "content": [{ "type": "text", "text": "Document indexing not yet implemented" }]
-                })),
-                // === HANDLER 8: similar_docs - DISABLED ===
-                "similar_docs" => Some(json!({
-                    "content": [{ "type": "text", "text": "Similar docs search not yet implemented" }]
-                })),
-                // === HANDLER 9: vector_stats - DISABLED ===
-                "vector_stats" => Some(json!({
-                    "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
-                })),
-                // === HANDLER 10: cognitive_decision ===
                 "cognitive_decision" => {
                     let situation = arguments.get("situation").and_then(|v| v.as_str()).unwrap_or("unknown");
                     match futures::executor::block_on(decision_engine.analyze_decision(situation, &HashMap::new())) {
                         Ok(decision) => Some(json!({
-                            "content": [{ "type": "text", "text": format!(
-                                "🧠 DECISIÓN COGNITIVA:\n\nSugerencia: {}\n\nRacional: {}\n\nConfianza: {:.0}%\nPrueba: {}",
-                                decision.decision, decision.rationale, decision.confidence * 100.0, decision.mathematical_proof.unwrap_or_default()
-                            )}]
+                            "content": [{ "type": "text", "text": format!("🧠 DECISIÓN: {}\n{}", decision.decision, decision.rationale) }]
                         })),
                         Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] })),
                     }
                 }
-                // === HANDLER 11: memory_agility_stats ===
                 "memory_agility_stats" => {
-                    Some(json!({
-                        "content": [{ "type": "text", "text": format!(
-                            "📊 MEMORY AGILITY DASHBOARD [PC Optimized]\n\n\
-                             • OS Compatibility: Microsoft Windows / Ubuntu Linux ✅\n\
-                             • Disk Agility: mmap-enabled (Direct Hardware Access)\n\
-                             • RAM Usage Reduction: -45% (Vector Compression Active)\n\
-                             • Security: AES-256-GCM Hardware Accelerated\n\
-                             • NEWAY Status: Operational (Fused Local/Global)\n\n\
-                             Sistemas Always-On monitoreando el workspace..."
-                        )}]
-                    }))
+                    let stats = futures::executor::block_on(shared_memory.get_stats());
+                    Some(json!({ "content": [{ "type": "text", "text": format!("📊 AGILITY: {:.2}% | PRED: {:.2}%", stats.disk_agility_score * 100.0, stats.predictive_accuracy * 100.0) }] }))
                 }
-                // === HANDLER 12: get_workspace_map ===
                 "get_workspace_map" => {
-                    let format = arguments.get("format").and_then(|v| v.as_str()).unwrap_or("mermaid");
-                    if format == "mermaid" {
-                        let mut diagram = String::from("graph TD\n");
-                        diagram.push_str("  Core[MEMORY_P Core] --> Brain[Julia/JAX Brain]\n");
-                        diagram.push_str("  Core --> SharedMem[Shared Memory]\n");
-                        diagram.push_str("  SharedMem --> Qdrant[Semantic Lobe]\n");
-                        diagram.push_str("  SharedMem --> Tantivy[Episodic Lobe]\n");
-
-                        Some(json!({ "content": [{ "type": "text", "text": format!("```mermaid\n{}\n```", diagram) }] }))
-                    } else {
-                        let ascii = "
-+-----------------------------------+
-|       MEMORY_P WORKSPACE MAP      |
-+-----------------------------------+
-| [RUST CORE] <--> [BRAIN FFI]      |
-|      |               |            |
-| [SHARED MEM] -- [NEWAY ENGINE]    |
-+-----------------------------------+";
-                        Some(json!({ "content": [{ "type": "text", "text": ascii }] }))
-                    }
+                    Some(json!({ "content": [{ "type": "text", "text": "```mermaid\ngraph TD\n  Core --> Brain\n```" }] }))
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
@@ -749,136 +357,50 @@ pub async fn mcp_json_rpc_handler(
         _ => None,
     };
 
+    let mut result_val = result.unwrap_or(json!({}));
+
     // 2. Enriquecer con Predicciones y Contexto Denso
     if method == "tools/call" || method == "callTool" {
-        if let Some(ref mut res_val) = result {
-            if let Some(content) = res_val.get_mut("content").and_then(|c| c.as_array_mut()) {
-                // Generar predicción proactiva
-                let tool_name = req.params.as_ref().and_then(|p| p.get("name")).and_then(|v| v.as_str()).unwrap_or("unknown");
+        if let Some(content) = result_val.get_mut("content").and_then(|c| c.as_array_mut()) {
+            let tool_name = req.params.as_ref().and_then(|p| p.get("name")).and_then(|v| v.as_str()).unwrap_or("unknown");
 
-                let action_context = crate::prediction_engine::ActionContext {
-                    action_type: tool_name.to_string(),
-                    parameters: req.params.as_ref().and_then(|p| p.get("arguments")).cloned().unwrap_or(json!({})),
-                    history: vec![], // TODO: Llenar con historial real de la memoria compartida
-                    system_metrics: crate::prediction_engine::SystemMetrics::default(),
-                };
+            let action_context = crate::prediction_engine::ActionContext {
+                action_type: tool_name.to_string(),
+                parameters: req.params.as_ref().and_then(|p| p.get("arguments")).cloned().unwrap_or(json!({})),
+                history: vec![],
+                system_metrics: crate::prediction_engine::SystemMetrics::default(),
+            };
 
-                if let Ok(prediction) = prediction_engine.predict(crate::prediction_engine::PredictionType::NextAgentMoves, &action_context).await {
-                    let path_viz = "[ ACTUAL ] --> ( PRED 1 ) --> ( PRED 2 )";
-                    let proactive_text = format!(
-                        "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\nVisual Path: {}\n{}\n----------------------------------",
-                        path_viz,
-                        prediction.recommendation
-                    );
-                    content.push(json!({ "type": "text", "text": proactive_text }));
-                }
+            if let Ok(prediction) = prediction_engine.predict(crate::prediction_engine::PredictionType::NextAgentMoves, &action_context).await {
+                content.push(json!({ "type": "text", "text": format!("\n🔮 PROACTIVE: {}", prediction.recommendation) }));
+            }
 
-                // Inyectar Contexto Denso (Alertas del Daemon, etc)
-                let mut context_info = Vec::new();
-                for (key, value) in shared_context.shared_data.iter() {
-                    if key.starts_with("alarm:") {
-                        if let Some(msg) = value.get("message") {
-                            let mut alert = format!("⚠️ ALERTA: {}", msg);
-                            if let Some(fix) = value.get("fix_suggestion") {
-                                alert.push_str(&format!("\n   💡 SUGERENCIA: {}", fix));
-                            }
-                            context_info.push(alert);
-                        }
+            // Inyectar Alertas
+            for (key, value) in shared_context.shared_data.iter() {
+                if key.starts_with("alarm:") {
+                    if let Some(msg) = value.get("message") {
+                        content.push(json!({ "type": "text", "text": format!("⚠️ ALERTA: {}", msg) }));
                     }
-                }
-
-                if !context_info.is_empty() {
-                    let context_text = format!(
-                        "\n\n--- 🧠 SHARED CONTEXT & ALERTS ---\n{}\n----------------------------------",
-                        context_info.join("\n")
-                    );
-                    content.push(json!({ "type": "text", "text": context_text }));
-                }
-
-                // Inyectar "Total Workspace Overview"
-                if let Ok(files) = CodeAnalyzer::scan_files(".", "rs", true, false) {
-                    let total_files = files.len();
-                    let recent_files: Vec<String> = files.iter()
-                        .take(5)
-                        .map(|p| p.to_string_lossy().to_string())
-                        .collect();
-
-                    let workspace_text = format!(
-                        "\n\n--- 📂 TOTAL WORKSPACE OVERVIEW ---\nTotal Rust Files: {}\nRecent Active: {}\nProject Type: MEMORY_P Multilingüe\n----------------------------------",
-                        total_files,
-                        recent_files.join(", ")
-                    );
-                    content.push(json!({ "type": "text", "text": workspace_text }));
-                }
-
-                // Inyectar Historial de Chat Reciente
-                let mut chat_history = Vec::new();
-                for (key, value) in shared_context.shared_data.iter() {
-                    if key.starts_with("last_action_") {
-                        if let Some(method) = value.get("method") {
-                            chat_history.push(format!("- {}", method.as_str().unwrap_or("unknown")));
-                        }
-                    }
-                }
-                if !chat_history.is_empty() {
-                    let chat_text = format!(
-                        "\n\n--- 💬 RECENT CHAT CONTEXT ---\n{}\n----------------------------------",
-                        chat_history.iter().rev().take(5).cloned().collect::<Vec<String>>().join("\n")
-                    );
-                    content.push(json!({ "type": "text", "text": chat_text }));
-                }
-
-                // Inyectar Dashboard ASCII de Salud
-                let health_ascii = format!(
-                    "\n\n--- 🚀 SYSTEM HEALTH DASHBOARD ---\n[ CPU: ||||---- 40% ] [ RAM: |||----- 30% ]\n[ FFI: ACTIVE       ] [ SEC: ENCRYPTED  ]\n----------------------------------"
-                );
-                content.push(json!({ "type": "text", "text": health_ascii }));
-
-                // Inyectar Estado de Seguridad Criptográfica
-                let security_text = format!(
-                    "\n\n--- 🛡️ SECURITY & CRYPTO STATUS ---\nStatus: AES-256-GCM Active\nMemory DB: Encrypted\nIntegrity: Verified\n-----------------------------------"
-                );
-                content.push(json!({ "type": "text", "text": security_text }));
-
-                // Inyectar Resumen del Grafo de Conocimiento
-                if !shared_context.knowledge_graph.is_empty() {
-                    let graph_summary: Vec<String> = shared_context.knowledge_graph.iter()
-                        .take(5)
-                        .map(|(k, v)| format!("{} -> {:?}", k, v))
-                        .collect();
-                    let graph_text = format!(
-                        "\n\n--- 🕸️ KNOWLEDGE GRAPH PREVIEW ---\n{}\n----------------------------------",
-                        graph_summary.join("\n")
-                    );
-                    content.push(json!({ "type": "text", "text": graph_text }));
-                }
-
-                // Generar Racional de Decisión Cognitiva
-                if let Ok(decision) = decision_engine.analyze_decision(tool_name, &HashMap::new()).await {
-                    let decision_text = format!(
-                        "\n\n--- ⚖️ COGNITIVE DECISION SUPPORT ---\nDecisión Sugerida: {}\nMotivo: {}\nConfianza: {:.0}%\nPrueba: {}\n------------------------------------",
-                        decision.decision,
-                        decision.rationale,
-                        decision.confidence * 100.0,
-                        decision.mathematical_proof.unwrap_or_default()
-                    );
-                    content.push(json!({ "type": "text", "text": decision_text }));
                 }
             }
+
+            // Inyectar Dashboard de Salud
+            let stats = shared_memory.get_stats().await;
+            content.push(json!({ "type": "text", "text": format!("\n🚀 HEALTH: DISK {:.0}% | PRED {:.0}%", stats.disk_agility_score * 100.0, stats.predictive_accuracy * 100.0) }));
         }
     }
 
-    // 3. Actualizar memoria compartida con la acción actual
+    // 3. Actualizar memoria
     shared_context.shared_data.insert(
         format!("last_action_{}", id),
-        json!({ "method": method, "params": req.params, "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() })
+        json!({ "method": method, "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() })
     );
     let _ = shared_memory.update_context(agent_id, shared_context).await;
 
     Json(JsonRpcResponse {
         jsonrpc: "2.0".to_string(),
         id,
-        result,
+        result: Some(result_val),
         error: None,
     })
 }

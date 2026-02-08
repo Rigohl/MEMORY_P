@@ -1,0 +1,20 @@
+{
+    "jsonrpc": "2.0",
+    "id": 300,
+    "method": "callTool",
+    "params": {
+        "name": "batch_tasks",
+        "arguments": {
+            "tasks": [
+                {
+                    "task_type": "replace",
+                    "paths": [
+                        "C:\\Users\\DELL\\Desktop\\hf_spaces\\nuclear_crawler_hybrid\\src\\lib.rs"
+                    ],
+                    "pattern": "// Dummy comment to force recompilation",
+                    "replacement": "pub mod data_management;\npub mod nim_integration;\npub mod jax_integration;\npub mod zig_integration;\npub mod file_search;\npub mod deepweb_tor;\npub mod intelligent_storage;\npub mod rate_limit;\npub mod utils;"
+                }
+            ]
+        }
+    }
+}

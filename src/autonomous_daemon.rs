@@ -377,7 +377,55 @@ impl AutonomousDaemon {
             if let Err(e) = self.shared_memory.auto_manage_memory().await {
                 error!("❌ Error en autogestión de memoria: {}", e);
             }
+
+            // 3. Ejecutar Auto-Sanación Proactiva
+            if self.config.auto_correction_enabled {
+                if let Err(e) = self.perform_auto_heal().await {
+                    error!("❌ Error en auto-sanación: {}", e);
+                }
+            }
         }
+    }
+
+    /// Realiza auto-sanación de problemas detectados
+    async fn perform_auto_heal(&self) -> Result<()> {
+        debug!("🛠️  Iniciando ciclo de auto-sanación...");
+
+        let agent_id = crate::shared_memory::AgentId::new("autonomous-daemon".to_string());
+        let ctx = self.shared_memory.get_or_create_context(agent_id).await?;
+
+        // Buscar archivos con alarmas para auto-reparar
+        let mut files_to_repair = Vec::new();
+        for (key, value) in ctx.shared_data.iter() {
+            if key.starts_with("alarm:") {
+                if let Some(file) = value.get("file").and_then(|v| v.as_str()) {
+                    // Solo reparamos si el mensaje sugiere problemas de código tratables
+                    if let Some(msg) = value.get("message").and_then(|v| v.as_str()) {
+                        if msg.contains("RUST") || msg.contains("formato") {
+                            files_to_repair.push(std::path::PathBuf::from(file));
+                        }
+                    }
+                }
+            }
+        }
+
+        if !files_to_repair.is_empty() {
+            info!("🔧 Auto-sanando {} archivos detectados...", files_to_repair.len());
+            let config = crate::parallel_engine::ParallelConfig::default();
+
+            // Limitamos a 5 archivos por ciclo para no saturar
+            let to_fix = if files_to_repair.len() > 5 { &files_to_repair[..5] } else { &files_to_repair };
+
+            if let Ok((_res, stats)) = crate::parallel_engine::ultra_repair(to_fix, config) {
+                info!("✅ Auto-sanación completada: {} exitosos", stats.successful);
+
+                // Actualizar métricas
+                let mut metrics = self.metrics.write().await;
+                metrics.auto_corrections += stats.successful as u64;
+            }
+        }
+
+        Ok(())
     }
 
     /// Obtiene el estado actual del daemon
