@@ -21,6 +21,7 @@ pub struct FileAnalysis {
     pub structs: usize,
     pub imports: usize,
     pub warnings: Vec<String>,
+    pub suggestions: Vec<String>,
     pub security_score: u8,
 }
 
@@ -107,6 +108,7 @@ impl CodeAnalyzer {
 
         let complexity_estimate = estimate_complexity(&content, 1.0);
         let warnings = detect_warnings(&content, file_path);
+        let suggestions = generate_suggestions(&warnings);
 
         let result = FileAnalysis {
             file_path: file_path.to_string_lossy().to_string(),
@@ -119,6 +121,7 @@ impl CodeAnalyzer {
             structs,
             imports,
             warnings: warnings.clone(),
+            suggestions,
             security_score: calculate_security_score(&warnings),
         };
 
@@ -151,6 +154,8 @@ lazy_static! {
     static ref RE_SEC_API_KEY_GOOGLE: Regex = Regex::new(r"AIza[0-9A-Za-z-_]{35}").unwrap();
     static ref RE_SEC_API_KEY_OPENAI: Regex = Regex::new(r"sk-[a-zA-Z0-9]{48}").unwrap();
     static ref RE_SEC_PASSWORD: Regex = Regex::new(r"(?i)password\s*[:=]").unwrap();
+    static ref RE_SEC_SQL_INJECTION: Regex = Regex::new(r"(?i)SELECT.*FROM.*WHERE.*=.*'.*'.*\+").unwrap();
+    static ref RE_SEC_HARDCODED_IP: Regex = Regex::new(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b").unwrap();
 
     // Multilingual Support
     static ref RE_DEF: Regex = Regex::new(r"def\s+\w+").unwrap();    // Python, Bend
@@ -289,8 +294,30 @@ fn detect_warnings(content: &str, file_path: &Path) -> Vec<String> {
     if RE_SEC_PASSWORD.is_match(content) {
         warnings.push("🛡️ SEGURIDAD: Password Hardcoded detectado".into());
     }
+    if RE_SEC_SQL_INJECTION.is_match(content) {
+        warnings.push("🛡️ SEGURIDAD: Riesgo potencial de SQL Injection".into());
+    }
+    if RE_SEC_HARDCODED_IP.is_match(content) && !content.contains("127.0.0.1") {
+        warnings.push("🛡️ SEGURIDAD: IP Hardcoded detectada".into());
+    }
 
     warnings
+}
+
+fn generate_suggestions(warnings: &[String]) -> Vec<String> {
+    let mut suggestions = Vec::new();
+    for warning in warnings {
+        if warning.contains("unwrap()") {
+            suggestions.push("Usa expect() con un mensaje descriptivo o maneja el Result con match/if-let.".into());
+        } else if warning.contains("unsafe") {
+            suggestions.push("Encapsula el código inseguro en una abstracción segura y documenta por qué es necesario.".into());
+        } else if warning.contains("SQL Injection") {
+            suggestions.push("Usa consultas parametrizadas o un ORM seguro para evitar inyecciones.".into());
+        } else if warning.contains("API Key") {
+            suggestions.push("Mueve la API Key a un archivo .env o un gestor de secretos.".into());
+        }
+    }
+    suggestions
 }
 
 /// Calcula score de seguridad (0-100)

@@ -321,13 +321,18 @@ impl AutonomousDaemon {
                         if !analysis.warnings.is_empty() {
                             info!("⚠️  Detectados {} problemas en {}", analysis.warnings.len(), analysis.file_path);
 
-                            // 2. Registrar alarmas proactivas en memoria compartida
-                            for warning in analysis.warnings {
+                            // 2. Registrar alarmas proactivas en memoria compartida con sugerencias
+                            for (i, warning) in analysis.warnings.iter().enumerate() {
+                                let alarm_type = if warning.contains("🛡️ SEGURIDAD") { "critical_security" } else { "proactive_warning" };
+                                let suggestion = analysis.suggestions.get(i).cloned().unwrap_or_else(|| "Revisar código manualmente.".to_string());
+
                                 let alarm_key = format!("alarm:{}", analysis.file_path);
                                 ctx.shared_data.insert(alarm_key, serde_json::json!({
-                                    "type": "proactive_warning",
+                                    "type": alarm_type,
                                     "file": analysis.file_path,
                                     "message": warning,
+                                    "fix_suggestion": suggestion,
+                                    "severity": if alarm_type == "critical_security" { "high" } else { "medium" },
                                     "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
                                 }));
                             }

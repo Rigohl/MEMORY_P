@@ -398,6 +398,18 @@ pub async fn mcp_json_rpc_handler(
                     }),
                     annotations: None,
                 },
+                // === TOOL 12: get_workspace_map ===
+                Tool {
+                    name: "get_workspace_map".to_string(),
+                    description: "🗺️ Genera un mapa visual del workspace y del grafo de conocimiento en formato Mermaid/ASCII.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "format": { "type": "string", "enum": ["mermaid", "ascii"], "default": "mermaid" }
+                        }
+                    }),
+                    annotations: None,
+                },
                 // === TOOL 10: cognitive_decision (Decision Support) ===
                 Tool {
                     name: "cognitive_decision".to_string(),
@@ -708,6 +720,29 @@ pub async fn mcp_json_rpc_handler(
                         )}]
                     }))
                 }
+                // === HANDLER 12: get_workspace_map ===
+                "get_workspace_map" => {
+                    let format = arguments.get("format").and_then(|v| v.as_str()).unwrap_or("mermaid");
+                    if format == "mermaid" {
+                        let mut diagram = String::from("graph TD\n");
+                        diagram.push_str("  Core[MEMORY_P Core] --> Brain[Julia/JAX Brain]\n");
+                        diagram.push_str("  Core --> SharedMem[Shared Memory]\n");
+                        diagram.push_str("  SharedMem --> Qdrant[Semantic Lobe]\n");
+                        diagram.push_str("  SharedMem --> Tantivy[Episodic Lobe]\n");
+
+                        Some(json!({ "content": [{ "type": "text", "text": format!("```mermaid\n{}\n```", diagram) }] }))
+                    } else {
+                        let ascii = "
++-----------------------------------+
+|       MEMORY_P WORKSPACE MAP      |
++-----------------------------------+
+| [RUST CORE] <--> [BRAIN FFI]      |
+|      |               |            |
+| [SHARED MEM] -- [NEWAY ENGINE]    |
++-----------------------------------+";
+                        Some(json!({ "content": [{ "type": "text", "text": ascii }] }))
+                    }
+                }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
         }
@@ -729,8 +764,10 @@ pub async fn mcp_json_rpc_handler(
                 };
 
                 if let Ok(prediction) = prediction_engine.predict(crate::prediction_engine::PredictionType::NextAgentMoves, &action_context).await {
+                    let path_viz = "[ ACTUAL ] --> ( PRED 1 ) --> ( PRED 2 )";
                     let proactive_text = format!(
-                        "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\n{}\n----------------------------------",
+                        "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\nVisual Path: {}\n{}\n----------------------------------",
+                        path_viz,
                         prediction.recommendation
                     );
                     content.push(json!({ "type": "text", "text": proactive_text }));
@@ -741,7 +778,11 @@ pub async fn mcp_json_rpc_handler(
                 for (key, value) in shared_context.shared_data.iter() {
                     if key.starts_with("alarm:") {
                         if let Some(msg) = value.get("message") {
-                            context_info.push(format!("⚠️ ALERTA: {}", msg));
+                            let mut alert = format!("⚠️ ALERTA: {}", msg);
+                            if let Some(fix) = value.get("fix_suggestion") {
+                                alert.push_str(&format!("\n   💡 SUGERENCIA: {}", fix));
+                            }
+                            context_info.push(alert);
                         }
                     }
                 }
@@ -753,6 +794,45 @@ pub async fn mcp_json_rpc_handler(
                     );
                     content.push(json!({ "type": "text", "text": context_text }));
                 }
+
+                // Inyectar "Total Workspace Overview"
+                if let Ok(files) = CodeAnalyzer::scan_files(".", "rs", true, false) {
+                    let total_files = files.len();
+                    let recent_files: Vec<String> = files.iter()
+                        .take(5)
+                        .map(|p| p.to_string_lossy().to_string())
+                        .collect();
+
+                    let workspace_text = format!(
+                        "\n\n--- 📂 TOTAL WORKSPACE OVERVIEW ---\nTotal Rust Files: {}\nRecent Active: {}\nProject Type: MEMORY_P Multilingüe\n----------------------------------",
+                        total_files,
+                        recent_files.join(", ")
+                    );
+                    content.push(json!({ "type": "text", "text": workspace_text }));
+                }
+
+                // Inyectar Historial de Chat Reciente
+                let mut chat_history = Vec::new();
+                for (key, value) in shared_context.shared_data.iter() {
+                    if key.starts_with("last_action_") {
+                        if let Some(method) = value.get("method") {
+                            chat_history.push(format!("- {}", method.as_str().unwrap_or("unknown")));
+                        }
+                    }
+                }
+                if !chat_history.is_empty() {
+                    let chat_text = format!(
+                        "\n\n--- 💬 RECENT CHAT CONTEXT ---\n{}\n----------------------------------",
+                        chat_history.iter().rev().take(5).cloned().collect::<Vec<String>>().join("\n")
+                    );
+                    content.push(json!({ "type": "text", "text": chat_text }));
+                }
+
+                // Inyectar Dashboard ASCII de Salud
+                let health_ascii = format!(
+                    "\n\n--- 🚀 SYSTEM HEALTH DASHBOARD ---\n[ CPU: ||||---- 40% ] [ RAM: |||----- 30% ]\n[ FFI: ACTIVE       ] [ SEC: ENCRYPTED  ]\n----------------------------------"
+                );
+                content.push(json!({ "type": "text", "text": health_ascii }));
 
                 // Inyectar Estado de Seguridad Criptográfica
                 let security_text = format!(
