@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use tokio::fs;
 use tracing::{debug, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
+use crate::error::{MemoryPError as Error, Result};
 
 /// Tipo de contexto detectado
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -58,7 +58,7 @@ impl ContextDetector {
     /// Detecta contextos relevantes automáticamente
     pub async fn detect_contexts(&self) -> Result<Vec<Context>> {
         debug!("🔎 Detectando contextos dinámicamente...");
-        
+
         let mut contexts = Vec::new();
 
         // Detectar contexto de workspace
@@ -93,26 +93,31 @@ impl ContextDetector {
     /// Detecta contexto del workspace actual
     async fn detect_workspace_context(&self) -> Result<Context> {
         debug!("📁 Detectando contexto de workspace...");
-        
+
         let current_dir = std::env::current_dir()
             .map_err(|e| Error::Other(format!("No se pudo obtener directorio actual: {}", e)))?;
-        
+
         let mut data = HashMap::new();
-        data.insert("path".to_string(), current_dir.to_string_lossy().to_string());
+        data.insert(
+            "path".to_string(),
+            current_dir.to_string_lossy().to_string(),
+        );
 
         // Detectar tipo de proyecto
         let project_type = if current_dir.join("Cargo.toml").exists() {
             "Rust"
         } else if current_dir.join("package.json").exists() {
             "Node.js"
-        } else if current_dir.join("pyproject.toml").exists() || current_dir.join("setup.py").exists() {
+        } else if current_dir.join("pyproject.toml").exists()
+            || current_dir.join("setup.py").exists()
+        {
             "Python"
         } else if current_dir.join("go.mod").exists() {
             "Go"
         } else {
             "Unknown"
         };
-        
+
         data.insert("project_type".to_string(), project_type.to_string());
 
         Ok(Context {
@@ -126,7 +131,7 @@ impl ContextDetector {
     /// Detecta contexto de configuración
     async fn detect_config_context(&self) -> Result<Context> {
         debug!("⚙️  Detectando contexto de configuración...");
-        
+
         let mut data = HashMap::new();
         let config_files = vec![
             "Cargo.toml",
@@ -150,7 +155,10 @@ impl ContextDetector {
 
         Ok(Context {
             context_type: ContextType::Configuration,
-            description: format!("Archivos de configuración encontrados: {}", found_configs.len()),
+            description: format!(
+                "Archivos de configuración encontrados: {}",
+                found_configs.len()
+            ),
             data,
             relevance: 80,
         })
@@ -159,7 +167,7 @@ impl ContextDetector {
     /// Detecta contexto de Git
     async fn detect_git_context(&self) -> Result<Context> {
         debug!("🔀 Detectando contexto de Git...");
-        
+
         let mut data = HashMap::new();
 
         // Verificar si es un repositorio Git
@@ -188,7 +196,7 @@ impl ContextDetector {
     /// Detecta contexto de dependencias
     async fn detect_dependencies_context(&self) -> Result<Context> {
         debug!("📦 Detectando contexto de dependencias...");
-        
+
         let mut data = HashMap::new();
         let mut dep_count = 0;
 
@@ -223,7 +231,7 @@ impl ContextDetector {
     /// Detecta contexto del sistema
     async fn detect_system_context(&self) -> Result<Context> {
         debug!("💻 Detectando contexto del sistema...");
-        
+
         let mut data = HashMap::new();
 
         // Información del sistema operativo
@@ -236,8 +244,9 @@ impl ContextDetector {
 
         Ok(Context {
             context_type: ContextType::System,
-            description: format!("Sistema: {} ({}), {} CPUs", 
-                std::env::consts::OS, 
+            description: format!(
+                "Sistema: {} ({}), {} CPUs",
+                std::env::consts::OS,
                 std::env::consts::ARCH,
                 cpu_count
             ),
@@ -249,38 +258,40 @@ impl ContextDetector {
     /// Detecta contextos específicos para una operación
     pub async fn detect_contexts_for_operation(&self, operation: &str) -> Result<Vec<Context>> {
         debug!("🎯 Detectando contextos para operación: {}", operation);
-        
+
         let all_contexts = self.detect_contexts().await?;
-        
+
         // Filtrar contextos relevantes según la operación
         let relevant_contexts: Vec<Context> = all_contexts
             .into_iter()
             .filter(|ctx| {
                 match operation {
                     op if op.contains("build") => {
-                        ctx.context_type == ContextType::Dependencies || 
-                        ctx.context_type == ContextType::Configuration
+                        ctx.context_type == ContextType::Dependencies
+                            || ctx.context_type == ContextType::Configuration
                     }
-                    op if op.contains("git") => {
-                        ctx.context_type == ContextType::Git
-                    }
+                    op if op.contains("git") => ctx.context_type == ContextType::Git,
                     op if op.contains("analyze") => {
-                        ctx.context_type == ContextType::Workspace ||
-                        ctx.context_type == ContextType::File
+                        ctx.context_type == ContextType::Workspace
+                            || ctx.context_type == ContextType::File
                     }
-                    _ => true // Por defecto, incluir todos
+                    _ => true, // Por defecto, incluir todos
                 }
             })
             .collect();
 
-        info!("✅ {} contextos relevantes para '{}'", relevant_contexts.len(), operation);
+        info!(
+            "✅ {} contextos relevantes para '{}'",
+            relevant_contexts.len(),
+            operation
+        );
         Ok(relevant_contexts)
     }
 
     /// Valida si un contexto es seguro para operar
     pub fn validate_context_safety(&self, context: &Context) -> Result<bool> {
         debug!("🔒 Validando seguridad del contexto...");
-        
+
         // Verificar que no estamos en directorios del sistema
         if let Some(path) = context.data.get("path") {
             let unsafe_paths = vec!["/", "/bin", "/sbin", "/usr", "/etc", "/sys"];
@@ -317,7 +328,7 @@ mod tests {
         let detector = ContextDetector::new();
         let result = detector.detect_workspace_context().await;
         assert!(result.is_ok());
-        
+
         let context = result.unwrap();
         assert_eq!(context.context_type, ContextType::Workspace);
         assert!(context.data.contains_key("path"));
@@ -328,7 +339,7 @@ mod tests {
         let detector = ContextDetector::new();
         let result = detector.detect_system_context().await;
         assert!(result.is_ok());
-        
+
         let context = result.unwrap();
         assert_eq!(context.context_type, ContextType::System);
         assert!(context.data.contains_key("cpu_count"));
@@ -344,7 +355,7 @@ mod tests {
     #[tokio::test]
     async fn test_validate_context_safety() {
         let detector = ContextDetector::new();
-        
+
         let safe_context = Context {
             context_type: ContextType::Workspace,
             description: "Test".to_string(),
@@ -355,7 +366,7 @@ mod tests {
             },
             relevance: 80,
         };
-        
+
         assert!(detector.validate_context_safety(&safe_context).unwrap());
     }
 }

@@ -140,7 +140,11 @@ pub async fn kpi_record_handler(
     }))
 }
 
-pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonRpcResponse> {
+pub async fn mcp_json_rpc_handler(
+    Extension(shared_memory): Extension<Arc<crate::shared_memory::SharedMemorySystem>>,
+    Extension(prediction_engine): Extension<Arc<crate::prediction_engine::PredictionEngine>>,
+    Json(req): Json<JsonRpcRequest>,
+) -> Json<JsonRpcResponse> {
     let id = req.id.clone().unwrap_or(Value::Null);
 
     if req.jsonrpc != "2.0" {
@@ -155,7 +159,14 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
 
     let method = req.method.as_str();
 
-    let result = match method {
+    // 1. Obtener contexto compartido (AgentId por defecto para simplicidad)
+    let agent_id = crate::shared_memory::AgentId::new("default-agent".to_string());
+    let mut shared_context = match shared_memory.get_or_create_context(agent_id.clone()).await {
+        Ok(ctx) => ctx,
+        Err(_) => crate::shared_memory::SharedContext::new(agent_id.clone()),
+    };
+
+    let mut result = match method {
         "initialize" => Some(json!({
             "protocolVersion": "2026.1.0",
             "capabilities": {
@@ -649,6 +660,72 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
         }
         _ => None,
     };
+
+    // 2. Enriquecer con Predicciones y Contexto Denso
+    if method == "tools/call" || method == "callTool" {
+        if let Some(ref mut res_val) = result {
+            if let Some(content) = res_val.get_mut("content").and_then(|c| c.as_array_mut()) {
+                // Generar predicción proactiva
+                let tool_name = req
+                    .params
+                    .as_ref()
+                    .and_then(|p| p.get("name"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+
+                let action_context = crate::prediction_engine::ActionContext {
+                    action_type: tool_name.to_string(),
+                    parameters: req
+                        .params
+                        .as_ref()
+                        .and_then(|p| p.get("arguments"))
+                        .cloned()
+                        .unwrap_or(json!({})),
+                    history: vec![], // TODO: Llenar con historial real de la memoria compartida
+                    system_metrics: crate::prediction_engine::SystemMetrics::default(),
+                };
+
+                if let Ok(prediction) = prediction_engine
+                    .predict(
+                        crate::prediction_engine::PredictionType::NextAgentMoves,
+                        &action_context,
+                    )
+                    .await
+                {
+                    let proactive_text = format!(
+                        "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\n{}\n----------------------------------",
+                        prediction.recommendation
+                    );
+                    content.push(json!({ "type": "text", "text": proactive_text }));
+                }
+
+                // Inyectar Contexto Denso (Alertas del Daemon, etc)
+                let mut context_info = Vec::new();
+                for (key, value) in shared_context.shared_data.iter() {
+                    if key.starts_with("alarm:") {
+                        if let Some(msg) = value.get("message") {
+                            context_info.push(format!("⚠️ ALERTA: {}", msg));
+                        }
+                    }
+                }
+
+                if !context_info.is_empty() {
+                    let context_text = format!(
+                        "\n\n--- 🧠 SHARED CONTEXT & ALERTS ---\n{}\n----------------------------------",
+                        context_info.join("\n")
+                    );
+                    content.push(json!({ "type": "text", "text": context_text }));
+                }
+            }
+        }
+    }
+
+    // 3. Actualizar memoria compartida con la acción actual
+    shared_context.shared_data.insert(
+        format!("last_action_{}", id),
+        json!({ "method": method, "params": req.params, "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() })
+    );
+    let _ = shared_memory.update_context(agent_id, shared_context).await;
 
     Json(JsonRpcResponse {
         jsonrpc: "2.0".to_string(),

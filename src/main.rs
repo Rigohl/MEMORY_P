@@ -19,16 +19,22 @@ static GLOBAL: MiMalloc = MiMalloc;
 
 mod analyzer;
 mod auto_manager; // Sistema de auto-gestión MCP 2026
+mod autonomous_daemon;
 mod config;
+mod context_detector;
 mod error;
 mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
+mod hyper_memory;
 mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 mod mcp;
 mod mcp_api;
 mod mega_simulator; // 3-phase mega simulation engine
 mod parallel_engine;
+mod pattern_detector;
 mod prediction_engine; // Motor de predicción con Julia + Mojo
+mod predictive_engine;
 mod shared_memory; // Sistema de memoria compartida entre agentes
+mod telemetry;
 mod workspace;
 
 #[tokio::main]
@@ -63,18 +69,22 @@ async fn http_server_mode() -> crate::error::Result<()> {
     tracing::info!("║  MEMORY_P MCP Server 2026 - ALWAYS-ON EDITION   ║");
     tracing::info!("╚══════════════════════════════════════════════════╝");
 
-    // 1. Auto-iniciar sistema de gestión
+    // 1. Iniciar sistema de memoria compartida
+    let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
+    tracing::info!("🧠 Sistema de memoria compartida inicializado");
+
+    // 2. Auto-iniciar sistema de gestión
     let auto_manager = Arc::new(auto_manager::AutoManager::new(
         auto_manager::ManagerConfig::default(),
     ));
 
     tracing::info!("🔧 Iniciando sistema de auto-gestión...");
-    if let Err(e) = auto_manager.auto_start().await {
+    if let Err(e) = auto_manager.auto_start(shared_memory.clone()).await {
         tracing::error!("❌ Error al iniciar AutoManager: {}", e);
         tracing::warn!("⚠️  Continuando sin auto-gestión completa");
     }
 
-    // 2. Auto-iniciar KPI Tracker (Six Sigma + Automation)
+    // 3. Auto-iniciar KPI Tracker (Six Sigma + Automation)
     let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(
         kpi_tracker::KpiConfig::default(),
     ));
@@ -84,10 +94,6 @@ async fn http_server_mode() -> crate::error::Result<()> {
         tracing::error!("❌ Error al iniciar KPI Tracker: {}", e);
         tracing::warn!("⚠️  Continuando sin KPI tracking");
     }
-
-    // 3. Iniciar sistema de memoria compartida
-    let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new());
-    tracing::info!("🧠 Sistema de memoria compartida inicializado");
 
     // 4. Iniciar motor de predicción
     let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
@@ -153,13 +159,24 @@ async fn mcp_stdio_mode() -> crate::error::Result<()> {
 
     tracing::info!("✅ MEMORY_P MCP Stdio listo");
 
+    // Inicializar sistemas necesarios para el handler
+    let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
+        prediction_engine::PredictionConfig::default(),
+    ));
+
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
     let mut stdout = tokio::io::stdout();
     let mut line = String::new();
 
     while stdin.read_line(&mut line).await? > 0 {
         if let Ok(req) = serde_json::from_str::<JsonRpcRequest>(&line) {
-            let response = mcp_json_rpc_handler(axum::Json(req)).await;
+            let response = mcp_json_rpc_handler(
+                axum::extract::Extension(shared_memory.clone()),
+                axum::extract::Extension(prediction_engine.clone()),
+                axum::Json(req),
+            )
+            .await;
             let resp_json =
                 serde_json::to_string(&response.0).map_err(crate::error::MemoryPError::Json)?;
             stdout

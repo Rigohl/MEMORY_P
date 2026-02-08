@@ -399,6 +399,7 @@ curl -X POST http://localhost:4040/mcp \
 - **[docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md)** - Complete MCP tools API
 - **[docs/HOWTO_REPAIR.md](docs/HOWTO_REPAIR.md)** - Predictive repair guide
 - **[FFI/README.md](FFI/README.md)** - MemoryBank FFI engine documentation
+- **[NEWAY/README.md](NEWAY/README.md)** - 🚀 Next-Gen "Super Wow" Motor
 
 ### FFI Performance Optimization (⚡ NEW)
 - **[docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)** - Ultra-low-latency FFI optimization guide

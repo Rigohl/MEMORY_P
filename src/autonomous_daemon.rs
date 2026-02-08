@@ -10,11 +10,13 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tokio::time::{interval, Instant};
-use tracing::{info, warn, error, debug};
+use tracing::{debug, error, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
-use crate::predictive_engine::PredictiveEngine;
+use crate::analyzer::CodeAnalyzer;
 use crate::context_detector::ContextDetector;
+use crate::error::{MemoryPError as Error, Result};
+use crate::predictive_engine::PredictiveEngine;
+use crate::shared_memory::SharedMemorySystem;
 
 /// Estado del daemon autónomo
 #[derive(Debug, Clone, PartialEq)]
@@ -90,21 +92,24 @@ pub struct AutonomousDaemon {
     predictive_engine: Arc<PredictiveEngine>,
     /// Detector de contexto
     context_detector: Arc<ContextDetector>,
+    /// Sistema de memoria compartida
+    shared_memory: Arc<SharedMemorySystem>,
     /// Tiempo de inicio
     start_time: Instant,
 }
 
 impl AutonomousDaemon {
     /// Crea un nuevo daemon autónomo
-    pub fn new(config: DaemonConfig) -> Self {
+    pub fn new(config: DaemonConfig, shared_memory: Arc<SharedMemorySystem>) -> Self {
         info!("🤖 Inicializando Daemon Autónomo...");
-        
+
         Self {
             config,
             state: Arc::new(RwLock::new(DaemonState::Starting)),
             metrics: Arc::new(RwLock::new(DaemonMetrics::default())),
             predictive_engine: Arc::new(PredictiveEngine::new()),
             context_detector: Arc::new(ContextDetector::new()),
+            shared_memory,
             start_time: Instant::now(),
         }
     }
@@ -112,7 +117,7 @@ impl AutonomousDaemon {
     /// Inicia el daemon autónomo (auto-ejecutable)
     pub async fn start(self: Arc<Self>) -> Result<()> {
         info!("🚀 Iniciando Daemon Autónomo...");
-        
+
         // Cambiar estado a Running
         {
             let mut state = self.state.write().await;
@@ -120,7 +125,7 @@ impl AutonomousDaemon {
         }
 
         info!("✅ Daemon Autónomo activo - modo always-on");
-        
+
         // Iniciar tareas en background
         let daemon_health = self.clone();
         tokio::spawn(async move {
@@ -143,23 +148,36 @@ impl AutonomousDaemon {
             }
         });
 
+        let daemon_scan = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_scan.workspace_scanning_loop().await {
+                error!("❌ Error en workspace scanning loop: {}", e);
+            }
+        });
+
         info!("🔄 Tareas de background iniciadas:");
-        info!("   • Health checks: cada {}s", self.config.health_check_interval);
-        info!("   • Context detection: cada {}s", self.config.context_detection_interval);
+        info!(
+            "   • Health checks: cada {}s",
+            self.config.health_check_interval
+        );
+        info!(
+            "   • Context detection: cada {}s",
+            self.config.context_detection_interval
+        );
         info!("   • Auto-optimization: habilitado");
-        
+
         Ok(())
     }
 
     /// Loop de verificación de salud
     async fn health_check_loop(&self) -> Result<()> {
         let mut interval = interval(Duration::from_secs(self.config.health_check_interval));
-        
+
         loop {
             interval.tick().await;
-            
+
             debug!("🏥 Ejecutando health check...");
-            
+
             // Actualizar métricas
             {
                 let mut metrics = self.metrics.write().await;
@@ -168,14 +186,14 @@ impl AutonomousDaemon {
                     std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
                         .unwrap()
-                        .as_secs()
+                        .as_secs(),
                 );
             }
 
             // Verificar estado del sistema
             if let Err(e) = self.perform_health_check().await {
                 warn!("⚠️  Health check detectó problemas: {}", e);
-                
+
                 // Intentar auto-recuperación
                 if let Err(recovery_err) = self.attempt_recovery().await {
                     error!("❌ Auto-recuperación falló: {}", recovery_err);
@@ -187,7 +205,7 @@ impl AutonomousDaemon {
     /// Realiza verificación de salud del sistema
     async fn perform_health_check(&self) -> Result<()> {
         let state = self.state.read().await;
-        
+
         match *state {
             DaemonState::Running => {
                 debug!("✅ Sistema saludable");
@@ -211,7 +229,7 @@ impl AutonomousDaemon {
     /// Intenta auto-recuperación del sistema
     async fn attempt_recovery(&self) -> Result<()> {
         info!("🔧 Iniciando auto-recuperación...");
-        
+
         // Cambiar estado a Recovering
         {
             let mut state = self.state.write().await;
@@ -220,34 +238,40 @@ impl AutonomousDaemon {
 
         // Intentar recuperación
         for attempt in 1..=self.config.max_recovery_attempts {
-            info!("🔄 Intento de recuperación {}/{}", attempt, self.config.max_recovery_attempts);
-            
+            info!(
+                "🔄 Intento de recuperación {}/{}",
+                attempt, self.config.max_recovery_attempts
+            );
+
             // Simular recuperación (aquí iría lógica real)
             tokio::time::sleep(Duration::from_secs(2)).await;
-            
+
             // Verificar si la recuperación fue exitosa
             if self.verify_recovery().await? {
                 info!("✅ Recuperación exitosa en intento {}", attempt);
-                
+
                 // Actualizar métricas
                 {
                     let mut metrics = self.metrics.write().await;
                     metrics.successful_recoveries += 1;
                 }
-                
+
                 // Volver a estado Running
                 {
                     let mut state = self.state.write().await;
                     *state = DaemonState::Running;
                 }
-                
+
                 return Ok(());
             }
-            
+
             warn!("⚠️  Intento {} falló, reintentando...", attempt);
         }
-        
-        error!("❌ Recuperación falló después de {} intentos", self.config.max_recovery_attempts);
+
+        error!(
+            "❌ Recuperación falló después de {} intentos",
+            self.config.max_recovery_attempts
+        );
         Err(Error::Other("Recuperación falló".into()))
     }
 
@@ -261,23 +285,80 @@ impl AutonomousDaemon {
     /// Loop de detección de contexto
     async fn context_detection_loop(&self) -> Result<()> {
         let mut interval = interval(Duration::from_secs(self.config.context_detection_interval));
-        
+
         loop {
             interval.tick().await;
-            
+
             debug!("🔍 Detectando contextos...");
-            
+
             // Detectar contextos dinámicamente
             if let Ok(contexts) = self.context_detector.detect_contexts().await {
                 if !contexts.is_empty() {
                     info!("📍 Contextos detectados: {}", contexts.len());
-                    
+
                     // Actualizar métricas
                     {
                         let mut metrics = self.metrics.write().await;
                         metrics.context_detections += contexts.len() as u64;
                     }
                 }
+            }
+        }
+    }
+
+    /// Loop de escaneo de workspace proactivo
+    async fn workspace_scanning_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(60)); // Cada minuto
+
+        loop {
+            interval.tick().await;
+
+            debug!("🔍 Ejecutando escaneo de workspace proactivo...");
+
+            // 1. Escanear archivos (Rust por defecto)
+            if let Ok(files) = CodeAnalyzer::scan_files(".", "rs", true, false) {
+                let mut ctx = self
+                    .shared_memory
+                    .get_or_create_context(crate::shared_memory::AgentId::new(
+                        "autonomous-daemon".to_string(),
+                    ))
+                    .await?;
+
+                for file_path in files {
+                    if let Ok(analysis) = CodeAnalyzer::analyze_file(&file_path) {
+                        // Memoria Episódica: Registrar que hemos visto este archivo
+                        let file_key = format!("file_seen:{}", analysis.file_path);
+                        ctx.shared_data.insert(file_key, serde_json::json!({
+                            "path": analysis.file_path,
+                            "loc": analysis.lines_of_code,
+                            "complexity": analysis.complexity_estimate,
+                            "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
+                        }));
+
+                        if !analysis.warnings.is_empty() {
+                            info!(
+                                "⚠️  Detectados {} problemas en {}",
+                                analysis.warnings.len(),
+                                analysis.file_path
+                            );
+
+                            // 2. Registrar alarmas proactivas en memoria compartida
+                            for warning in analysis.warnings {
+                                let alarm_key = format!("alarm:{}", analysis.file_path);
+                                ctx.shared_data.insert(alarm_key, serde_json::json!({
+                                    "type": "proactive_warning",
+                                    "file": analysis.file_path,
+                                    "message": warning,
+                                    "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
+                                }));
+                            }
+                        }
+                    }
+                }
+                // Actualizar contexto total una vez por escaneo
+                self.shared_memory
+                    .update_context(ctx.agent_id.clone(), ctx)
+                    .await?;
             }
         }
     }
@@ -290,17 +371,18 @@ impl AutonomousDaemon {
         }
 
         let mut interval = interval(Duration::from_secs(60)); // Cada minuto
-        
+
         loop {
             interval.tick().await;
-            
+
             debug!("⚡ Ejecutando auto-optimización...");
-            
+
             // Ejecutar optimizaciones predictivas
             if let Ok(optimizations) = self.predictive_engine.suggest_optimizations().await {
+                let optimizations: Vec<crate::predictive_engine::Optimization> = optimizations;
                 if !optimizations.is_empty() {
                     info!("🎯 Aplicando {} optimizaciones", optimizations.len());
-                    
+
                     // Actualizar métricas
                     {
                         let mut metrics = self.metrics.write().await;
@@ -324,10 +406,10 @@ impl AutonomousDaemon {
     /// Detiene el daemon de forma controlada
     pub async fn stop(&self) -> Result<()> {
         info!("🛑 Deteniendo Daemon Autónomo...");
-        
+
         let mut state = self.state.write().await;
         *state = DaemonState::Stopped;
-        
+
         info!("✅ Daemon detenido correctamente");
         Ok(())
     }
@@ -341,7 +423,7 @@ mod tests {
     async fn test_daemon_creation() {
         let config = DaemonConfig::default();
         let daemon = AutonomousDaemon::new(config);
-        
+
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Starting);
     }
@@ -350,10 +432,10 @@ mod tests {
     async fn test_daemon_start() {
         let config = DaemonConfig::default();
         let daemon = Arc::new(AutonomousDaemon::new(config));
-        
+
         let result = daemon.clone().start().await;
         assert!(result.is_ok());
-        
+
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Running);
     }
@@ -362,10 +444,10 @@ mod tests {
     async fn test_daemon_stop() {
         let config = DaemonConfig::default();
         let daemon = AutonomousDaemon::new(config);
-        
+
         let result = daemon.stop().await;
         assert!(result.is_ok());
-        
+
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Stopped);
     }

@@ -1,8 +1,10 @@
 //! auto_manager.rs - Sistema de Auto-Gestión y Auto-Ejecución
 //! MCP Protocol 2026 - Always-On, Zero-Touch Operation
 
+use crate::autonomous_daemon::{AutonomousDaemon, DaemonConfig};
 use crate::error::{MemoryPError, Result};
 use crate::ffi;
+use crate::shared_memory::SharedMemorySystem;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -46,6 +48,9 @@ pub struct AutoManager {
     /// Estado de salud de módulos FFI
     ffi_health: Arc<DashMap<String, HealthInfo>>,
 
+    /// Daemon autónomo
+    autonomous_daemon: Arc<RwLock<Option<Arc<AutonomousDaemon>>>>,
+
     /// Configuración
     config: ManagerConfig,
 
@@ -85,13 +90,14 @@ impl AutoManager {
         Self {
             engine_health: Arc::new(DashMap::new()),
             ffi_health: Arc::new(DashMap::new()),
+            autonomous_daemon: Arc::new(RwLock::new(None)),
             config,
             running: Arc::new(RwLock::new(false)),
         }
     }
 
     /// Inicia el sistema de auto-gestión (auto-ejecutado en startup)
-    pub async fn auto_start(&self) -> Result<()> {
+    pub async fn auto_start(&self, shared_memory: Arc<SharedMemorySystem>) -> Result<()> {
         info!("🚀 Iniciando AutoManager - MCP Protocol 2026");
 
         let mut running = self.running.write().await;
@@ -113,6 +119,14 @@ impl AutoManager {
 
         // 4. Iniciar auto-recovery en background
         self.start_auto_recovery().await;
+
+        // 5. Iniciar Daemon Autónomo
+        let daemon = Arc::new(AutonomousDaemon::new(
+            DaemonConfig::default(),
+            shared_memory,
+        ));
+        daemon.clone().start().await?;
+        *self.autonomous_daemon.write().await = Some(daemon);
 
         info!("✅ AutoManager iniciado - Sistema Always-On activo");
         Ok(())

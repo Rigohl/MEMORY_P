@@ -7,14 +7,21 @@
 
 pub mod analyzer;
 pub mod auto_manager; // Sistema de auto-gestión MCP 2026
+pub mod autonomous_daemon;
 pub mod cli; // CLI stub para JAR
 pub mod config;
+pub mod context_detector;
 pub mod error;
 pub mod ffi; // FFI multi-lenguaje (Julia, JAX, Mojo, Pony, Zig)
+pub mod hyper_memory;
 pub mod kpi_tracker; // Sistema de KPIs Always-On + Six Sigma
 pub mod mcp;
 pub mod mcp_api;
 pub mod mega_simulator;
+pub mod pattern_detector;
+pub mod prediction_engine;
+pub mod predictive_engine;
+pub mod telemetry;
 // TODO: Fix trait object safety issues in motores module
 // The SearchEngine trait has async methods which prevents it from being object-safe
 // Need to refactor using enum dispatch or async-trait with Box<dyn Future>

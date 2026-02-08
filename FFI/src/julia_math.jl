@@ -33,6 +33,41 @@ export optimize_weights
 export chaos_analysis
 export solve_differential
 export symbolic_simplify
+export predict_next_agent_moves
+
+"""
+    predict_next_agent_moves(current_embedding::Vector{Float64}, lookahead::Int=2) -> Vector{Vector{Float64}}
+
+Predice los próximos movimientos del agente usando análisis de caos sobre el embedding actual.
+"""
+function predict_next_agent_moves(current_embedding::Vector{Float64}, lookahead::Int=2)
+    println("[Julia] Prediciendo próximos ", lookahead, " movimientos")
+    return chaos_analysis_vec(current_embedding, lookahead)
+end
+
+function chaos_analysis_vec(current_state::Vector{Float64}, lookahead::Int=2)
+    predictions = Vector{Vector{Float64}}()
+    α = 0.1
+    β = 0.95
+    state = copy(current_state)
+
+    for i in 1:lookahead
+        next_state = similar(state)
+        for j in 1:length(state)
+            r = 3.9
+            prev_idx = mod(j-2, length(state)) + 1
+            next_idx = mod(j, length(state)) + 1
+            x = state[j]
+            coupling = 0.1 * (state[prev_idx] + state[next_idx])
+            next_state[j] = r * x * (1 - x) + α * coupling
+            next_state[j] = clamp(next_state[j], 0.0, 1.0)
+        end
+        next_state = next_state .* β
+        push!(predictions, next_state)
+        state = next_state
+    end
+    return predictions
+end
 
 """
     optimize_weights(weights::Vector{Float64}) -> Vector{Float64}
