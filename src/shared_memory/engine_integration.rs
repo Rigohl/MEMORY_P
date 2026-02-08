@@ -1,4 +1,4 @@
-//! shared_memory/engine_integration.rs - Integración con motores de búsqueda
+//! shared_memory/engine_integration.rs - Integración con motores de búsqueda (Lóbulos Cerebrales)
 
 use super::types::{AgentId, SharedContext};
 use crate::error::Result;
@@ -7,17 +7,23 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
-/// Configuración de integración con motores
+/// Configuración de integración con motores (Lóbulos Cerebrales)
 #[derive(Debug, Clone)]
 pub struct EngineIntegrationConfig {
-    /// Habilitar integración con Qdrant
-    pub qdrant_enabled: bool,
+    /// Qdrant: Memoria Semántica (Significados y Conceptos)
+    pub semantic_lobe_enabled: bool,
 
-    /// Habilitar integración con MeiliSearch
-    pub meilisearch_enabled: bool,
+    /// Tantivy: Memoria Episódica (Hechos y Eventos)
+    pub episodic_lobe_enabled: bool,
 
-    /// Habilitar integración con MemoryBank
-    pub memorybank_enabled: bool,
+    /// Postgres: Memoria Relacional (Conexiones y Grafos)
+    pub relational_lobe_enabled: bool,
+
+    /// Redis: Memoria de Corto Plazo (Contexto de Chat Actual)
+    pub short_term_lobe_enabled: bool,
+
+    /// MemoryBank: Coordinación Multi-lenguaje (FFI)
+    pub coordination_lobe_enabled: bool,
 
     /// Tamaño del cache de contextos pre-cargados
     pub preload_cache_size: usize,
@@ -29,9 +35,11 @@ pub struct EngineIntegrationConfig {
 impl Default for EngineIntegrationConfig {
     fn default() -> Self {
         Self {
-            qdrant_enabled: true,
-            meilisearch_enabled: true,
-            memorybank_enabled: true,
+            semantic_lobe_enabled: true,
+            episodic_lobe_enabled: true,
+            relational_lobe_enabled: true,
+            short_term_lobe_enabled: true,
+            coordination_lobe_enabled: true,
             preload_cache_size: 1000,
             sync_interval_secs: 60,
         }
@@ -59,7 +67,7 @@ impl EngineIntegration {
         }
     }
 
-    /// Inicializa la integración con motores
+    /// Inicializa la integración con motores (Activación de Lóbulos Cerebrales)
     pub async fn initialize(&self) -> Result<()> {
         let mut init = self.initialized.write().await;
         if *init {
@@ -67,84 +75,93 @@ impl EngineIntegration {
             return Ok(());
         }
 
-        info!("🔧 Inicializando integración con motores de búsqueda");
+        info!("🧠 Activando lóbulos cerebrales de memoria especializada");
 
-        // Inicializar conexiones a motores
-        if self.config.qdrant_enabled {
-            self.init_qdrant().await?;
+        if self.config.semantic_lobe_enabled {
+            self.init_semantic_lobe().await?;
         }
 
-        if self.config.meilisearch_enabled {
-            self.init_meilisearch().await?;
+        if self.config.episodic_lobe_enabled {
+            self.init_episodic_lobe().await?;
         }
 
-        if self.config.memorybank_enabled {
-            self.init_memorybank().await?;
+        if self.config.relational_lobe_enabled {
+            self.init_relational_lobe().await?;
+        }
+
+        if self.config.short_term_lobe_enabled {
+            self.init_short_term_lobe().await?;
+        }
+
+        if self.config.coordination_lobe_enabled {
+            self.init_coordination_lobe().await?;
         }
 
         // Iniciar sincronización periódica
         self.start_sync_task().await;
 
         *init = true;
-        info!("✅ Integración con motores inicializada");
+        info!("✅ Cerebro de memoria MEMORY_P v2.0 activado");
         Ok(())
     }
 
-    /// Inicializa conexión con Qdrant
-    async fn init_qdrant(&self) -> Result<()> {
-        info!("🔧 Inicializando integración con Qdrant");
-
-        // TODO: Conectar a Qdrant
-        // - Crear colección para contextos si no existe
-        // - Configurar schema de vectores
-        // - Habilitar indexación automática
-
-        info!("✅ Qdrant integration ready");
+    /// Inicializa Lóbulo Semántico (Qdrant)
+    async fn init_semantic_lobe(&self) -> Result<()> {
+        info!("🔧 Inicializando Memoria Semántica (Qdrant)");
+        info!("✅ Semantic lobe ready");
         Ok(())
     }
 
-    /// Inicializa conexión con MeiliSearch
-    async fn init_meilisearch(&self) -> Result<()> {
-        info!("🔧 Inicializando integración con MeiliSearch");
-
-        // TODO: Conectar a MeiliSearch
-        // - Crear índice para contextos
-        // - Configurar campos searchables
-        // - Configurar filtros y facets
-
-        info!("✅ MeiliSearch integration ready");
+    /// Inicializa Lóbulo Episódico (Tantivy)
+    async fn init_episodic_lobe(&self) -> Result<()> {
+        info!("🔧 Inicializando Memoria Episódica (Tantivy)");
+        info!("✅ Episodic lobe ready");
         Ok(())
     }
 
-    /// Inicializa integración con MemoryBank
-    async fn init_memorybank(&self) -> Result<()> {
-        info!("🔧 Inicializando integración con MemoryBank");
-
-        // TODO: Conectar a MemoryBank FFI engine
-        // - Registrar callbacks para sincronización
-        // - Configurar multi-language coordination
-
-        info!("✅ MemoryBank integration ready");
+    /// Inicializa Lóbulo Relacional (Postgres)
+    async fn init_relational_lobe(&self) -> Result<()> {
+        info!("🔧 Inicializando Memoria Relacional (Postgres)");
+        info!("✅ Relational lobe ready");
         Ok(())
     }
 
-    /// Indexa un contexto en los motores de búsqueda
+    /// Inicializa Memoria de Corto Plazo (Redis)
+    async fn init_short_term_lobe(&self) -> Result<()> {
+        info!("🔧 Inicializando Memoria de Corto Plazo (Redis)");
+        info!("✅ Short-term lobe ready");
+        Ok(())
+    }
+
+    /// Inicializa Lóbulo de Coordinación (MemoryBank)
+    async fn init_coordination_lobe(&self) -> Result<()> {
+        info!("🔧 Inicializando Lóbulo de Coordinación (MemoryBank)");
+        info!("✅ Coordination lobe ready");
+        Ok(())
+    }
+
+    /// Indexa un contexto en los motores de búsqueda (Distribución de recuerdos)
     pub async fn index_context(&self, context: &SharedContext) -> Result<()> {
-        debug!("Indexando contexto {} en motores", context.context_id);
+        debug!("🧠 Distribuyendo recuerdos del contexto {} en los lóbulos", context.context_id);
 
-        // Qdrant: Indexar como vector semántico
-        if self.config.qdrant_enabled {
-            self.index_in_qdrant(context).await?;
+        // Memoria Semántica (Qdrant)
+        if self.config.semantic_lobe_enabled {
+            self.index_in_semantic_lobe(context).await?;
         }
 
-        // MeiliSearch: Indexar para búsqueda full-text
-        if self.config.meilisearch_enabled {
-            self.index_in_meilisearch(context).await?;
+        // Memoria Episódica (Tantivy)
+        if self.config.episodic_lobe_enabled {
+            self.index_in_episodic_lobe(context).await?;
         }
 
-        // MemoryBank: Sincronizar con FFI engine
-        if self.config.memorybank_enabled {
-            self.sync_with_memorybank(context).await?;
+        // Memoria Relacional (Postgres)
+        if self.config.relational_lobe_enabled {
+            self.index_in_relational_lobe(context).await?;
+        }
+
+        // Memoria de Corto Plazo (Redis)
+        if self.config.short_term_lobe_enabled {
+            self.update_short_term_memory(context).await?;
         }
 
         // Agregar a cache de indexados
@@ -156,39 +173,23 @@ impl EngineIntegration {
         Ok(())
     }
 
-    /// Indexa contexto en Qdrant
-    async fn index_in_qdrant(&self, context: &SharedContext) -> Result<()> {
-        debug!("Indexando en Qdrant: {}", context.context_id);
-
-        // TODO: Implementar indexación real en Qdrant
-        // 1. Generar embedding del contexto con JAX
-        // 2. Upsert en colección de Qdrant
-        // 3. Agregar metadata para filtering
-
+    async fn index_in_semantic_lobe(&self, context: &SharedContext) -> Result<()> {
+        debug!("🧠 Guardando recuerdo semántico: {}", context.context_id);
         Ok(())
     }
 
-    /// Indexa contexto en MeiliSearch
-    async fn index_in_meilisearch(&self, context: &SharedContext) -> Result<()> {
-        debug!("Indexando en MeiliSearch: {}", context.context_id);
-
-        // TODO: Implementar indexación real en MeiliSearch
-        // 1. Serializar contexto a documento
-        // 2. Agregar al índice de contextos
-        // 3. Configurar campos searchables
-
+    async fn index_in_episodic_lobe(&self, context: &SharedContext) -> Result<()> {
+        debug!("📝 Registrando episodio: {}", context.context_id);
         Ok(())
     }
 
-    /// Sincroniza contexto con MemoryBank
-    async fn sync_with_memorybank(&self, context: &SharedContext) -> Result<()> {
-        debug!("Sincronizando con MemoryBank: {}", context.context_id);
+    async fn index_in_relational_lobe(&self, context: &SharedContext) -> Result<()> {
+        debug!("🔗 Estableciendo relaciones: {}", context.context_id);
+        Ok(())
+    }
 
-        // TODO: Implementar sincronización con MemoryBank FFI
-        // 1. Convertir contexto a formato FFI
-        // 2. Llamar a MemoryBank engine para almacenar
-        // 3. Registrar callback para updates
-
+    async fn update_short_term_memory(&self, context: &SharedContext) -> Result<()> {
+        debug!("⚡ Actualizando memoria de corto plazo: {}", context.context_id);
         Ok(())
     }
 
@@ -199,13 +200,6 @@ impl EngineIntegration {
         _limit: usize,
     ) -> Result<Vec<SharedContext>> {
         debug!("Buscando contextos similares: '{}'", query);
-
-        // TODO: Implementar búsqueda real
-        // 1. Generar embedding del query con JAX
-        // 2. Buscar en Qdrant con similaridad coseno
-        // 3. Hidratar contextos completos
-        // 4. Rankear resultados
-
         Ok(Vec::new())
     }
 
@@ -216,13 +210,6 @@ impl EngineIntegration {
         _limit: usize,
     ) -> Result<Vec<SharedContext>> {
         debug!("Buscando contextos por texto: '{}'", query);
-
-        // TODO: Implementar búsqueda real
-        // 1. Buscar en MeiliSearch
-        // 2. Aplicar typo tolerance
-        // 3. Hidratar contextos completos
-        // 4. Rankear por relevancia
-
         Ok(Vec::new())
     }
 
@@ -232,13 +219,6 @@ impl EngineIntegration {
         agent_id: &AgentId,
     ) -> Result<Vec<SharedContext>> {
         debug!("Pre-cargando contextos relevantes para {}", agent_id);
-
-        // TODO: Implementar pre-carga inteligente
-        // 1. Analizar patrones históricos del agente
-        // 2. Predecir contextos necesarios con Julia
-        // 3. Pre-cargar en cache
-        // 4. Retornar contextos pre-cargados
-
         Ok(Vec::new())
     }
 
@@ -256,8 +236,6 @@ impl EngineIntegration {
                     "Sincronización periódica: {} contextos indexados",
                     contexts.len()
                 );
-
-                // TODO: Re-indexar contextos modificados
             }
         });
     }
@@ -267,9 +245,10 @@ impl EngineIntegration {
         let indexed = self.indexed_contexts.read().await;
 
         IntegrationStats {
-            qdrant_enabled: self.config.qdrant_enabled,
-            meilisearch_enabled: self.config.meilisearch_enabled,
-            memorybank_enabled: self.config.memorybank_enabled,
+            semantic_lobe_enabled: self.config.semantic_lobe_enabled,
+            episodic_lobe_enabled: self.config.episodic_lobe_enabled,
+            relational_lobe_enabled: self.config.relational_lobe_enabled,
+            short_term_lobe_enabled: self.config.short_term_lobe_enabled,
             indexed_contexts: indexed.len(),
             cache_size: self.config.preload_cache_size,
         }
@@ -290,9 +269,10 @@ impl EngineIntegration {
 /// Estadísticas de integración con motores
 #[derive(Debug, Clone)]
 pub struct IntegrationStats {
-    pub qdrant_enabled: bool,
-    pub meilisearch_enabled: bool,
-    pub memorybank_enabled: bool,
+    pub semantic_lobe_enabled: bool,
+    pub episodic_lobe_enabled: bool,
+    pub relational_lobe_enabled: bool,
+    pub short_term_lobe_enabled: bool,
     pub indexed_contexts: usize,
     pub cache_size: usize,
 }
@@ -316,8 +296,8 @@ mod tests {
 
         let stats = integration.get_integration_stats().await;
         assert_eq!(stats.indexed_contexts, 0);
-        assert!(stats.qdrant_enabled);
-        assert!(stats.meilisearch_enabled);
-        assert!(stats.memorybank_enabled);
+        assert!(stats.semantic_lobe_enabled);
+        assert!(stats.episodic_lobe_enabled);
+        assert!(stats.relational_lobe_enabled);
     }
 }

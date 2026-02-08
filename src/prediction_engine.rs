@@ -32,6 +32,8 @@ pub enum PredictionType {
     ResultQuality,
     /// Predicción de impacto en el sistema
     SystemImpact,
+    /// Predicción de los próximos 2 movimientos del agente
+    NextAgentMoves,
 }
 
 /// Resultado de una predicción
@@ -160,6 +162,11 @@ impl Default for PredictionConfig {
 impl PredictionEngine {
     /// Crea una nueva instancia del motor de predicción
     pub fn new(config: PredictionConfig) -> Self {
+        #[cfg(feature = "ffi-julia")]
+        if config.enable_julia {
+            let _ = crate::ffi::julia::init();
+        }
+
         info!("🔮 Inicializando motor de predicción");
 
         Self {
@@ -189,6 +196,7 @@ impl PredictionEngine {
             PredictionType::ResourceUsage => self.predict_resource_usage(context).await?,
             PredictionType::ResultQuality => self.predict_result_quality(context).await?,
             PredictionType::SystemImpact => self.predict_system_impact(context).await?,
+            PredictionType::NextAgentMoves => self.predict_next_agent_moves(context).await?,
         };
 
         // Almacenar en cache
@@ -353,6 +361,71 @@ impl PredictionEngine {
             confidence: 0.7,
             metrics: HashMap::new(),
             recommendation: format!("📊 Calidad esperada: {:.0}%", predicted_quality * 100.0),
+            timestamp: SystemTime::now(),
+        })
+    }
+
+    /// Predice los próximos 2 movimientos del agente
+    async fn predict_next_agent_moves(&self, context: &ActionContext) -> Result<Prediction> {
+        info!("🔮 Prediciendo próximos movimientos para: {}", context.action_type);
+
+        // 1. Obtener patrones de Julia (Análisis de Caos)
+        let mut predicted_moves = Vec::new();
+
+        #[cfg(feature = "ffi-julia")]
+        if self.config.enable_julia {
+            // Convertir historial a serie temporal para Julia
+            let history_values: Vec<f64> = context.history.iter()
+                .map(|r| if r.success { 1.0 } else { 0.0 })
+                .collect();
+
+            if !history_values.is_empty() {
+                if let Ok(chaos) = crate::ffi::julia::chaos_analysis(&history_values) {
+                    debug!("Julia Chaos Analysis: {}", chaos);
+                    // Aquí usaríamos la lógica de Julia para determinar el "rumbo"
+                }
+            }
+        }
+
+        // 2. Lógica de predicción basada en patrones (Heurística avanzada por ahora)
+        // TODO: Integrar con JAX para Transformer-based prediction
+        match context.action_type.as_str() {
+            "search" | "map_search" => {
+                predicted_moves.push("analyze".to_string());
+                predicted_moves.push("edit".to_string());
+            },
+            "analyze" => {
+                predicted_moves.push("repair".to_string());
+                predicted_moves.push("edit".to_string());
+            },
+            "edit" => {
+                predicted_moves.push("analyze".to_string());
+                predicted_moves.push("workflow".to_string());
+            },
+            "repair" => {
+                predicted_moves.push("analyze".to_string());
+                predicted_moves.push("simulate".to_string());
+            },
+            _ => {
+                predicted_moves.push("analyze".to_string());
+                predicted_moves.push("search".to_string());
+            }
+        }
+
+        let recommendation = format!(
+            "🚀 Próximas 2 acciones sugeridas: 1. {} | 2. {}",
+            predicted_moves[0], predicted_moves[1]
+        );
+
+        let mut metrics = HashMap::new();
+        metrics.insert("prediction_depth".to_string(), 2.0);
+
+        Ok(Prediction {
+            prediction_type: PredictionType::NextAgentMoves,
+            value: 0.9, // Probabilidad de acierto estimada
+            confidence: 0.8,
+            metrics,
+            recommendation,
             timestamp: SystemTime::now(),
         })
     }

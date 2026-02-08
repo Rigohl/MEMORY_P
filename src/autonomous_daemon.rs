@@ -15,6 +15,8 @@ use tracing::{info, warn, error, debug};
 use crate::error::{Result, MemoryPError as Error};
 use crate::predictive_engine::PredictiveEngine;
 use crate::context_detector::ContextDetector;
+use crate::analyzer::CodeAnalyzer;
+use crate::shared_memory::SharedMemorySystem;
 
 /// Estado del daemon autónomo
 #[derive(Debug, Clone, PartialEq)]
@@ -90,13 +92,15 @@ pub struct AutonomousDaemon {
     predictive_engine: Arc<PredictiveEngine>,
     /// Detector de contexto
     context_detector: Arc<ContextDetector>,
+    /// Sistema de memoria compartida
+    shared_memory: Arc<SharedMemorySystem>,
     /// Tiempo de inicio
     start_time: Instant,
 }
 
 impl AutonomousDaemon {
     /// Crea un nuevo daemon autónomo
-    pub fn new(config: DaemonConfig) -> Self {
+    pub fn new(config: DaemonConfig, shared_memory: Arc<SharedMemorySystem>) -> Self {
         info!("🤖 Inicializando Daemon Autónomo...");
         
         Self {
@@ -105,6 +109,7 @@ impl AutonomousDaemon {
             metrics: Arc::new(RwLock::new(DaemonMetrics::default())),
             predictive_engine: Arc::new(PredictiveEngine::new()),
             context_detector: Arc::new(ContextDetector::new()),
+            shared_memory,
             start_time: Instant::now(),
         }
     }
@@ -140,6 +145,13 @@ impl AutonomousDaemon {
         tokio::spawn(async move {
             if let Err(e) = daemon_optimize.optimization_loop().await {
                 error!("❌ Error en optimization loop: {}", e);
+            }
+        });
+
+        let daemon_scan = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_scan.workspace_scanning_loop().await {
+                error!("❌ Error en workspace scanning loop: {}", e);
             }
         });
 
@@ -282,6 +294,43 @@ impl AutonomousDaemon {
         }
     }
 
+    /// Loop de escaneo de workspace proactivo
+    async fn workspace_scanning_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(60)); // Cada minuto
+
+        loop {
+            interval.tick().await;
+
+            debug!("🔍 Ejecutando escaneo de workspace proactivo...");
+
+            // 1. Escanear archivos (Rust por defecto)
+            if let Ok(files) = CodeAnalyzer::scan_files(".", "rs", true, false) {
+                for file_path in files {
+                    if let Ok(analysis) = CodeAnalyzer::analyze_file(&file_path) {
+                        if !analysis.warnings.is_empty() {
+                            info!("⚠️  Detectados {} problemas en {}", analysis.warnings.len(), analysis.file_path);
+
+                            // 2. Registrar alarmas proactivas en memoria compartida
+                            for warning in analysis.warnings {
+                                let mut ctx = self.shared_memory.get_or_create_context(crate::shared_memory::AgentId::new("autonomous-daemon".to_string())).await?;
+
+                                let alarm_key = format!("alarm:{}", analysis.file_path);
+                                ctx.shared_data.insert(alarm_key, serde_json::json!({
+                                    "type": "proactive_warning",
+                                    "file": analysis.file_path,
+                                    "message": warning,
+                                    "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
+                                }));
+
+                                self.shared_memory.update_context(ctx.agent_id.clone(), ctx).await?;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     /// Loop de optimización automática
     async fn optimization_loop(&self) -> Result<()> {
         if !self.config.auto_optimization_enabled {
@@ -298,6 +347,7 @@ impl AutonomousDaemon {
             
             // Ejecutar optimizaciones predictivas
             if let Ok(optimizations) = self.predictive_engine.suggest_optimizations().await {
+                let optimizations: Vec<crate::predictive_engine::Optimization> = optimizations;
                 if !optimizations.is_empty() {
                     info!("🎯 Aplicando {} optimizaciones", optimizations.len());
                     
