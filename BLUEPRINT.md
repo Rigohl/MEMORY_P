@@ -72,7 +72,7 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Traducción segura entre Rust y otros lenguajes vía C ABI.
 
-**Ubicación**: `FFI/src/ffi_bridge.zig`
+**Ubicación**: `brain/ffi_bridge.zig`
 
 **Features**:
 - Dispatcher centralizado
@@ -84,7 +84,7 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Optimización matemática, análisis de caos, ecuaciones diferenciales.
 
-**Ubicación**: `FFI/src/julia_math.jl`
+**Ubicación**: `brain/julia_math.jl`
 
 **Capacidades**:
 - Optimización global (Optim.jl)
@@ -98,7 +98,7 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Embeddings semánticos, inference ML, clasificación.
 
-**Ubicación**: `FFI/src/jax_inference.py`
+**Ubicación**: `brain/jax_inference.py`
 
 **Capacidades**:
 - Sentence embeddings (MiniLM, BGE)
@@ -112,7 +112,7 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Operaciones vectoriales ultra-rápidas.
 
-**Ubicación**: `FFI/src/kernels.mojo`
+**Ubicación**: `brain/kernels.mojo`
 
 **Capacidades**:
 - Dot products (12µs para 1M elementos)
@@ -126,7 +126,7 @@ MEMORY_P v2.0 es un servidor MCP de última generación que combina lo mejor de 
 
 **Responsabilidad**: Concurrencia sin locks, búsqueda distribuida.
 
-**Ubicación**: `FFI/src/search_actor.pony`
+**Ubicación**: `brain/search_actor.pony`
 
 **Capacidades**:
 - Message passing async
@@ -339,7 +339,7 @@ impl FfiVec {
 - **README.md**: Overview y quick start
 - **INSTALL.md**: Instalación completa multi-lenguaje
 - **BLUEPRINT.md**: Este documento
-- **FFI/README.md**: Documentación técnica FFI
+- **brain/README.md**: Documentación técnica FFI
 - **AGENTS.md**: GitHub Copilot Agents
 - **SKILLS.md**: Agent Skills
 - **docs/**: Tutoriales y referencia

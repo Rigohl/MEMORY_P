@@ -313,7 +313,7 @@ MEMORY_P/
 │   ├── workspace.rs         # Workspace context manager
 │   └── ffi/
 │       └── memory_bank.rs   # FFI bridge to multi-lang
-├── FFI/
+├── brain/
 │   ├── README.md            # FFI documentation
 │   ├── src/
 │   │   ├── ffi_bridge.zig   # Zig FFI dispatcher
@@ -390,21 +390,17 @@ curl -X POST http://localhost:4040/mcp \
 ## 📚 Documentation
 
 ### Getting Started
-- **[INSTALL.md](INSTALL.md)** - Complete installation guide for all languages
-- **[docs/TUTORIAL_START.md](docs/TUTORIAL_START.md)** - Quick start tutorial
-- **[BLUEPRINT.md](BLUEPRINT.md)** - Architectural deep-dive and design
-- **[DEVOPS.md](DEVOPS.md)** - 🚀 DevOps guide: deployment, monitoring, CI/CD
+- **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** - Guía de inicio rápido y tutorial
+- **[BLUEPRINT.md](BLUEPRINT.md)** - Diseño arquitectónico detallado
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Profundización en motores y FFI
 
-### Technical Reference
-- **[docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md)** - Complete MCP tools API
-- **[docs/HOWTO_REPAIR.md](docs/HOWTO_REPAIR.md)** - Predictive repair guide
-- **[FFI/README.md](FFI/README.md)** - MemoryBank FFI engine documentation
+### Referencia Técnica
+- **[docs/API_REFERENCE.md](docs/API_REFERENCE.md)** - API completa de herramientas MCP
+- **[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md)** - Guía de integraciones externas y workflows
+- **[NEWAY/README.md](NEWAY/README.md)** - 🚀 Motor "Super Wow" de Próxima Generación
 
-### FFI Performance Optimization (⚡ NEW)
-- **[docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)** - Ultra-low-latency FFI optimization guide
-- **[docs/FFI_OPTIMIZATION_SUMMARY.md](docs/FFI_OPTIMIZATION_SUMMARY.md)** - Executive summary of optimizations
-- **[docs/FFI_OPTIMIZATION_VISUAL.md](docs/FFI_OPTIMIZATION_VISUAL.md)** - Visual guide to optimizations
-- **[FFI_OPTIMIZATION_COMPLETE.md](FFI_OPTIMIZATION_COMPLETE.md)** - Complete optimization checklist
+### Optimizaciones Avanzadas
+- **[docs/legacy/FFI_OPTIMIZATION.md](docs/legacy/FFI_OPTIMIZATION.md)** - Guía de optimización FFI de ultra baja latencia
 
 **Performance Achieved**: ~0.5µs P50, ~0.8µs P95 (Target: <1µs) ✅
 

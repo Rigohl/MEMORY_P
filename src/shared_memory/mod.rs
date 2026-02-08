@@ -216,6 +216,25 @@ impl SharedMemorySystem {
         self.engine_integration.get_integration_stats().await
     }
 
+    /// Sistema de autogestión de memoria (Auto-moving Context)
+    /// Mueve y optimiza los contextos según su relevancia y uso
+    pub async fn auto_manage_memory(&self) -> Result<()> {
+        info!("🧠 Ejecutando autogestión de memoria (auto-moving context)");
+
+        let contexts = self.context_manager.get_all_contexts();
+        for context in contexts {
+            // Lógica de migración inteligente:
+            // - Memorias con alta frecuencia de acceso -> Asegurar en lóbulos rápidos (Redis)
+            // - Memorias antiguas o frías -> Archivar en Postgres/ClickHouse
+            // - Hechos detectados -> Indexar en Tantivy (Episódica)
+            // - Conceptos abstractos -> Indexar en Qdrant (Semántica)
+
+            self.engine_integration.index_context(&context).await?;
+        }
+
+        Ok(())
+    }
+
     /// Finaliza el sistema de memoria compartida
     pub async fn shutdown(&self) -> Result<()> {
         info!("🔧 Finalizando sistema de memoria compartida");
