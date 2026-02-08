@@ -36,6 +36,7 @@ mod predictive_engine;
 mod hyper_memory;
 mod pattern_detector;
 mod telemetry;
+mod decision_logic;
 
 #[tokio::main]
 async fn main() {
@@ -101,6 +102,10 @@ async fn http_server_mode() -> crate::error::Result<()> {
     ));
     tracing::info!("🔮 Motor de predicción inicializado");
 
+    // 5. Iniciar motor de decisiones cognitivas
+    let decision_engine = Arc::new(decision_logic::DecisionEngine::new());
+    tracing::info!("🧠 Motor de decisiones cognitivas inicializado");
+
     // 5. Iniciar tarea de limpieza de memoria en background (deshabilitada)
     // let memory_clone = shared_memory.clone();
     // tokio::spawn(async move {
@@ -124,7 +129,8 @@ async fn http_server_mode() -> crate::error::Result<()> {
         .layer(axum::Extension(auto_manager.clone()))
         .layer(axum::Extension(kpi_tracker.clone()))
         .layer(axum::Extension(shared_memory.clone()))
-        .layer(axum::Extension(prediction_engine.clone()));
+        .layer(axum::Extension(prediction_engine.clone()))
+        .layer(axum::Extension(decision_engine.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
 
@@ -164,6 +170,7 @@ async fn mcp_stdio_mode() -> crate::error::Result<()> {
     let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
         prediction_engine::PredictionConfig::default(),
     ));
+    let decision_engine = Arc::new(decision_logic::DecisionEngine::new());
 
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
     let mut stdout = tokio::io::stdout();
@@ -174,6 +181,7 @@ async fn mcp_stdio_mode() -> crate::error::Result<()> {
             let response = mcp_json_rpc_handler(
                 axum::extract::Extension(shared_memory.clone()),
                 axum::extract::Extension(prediction_engine.clone()),
+                axum::extract::Extension(decision_engine.clone()),
                 axum::Json(req),
             )
             .await;

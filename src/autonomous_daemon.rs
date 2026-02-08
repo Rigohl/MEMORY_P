@@ -404,7 +404,8 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_creation() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config);
+        let shared_memory = Arc::new(crate::shared_memory::SharedMemorySystem::new().await.unwrap());
+        let daemon = AutonomousDaemon::new(config, shared_memory);
         
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Starting);
@@ -413,7 +414,8 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_start() {
         let config = DaemonConfig::default();
-        let daemon = Arc::new(AutonomousDaemon::new(config));
+        let shared_memory = Arc::new(crate::shared_memory::SharedMemorySystem::new().await.unwrap());
+        let daemon = Arc::new(AutonomousDaemon::new(config, shared_memory));
         
         let result = daemon.clone().start().await;
         assert!(result.is_ok());
@@ -425,7 +427,8 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_stop() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config);
+        let shared_memory = Arc::new(crate::shared_memory::SharedMemorySystem::new().await.unwrap());
+        let daemon = AutonomousDaemon::new(config, shared_memory);
         
         let result = daemon.stop().await;
         assert!(result.is_ok());

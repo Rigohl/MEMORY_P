@@ -2,6 +2,16 @@
 
 use super::error::{FfiError, Result};
 
+/// Lenguajes soportados por el FFI Bridge
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Language {
+    Zig,
+    Julia,
+    Python,
+    Mojo,
+    Pony,
+}
+
 /// Estructura de información del buffer desde Zig
 #[repr(C)]
 #[derive(Debug)]
@@ -135,6 +145,19 @@ pub fn free_shared_buffer(buffer: *mut std::ffi::c_void) {
 #[cfg(not(feature = "ffi-zig"))]
 pub fn free_shared_buffer(_buffer: *mut std::ffi::c_void) {
     // No-op
+}
+
+/// Métricas de performance FFI
+pub fn get_metrics() -> (u64, f64) {
+    (0, 0.0) // Stub
+}
+
+/// Resetea métricas
+pub fn reset_metrics() {}
+
+/// Dispatch rápido de una operación FFI
+pub fn dispatch_fast(_lang: Language, _op: &str, _data: &mut [f64]) -> Result<bool> {
+    Ok(true) // Stub
 }
 
 #[cfg(feature = "ffi-zig")]

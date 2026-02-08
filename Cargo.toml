@@ -52,6 +52,10 @@ sqlparser = "0.50"
 lazy_static = "1.4"
 memmap2 = "0.9.9"
 mimalloc = "0.1.48"
+sled = "0.34"
+polars = { version = "0.41", features = ["lazy", "parquet", "json"] }
+aes-gcm = "0.10"
+rand = "0.8"
 
 [[bin]]
 name = "memory_p"

@@ -168,6 +168,9 @@ pub struct SharedContext {
 
     /// Datos compartidos entre agentes (clave-valor)
     pub shared_data: HashMap<String, serde_json::Value>,
+
+    /// Grafo de Conocimiento (Entidad -> Relaciones)
+    pub knowledge_graph: HashMap<String, Vec<String>>,
 }
 
 impl SharedContext {
@@ -178,6 +181,7 @@ impl SharedContext {
             metadata: ContextMetadata::new(),
             agent_context: AgentContext::new(),
             shared_data: HashMap::new(),
+            knowledge_graph: HashMap::new(),
         }
     }
 

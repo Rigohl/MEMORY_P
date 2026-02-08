@@ -544,9 +544,10 @@ mod tests {
     async fn test_auto_manager_lifecycle() {
         let config = ManagerConfig::default();
         let manager = AutoManager::new(config);
+        let shared_memory = Arc::new(crate::shared_memory::SharedMemorySystem::new().await.unwrap());
 
         // Start
-        assert!(manager.auto_start().await.is_ok());
+        assert!(manager.auto_start(shared_memory).await.is_ok());
         assert_eq!(manager.get_overall_health(), HealthStatus::Healthy);
 
         // Wait for checks

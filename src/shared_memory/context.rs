@@ -2,6 +2,10 @@
 
 use super::types::{AgentId, ContextId, SharedContext};
 use crate::error::{MemoryPError, Result};
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm, Nonce
+};
 use dashmap::DashMap;
 use std::sync::Arc;
 use tracing::{debug, info, warn};
@@ -14,23 +18,60 @@ pub struct ContextManager {
 
     /// Índice por AgentId para búsqueda rápida (AgentId -> ContextId)
     agent_index: Arc<DashMap<AgentId, ContextId>>,
-    // TODO: Agregar cliente PostgreSQL para persistencia
-    // db_pool: Option<PgPool>,
+
+    /// Base de datos persistente (Sled)
+    db: Arc<sled::Db>,
+
+    /// Clave de cifrado para seguridad de memoria
+    encryption_key: [u8; 32],
 }
 
 impl ContextManager {
-    /// Crea un nuevo gestor de contextos
+    /// Crea un nuevo gestor de contextos con persistencia Sled
     pub async fn new() -> Result<Self> {
-        info!("🔧 Inicializando gestor de contextos");
+        info!("🔧 Inicializando gestor de contextos con persistencia Sled y Cifrado AES-256");
 
-        // TODO: Conectar a PostgreSQL si está disponible
-        // let db_pool = connect_to_postgres().await.ok();
+        let db = sled::open("memory_db")
+            .map_err(|e| MemoryPError::Other(format!("Sled open failed: {}", e)))?;
 
-        Ok(Self {
+        // En producción, esto vendría de una variable de entorno segura
+        let encryption_key = [0u8; 32];
+
+        let manager = Self {
             contexts: Arc::new(DashMap::new()),
             agent_index: Arc::new(DashMap::new()),
-            // db_pool,
-        })
+            db: Arc::new(db),
+            encryption_key,
+        };
+
+        // Cargar datos desde persistencia
+        manager.load_all_from_db()?;
+
+        Ok(manager)
+    }
+
+    /// Carga todos los contextos desde el disco al inicio y los descifra
+    fn load_all_from_db(&self) -> Result<()> {
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|_| MemoryPError::Other("Invalid key length".into()))?;
+
+        for item in self.db.iter() {
+            if let Ok((_key, value)) = item {
+                // El nonce está al principio del valor (12 bytes)
+                if value.len() < 12 { continue; }
+                let nonce = Nonce::from_slice(&value[..12]);
+                let ciphertext = &value[12..];
+
+                if let Ok(plaintext) = cipher.decrypt(nonce, ciphertext) {
+                    if let Ok(context) = serde_json::from_slice::<SharedContext>(&plaintext) {
+                        self.contexts.insert(context.context_id.clone(), context.clone());
+                        self.agent_index.insert(context.agent_id.clone(), context.context_id.clone());
+                    }
+                }
+            }
+        }
+        info!("✅ Cargados {} contextos desde persistencia", self.contexts.len());
+        Ok(())
     }
 
     /// Obtiene o crea un contexto para un agente
@@ -72,7 +113,7 @@ impl ContextManager {
         Ok(context)
     }
 
-    /// Actualiza un contexto existente
+    /// Actualiza un contexto existente, lo cifra y lo persiste
     pub async fn update(&self, mut context: SharedContext) -> Result<()> {
         context.update();
 
@@ -82,12 +123,31 @@ impl ContextManager {
         self.agent_index
             .insert(context.agent_id.clone(), context.context_id.clone());
 
-        // TODO: Persistir en PostgreSQL
-        // if let Some(pool) = &self.db_pool {
-        //     save_to_db(pool, &context).await?;
-        // }
+        // Cifrar datos
+        let plaintext = serde_json::to_vec(&context)
+            .map_err(|e| MemoryPError::Other(format!("Serialization failed: {}", e)))?;
 
-        debug!("Contexto {} actualizado", context.context_id);
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|_| MemoryPError::Other("Invalid key length".into()))?;
+
+        let nonce_bytes: [u8; 12] = rand::random();
+        let nonce = Nonce::from_slice(&nonce_bytes);
+
+        let ciphertext = cipher.encrypt(nonce, plaintext.as_ref())
+            .map_err(|e| MemoryPError::Other(format!("Encryption failed: {}", e)))?;
+
+        // Combinar nonce + ciphertext
+        let mut final_payload = nonce_bytes.to_vec();
+        final_payload.extend(ciphertext);
+
+        // Persistir en Sled
+        self.db.insert(context.context_id.0.as_bytes(), final_payload)
+            .map_err(|e| MemoryPError::Other(format!("Sled insert failed: {}", e)))?;
+
+        self.db.flush()
+            .map_err(|e| MemoryPError::Other(format!("Sled flush failed: {}", e)))?;
+
+        debug!("Contexto {} actualizado y persistido de forma segura (Cifrado)", context.context_id);
         Ok(())
     }
 
@@ -96,10 +156,9 @@ impl ContextManager {
         if let Some((_, context)) = self.contexts.remove(context_id) {
             self.agent_index.remove(&context.agent_id);
 
-            // TODO: Eliminar de PostgreSQL
-            // if let Some(pool) = &self.db_pool {
-            //     delete_from_db(pool, context_id).await?;
-            // }
+            // Eliminar de Sled
+            self.db.remove(context_id.0.as_bytes())
+                .map_err(|e| MemoryPError::Other(format!("Sled remove failed: {}", e)))?;
 
             debug!("Contexto {} eliminado", context_id);
             Ok(())

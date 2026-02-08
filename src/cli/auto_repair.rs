@@ -188,8 +188,9 @@ fn run_cargo_clippy_fix(path: &Path) -> Result<RepairAction> {
         .context("Failed to run cargo clippy --fix")?;
 
     let success = output.status.success();
-    let output_str = String::from_utf8_lossy(&output.stdout).to_string()
-        + &String::from_utf8_lossy(&output.stderr).to_string();
+    let output_str = format!("{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr));
 
     Ok(RepairAction {
         action: "cargo clippy --fix".to_string(),
