@@ -303,7 +303,7 @@ impl PatternDetector {
     }
     
     /// Detecta estilo de código (análisis básico)
-    fn detect_code_style(&self, actions: &[UserAction]) -> CodeStylePatterns {
+    fn detect_code_style(&self, _actions: &[UserAction]) -> CodeStylePatterns {
         // Por ahora retornar valores por defecto
         // En producción, analizaríamos el código real
         CodeStylePatterns::default()

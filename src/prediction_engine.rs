@@ -13,11 +13,10 @@ use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
-use tracing::{debug, info, warn};
+use std::time::SystemTime;
+use tracing::{debug, info};
 
-use crate::error::{MemoryPError, Result};
-use crate::ffi;
+use crate::error::Result;
 
 /// Tipo de predicción
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -388,7 +387,6 @@ impl PredictionEngine {
         // 1. Obtener patrones de Julia (Análisis de Caos)
         let mut predicted_moves = Vec::new();
 
-        #[cfg(feature = "ffi-julia")]
         if self.config.enable_julia {
             // Convertir historial a serie temporal para Julia
             let history_values: Vec<f64> = context.history.iter()
@@ -397,8 +395,7 @@ impl PredictionEngine {
 
             if !history_values.is_empty() {
                 if let Ok(chaos) = crate::ffi::julia::chaos_analysis(&history_values) {
-                    debug!("Julia Chaos Analysis: {}", chaos);
-                    // Aquí usaríamos la lógica de Julia para determinar el "rumbo"
+                    debug!("Julia Chaos Analysis (REAL FFI): {}", chaos);
                 }
             }
         }

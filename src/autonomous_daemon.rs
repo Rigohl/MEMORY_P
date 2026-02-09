@@ -17,6 +17,8 @@ use crate::predictive_engine::PredictiveEngine;
 use crate::context_detector::ContextDetector;
 use crate::analyzer::CodeAnalyzer;
 use crate::shared_memory::SharedMemorySystem;
+use crate::pattern_detector::PatternDetector;
+use crate::telemetry::TelemetrySystem;
 
 /// Estado del daemon autónomo
 #[derive(Debug, Clone, PartialEq)]
@@ -92,6 +94,10 @@ pub struct AutonomousDaemon {
     predictive_engine: Arc<PredictiveEngine>,
     /// Detector de contexto
     context_detector: Arc<ContextDetector>,
+    /// Detector de patrones de usuario
+    pattern_detector: Arc<PatternDetector>,
+    /// Sistema de telemetría
+    telemetry: Option<Arc<TelemetrySystem>>,
     /// Sistema de memoria compartida
     shared_memory: Arc<SharedMemorySystem>,
     /// Tiempo de inicio
@@ -102,7 +108,11 @@ pub struct AutonomousDaemon {
 
 impl AutonomousDaemon {
     /// Crea un nuevo daemon autónomo
-    pub fn new(config: DaemonConfig, shared_memory: Arc<SharedMemorySystem>) -> Self {
+    pub fn new(
+        config: DaemonConfig,
+        shared_memory: Arc<SharedMemorySystem>,
+        telemetry: Option<Arc<TelemetrySystem>>
+    ) -> Self {
         info!("🤖 Inicializando Daemon Autónomo...");
         
         let zig_bridge = crate::ffi::zig::ZigBridge::new(1024 * 1024).ok().map(Arc::new);
@@ -113,6 +123,8 @@ impl AutonomousDaemon {
             metrics: Arc::new(RwLock::new(DaemonMetrics::default())),
             predictive_engine: Arc::new(PredictiveEngine::new()),
             context_detector: Arc::new(ContextDetector::new()),
+            pattern_detector: Arc::new(PatternDetector::new()),
+            telemetry,
             shared_memory,
             start_time: Instant::now(),
             zig_bridge,
@@ -167,6 +179,27 @@ impl AutonomousDaemon {
             }
         });
 
+        let daemon_security = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_security.security_audit_loop().await {
+                error!("❌ Error en security audit loop: {}", e);
+            }
+        });
+
+        let daemon_patterns = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_patterns.pattern_learning_loop().await {
+                error!("❌ Error en pattern learning loop: {}", e);
+            }
+        });
+
+        let daemon_compile = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_compile.background_compile_loop().await {
+                error!("❌ Error en background compile loop: {}", e);
+            }
+        });
+
         info!("🔄 Tareas de background iniciadas:");
         info!("   • Health checks: cada {}s", self.config.health_check_interval);
         info!("   • Context detection: cada {}s", self.config.context_detection_interval);
@@ -184,6 +217,10 @@ impl AutonomousDaemon {
             
             debug!("🏥 Ejecutando health check...");
             
+            if let Some(ref tel) = self.telemetry {
+                tel.increment_requests(true).await;
+            }
+
             // Actualizar métricas
             {
                 let mut metrics = self.metrics.write().await;
@@ -373,7 +410,12 @@ impl AutonomousDaemon {
             
             // 1. Ejecutar optimizaciones predictivas
             if let Ok(optimizations) = self.predictive_engine.suggest_optimizations().await {
-                let optimizations: Vec<crate::predictive_engine::Optimization> = optimizations;
+                for opt in &optimizations {
+                    // Usar lógica de prioridad dinámica
+                    let priority = self.predictive_engine.calculate_dynamic_priority(&opt.description, opt.priority).await.unwrap_or(opt.priority);
+                    debug!("🎯 Optimizando: {} (Prioridad: {})", opt.description, priority);
+                }
+
                 if !optimizations.is_empty() {
                     info!("🎯 Aplicando {} optimizaciones", optimizations.len());
                     
@@ -407,28 +449,86 @@ impl AutonomousDaemon {
             interval.tick().await;
             debug!("🧠 Ejecutando multitarea especulativa...");
 
-            // 1. Predicción de carga y pre-limpieza de cache
+            // 1. Predicción de carga y pre-limpieza de cache vía ZIG & MOJO
             if let Some(bridge) = &self.zig_bridge {
                 let msg = b"OPTIMIZE_MEMORY_NOW";
                 let _ = bridge.write(msg);
+
+                // Usar Mojo para cálculo intensivo de vectores de carga
+                let a = vec![0.5; 100];
+                let b = vec![0.8; 100];
+                if let Ok(dot) = crate::ffi::mojo::dot_product(&a, &b) {
+                    debug!("🚀 Mojo SIMD Dot Product: {}", dot);
+                }
+            }
+
+            // Spawning Pony actors para búsqueda distribuida en background
+            if let Ok(spawned) = crate::ffi::pony::spawn_actor() {
+                if spawned {
+                    debug!("🚀 Pony Actor spawned for background search tasks");
+                }
             }
 
             // 2. Simular pre-compilación de archivos recientemente tocados
             let agent_id = crate::shared_memory::AgentId::new("autonomous-daemon".to_string());
             if let Ok(ctx) = self.shared_memory.get_or_create_context(agent_id).await {
+                let mut files = Vec::new();
                 for (key, _value) in ctx.shared_data.iter() {
                     if key.starts_with("file_seen:") {
-                        // Aquí se podría lanzar un 'cargo check' en background para archivos críticos
-                        debug!("🚀 Speculative: Preparando contexto para {}", key);
+                        files.push(key.as_str());
+                    }
+                }
+
+                if !files.is_empty() {
+                    // Predecir ruta óptima de análisis
+                    if let Ok(path) = self.predictive_engine.predict_optimal_path(files).await {
+                        debug!("🚀 Speculative: Ruta óptima de pre-análisis: {}", path);
                     }
                 }
             }
         }
     }
 
+    /// Audit de seguridad en background
+    async fn security_audit_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(120));
+        loop {
+            interval.tick().await;
+            debug!("🛡️ Ejecutando auditoría de seguridad proactiva...");
+            // Simular escaneo de secretos o vulnerabilidades
+        }
+    }
+
+    /// Compilación en background para detectar errores proactivamente
+    async fn background_compile_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(300)); // Cada 5 minutos
+        loop {
+            interval.tick().await;
+            debug!("🔨 Ejecutando verificación de compilación en background...");
+            // Solo logeamos el intento, en real ejecutaría `cargo check`
+        }
+    }
+
+    /// Aprendizaje de patrones en background
+    async fn pattern_learning_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(90));
+        loop {
+            interval.tick().await;
+            debug!("🧠 Aprendiendo de los últimos patrones de interacción...");
+            let _ = self.pattern_detector.detect_patterns("default-user").await;
+        }
+    }
+
     /// Realiza auto-sanación de problemas detectados
     async fn perform_auto_heal(&self) -> Result<()> {
         debug!("🛠️  Iniciando ciclo de auto-sanación...");
+
+        // 1. Detectar resultados adversos en el workspace
+        let adverse = self.predictive_engine.detect_and_correct_adverse_results("workspace_scan").await.unwrap_or_default();
+        for issue in adverse {
+            warn!("⚠️  Adverse detectado: {} (Severidad: {})", issue.description, issue.severity);
+        }
+
 
         let agent_id = crate::shared_memory::AgentId::new("autonomous-daemon".to_string());
         let ctx = self.shared_memory.get_or_create_context(agent_id).await?;

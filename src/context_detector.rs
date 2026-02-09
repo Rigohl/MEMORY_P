@@ -41,9 +41,12 @@ pub struct Context {
 }
 
 /// Detector de contextos
+use tokio::sync::RwLock;
+use std::sync::Arc;
+
 pub struct ContextDetector {
     /// Caché de contextos detectados
-    context_cache: HashMap<String, Vec<Context>>,
+    context_cache: Arc<RwLock<HashMap<String, Vec<Context>>>>,
 }
 
 impl ContextDetector {
@@ -51,7 +54,7 @@ impl ContextDetector {
     pub fn new() -> Self {
         info!("🔍 Inicializando Detector de Contextos...");
         Self {
-            context_cache: HashMap::new(),
+            context_cache: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -309,7 +312,7 @@ mod tests {
     #[tokio::test]
     async fn test_context_detector_creation() {
         let detector = ContextDetector::new();
-        assert_eq!(detector.context_cache.len(), 0);
+        assert_eq!(detector.context_cache.read().await.len(), 0);
     }
 
     #[tokio::test]

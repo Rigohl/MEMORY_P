@@ -2,14 +2,13 @@
 //! MCP Protocol 2026 - Always-On, Zero-Touch Operation
 
 use crate::autonomous_daemon::{AutonomousDaemon, DaemonConfig};
-use crate::error::{MemoryPError, Result};
-use crate::ffi;
+use crate::error::Result;
 use crate::shared_memory::SharedMemorySystem;
 use dashmap::DashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::info;
 
 /// Estado de salud de un componente
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -84,7 +83,7 @@ impl AutoManager {
         }
     }
 
-    pub async fn auto_start(&self, shared_memory: Arc<SharedMemorySystem>) -> Result<()> {
+    pub async fn auto_start(&self, shared_memory: Arc<SharedMemorySystem>, telemetry: Option<Arc<crate::telemetry::TelemetrySystem>>) -> Result<()> {
         info!("🚀 Iniciando AutoManager - MCP Protocol 2026");
         let mut running = self.running.write().await;
         if *running { return Ok(()); }
@@ -96,7 +95,7 @@ impl AutoManager {
         self.start_health_monitor().await;
         self.start_auto_recovery().await;
 
-        let daemon = Arc::new(AutonomousDaemon::new(DaemonConfig::default(), shared_memory));
+        let daemon = Arc::new(AutonomousDaemon::new(DaemonConfig::default(), shared_memory, telemetry));
         daemon.clone().start().await?;
         *self.autonomous_daemon.write().await = Some(daemon);
 
@@ -128,7 +127,14 @@ impl AutoManager {
     }
 
     pub fn get_overall_health(&self) -> HealthStatus { HealthStatus::Healthy }
-    pub fn get_detailed_status(&self) -> serde_json::Value { serde_json::json!({}) }
+    pub fn get_detailed_status(&self) -> serde_json::Value {
+        serde_json::json!({
+            "config": {
+                "check_interval_secs": self.config.check_interval.as_secs(),
+                "max_errors": self.config.max_errors
+            }
+        })
+    }
 }
 
 #[cfg(test)]

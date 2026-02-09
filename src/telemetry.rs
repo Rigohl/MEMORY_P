@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Sistema de telemetría
 pub struct TelemetrySystem {
@@ -194,8 +194,8 @@ impl TelemetrySystem {
                 };
                 
                 info!(
-                    "📊 Metrics: {} total requests ({:.1}% success), {} active connections",
-                    total, success_rate, connections
+                    "📊 Metrics: {} total requests ({:.1}% success, {} failed), {} active connections",
+                    total, success_rate, failed, connections
                 );
             }
         });

@@ -6,5 +6,17 @@ pub mod mojo;
 pub mod pony;
 pub mod zig;
 
-pub fn init() -> crate::error::Result<()> { Ok(()) }
-pub fn shutdown() {}
+pub fn init() -> crate::error::Result<()> {
+    julia::init()?;
+    jax::init()?;
+    mojo::init()?;
+    pony::init()?;
+    Ok(())
+}
+
+pub fn shutdown() {
+    julia::shutdown();
+    jax::shutdown();
+    mojo::shutdown();
+    pony::shutdown();
+}

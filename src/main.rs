@@ -29,19 +29,31 @@ mod pattern_detector;
 mod telemetry;
 mod decision_logic;
 
+use crate::telemetry::{TelemetrySystem, TelemetryConfig};
+
 #[tokio::main]
 async fn main() {
-    if let Err(e) = http_server_mode().await {
+    // Inicializar Telemetría Always-On
+    let telemetry = Arc::new(TelemetrySystem::new(TelemetryConfig::default()));
+    if let Err(e) = telemetry.start().await {
+        eprintln!("Error al iniciar telemetría: {}", e);
+    }
+
+    if let Err(e) = http_server_mode(telemetry.clone()).await {
         eprintln!("Error: {}", e);
     }
+
+    // Shutdown FFI
+    crate::ffi::shutdown();
+    let _ = telemetry.shutdown().await;
 }
 
-async fn http_server_mode() -> crate::error::Result<()> {
+async fn http_server_mode(telemetry: Arc<TelemetrySystem>) -> crate::error::Result<()> {
     let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
     shared_memory.initialize().await?;
 
     let auto_manager = Arc::new(auto_manager::AutoManager::new(auto_manager::ManagerConfig::default()));
-    auto_manager.auto_start(shared_memory.clone()).await?;
+    auto_manager.auto_start(shared_memory.clone(), Some(telemetry.clone())).await?;
 
     let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(kpi_tracker::KpiConfig::default()));
     let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(prediction_engine::PredictionConfig::default()));
@@ -53,7 +65,8 @@ async fn http_server_mode() -> crate::error::Result<()> {
         .layer(axum::Extension(kpi_tracker))
         .layer(axum::Extension(shared_memory))
         .layer(axum::Extension(prediction_engine))
-        .layer(axum::Extension(decision_engine));
+        .layer(axum::Extension(decision_engine))
+        .layer(axum::Extension(telemetry));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
     let listener = TcpListener::bind(addr).await.map_err(|e| crate::error::MemoryPError::Io(e))?;

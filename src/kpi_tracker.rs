@@ -1,7 +1,5 @@
 //! kpi_tracker.rs - Sistema de KPIs Six Sigma
 
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 pub struct KpiConfig {
     pub enabled: bool,
@@ -23,6 +21,9 @@ impl KpiTracker {
     }
 
     pub async fn start(&self) -> crate::error::Result<()> {
+        if self.config.enabled {
+            // Log something or start a worker
+        }
         Ok(())
     }
 

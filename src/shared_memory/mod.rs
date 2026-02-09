@@ -18,6 +18,7 @@ pub mod monitor;
 pub mod sync;
 pub mod types;
 
+use crate::hyper_memory::HyperMemoryManager;
 pub use buffer::SharedMemoryBuffer;
 pub use cleanup::CleanupManager;
 pub use context::ContextManager;
@@ -53,6 +54,9 @@ pub struct SharedMemorySystem {
     /// Integración con motores de búsqueda
     engine_integration: Arc<EngineIntegration>,
 
+    /// Gestor de memoria hiperestructurada (Vectorial + Textual)
+    hyper_memory: Arc<HyperMemoryManager>,
+
     /// Cache de contextos activos (AgentId -> Context)
     active_contexts: Arc<DashMap<AgentId, SharedContext>>,
 
@@ -72,6 +76,7 @@ impl SharedMemorySystem {
         let cleanup_manager = Arc::new(CleanupManager::new());
         let engine_integration =
             Arc::new(EngineIntegration::new(EngineIntegrationConfig::default()));
+        let hyper_memory = Arc::new(HyperMemoryManager::new(384)); // Dimensión para embeddings BERT/JAX
         let active_contexts = Arc::new(DashMap::new());
 
         Ok(Self {
@@ -81,6 +86,7 @@ impl SharedMemorySystem {
             monitor,
             cleanup_manager,
             engine_integration,
+            hyper_memory,
             active_contexts,
             initialized: Arc::new(RwLock::new(false)),
         })
@@ -214,6 +220,11 @@ impl SharedMemorySystem {
     /// Obtiene estadísticas de integración con motores
     pub async fn get_integration_stats(&self) -> IntegrationStats {
         self.engine_integration.get_integration_stats().await
+    }
+
+    /// Obtiene acceso al gestor de memoria hiperestructurada
+    pub fn hyper_memory(&self) -> Arc<HyperMemoryManager> {
+        self.hyper_memory.clone()
     }
 
     /// Sistema de autogestión de memoria (Auto-moving Context)

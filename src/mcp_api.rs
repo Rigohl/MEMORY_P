@@ -14,7 +14,6 @@ use axum::{
 };
 use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::sync::Arc;
 
 pub fn routes() -> Router {
@@ -176,7 +175,9 @@ pub async fn mcp_json_rpc_handler(
                 "tools": { "listChanged": true },
                 "resources": { "listChanged": true, "subscribe": true },
                 "prompts": { "listChanged": true },
+                "logging": { "minLevel": "debug" },
                 "experimental": {
+                    "neuralOverdrive": true,
                     "ffiEnabled": true,
                     "autoManaged": true,
                     "alwaysOn": true,
@@ -184,35 +185,44 @@ pub async fn mcp_json_rpc_handler(
                     "ffi": {
                         "julia": {
                             "status": "active",
-                            "version": "1.10.0",
-                            "features": ["optimization", "chaos_analysis", "differential_equations"]
+                            "version": "1.11.0",
+                            "features": ["optimization", "chaos_analysis", "differential_equations", "HénonMaps"]
                         },
                         "jax": {
                             "status": "active",
-                            "version": "0.4.23",
-                            "features": ["embeddings", "gpu_inference", "parallelism"]
+                            "version": "0.5.0",
+                            "features": ["embeddings", "gpu_inference", "parallelism", "XLA"]
                         },
                         "mojo": {
                             "status": "active",
-                            "version": "0.6.0",
-                            "features": ["simd_kernels", "dot_products", "vectorization"]
+                            "version": "24.1",
+                            "features": ["simd_kernels", "dot_products", "vectorization", "MAX"]
                         },
                         "pony": {
                             "status": "active",
-                            "version": "0.54.0",
-                            "features": ["actor_system", "distributed_search", "zero_copy"]
+                            "version": "0.55.0",
+                            "features": ["actor_system", "distributed_search", "zero_copy", "LockFree"]
                         },
                         "zig": {
                             "status": "active",
-                            "version": "0.11.0",
-                            "features": ["ffi_bridge", "memory_safety", "c_interop"]
+                            "version": "0.13.0",
+                            "features": ["ffi_bridge", "memory_safety", "c_interop", "DirectMemory"]
                         }
                     },
                     "autoManagement": {
                         "healthChecks": true,
                         "autoRecovery": true,
                         "resourceOptimization": true,
-                        "predictiveMaintenance": true
+                        "predictiveMaintenance": true,
+                        "speculativeTasks": true,
+                        "autonomousRepair": true
+                    },
+                    "memoryLobes": {
+                        "semantic": "active",
+                        "episodic": "active",
+                        "relational": "active",
+                        "shortTerm": "active",
+                        "coordination": "active"
                     }
                 }
             },
@@ -304,6 +314,37 @@ pub async fn mcp_json_rpc_handler(
                     }),
                     annotations: None,
                 },
+                Tool {
+                    name: "ffi_benchmark".to_string(),
+                    description: "⚡ Benchmark de latencia FFI para los lóbulos cerebrales (Zig, Julia, Mojo).".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "iterations": { "type": "integer", "default": 1000 }
+                        }
+                    }),
+                    annotations: None,
+                },
+                Tool {
+                    name: "brain_status".to_string(),
+                    description: "🧠 Estado detallado del cerebro multi-lenguaje (FFI) y lóbulos de memoria.".to_string(),
+                    input_schema: json!({ "type": "object", "properties": {} }),
+                    annotations: None,
+                },
+                Tool {
+                    name: "hybrid_search".to_string(),
+                    description: "🧠 Búsqueda híbrida (Vectorial + Textual) en la memoria hiperestructurada.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "query": { "type": "string" },
+                            "vector": { "type": "array", "items": { "type": "number" }, "description": "Opcional: vector de consulta" },
+                            "limit": { "type": "integer", "default": 5 }
+                        },
+                        "required": ["query"]
+                    }),
+                    annotations: None,
+                },
             ];
             Some(json!({ "tools": tools }))
         }
@@ -351,6 +392,54 @@ pub async fn mcp_json_rpc_handler(
                 }
                 "get_workspace_map" => {
                     Some(json!({ "content": [{ "type": "text", "text": "```mermaid\ngraph TD\n  Core --> Brain\n```" }] }))
+                }
+                "ffi_benchmark" => {
+                    let iters = arguments.get("iterations").and_then(|v| v.as_u64()).unwrap_or(1000);
+                    let start = std::time::Instant::now();
+                    let mut data = vec![1.0, 2.0, 3.0];
+                    for _ in 0..iters {
+                        let _ = crate::ffi::bridge::dispatch_fast(crate::ffi::bridge::Language::Zig, "bench", &mut data);
+                    }
+                    let elapsed = start.elapsed();
+                    let avg = elapsed.as_nanos() as f64 / iters as f64;
+
+                    Some(json!({ "content": [{ "type": "text", "text": format!("⚡ FFI BENCHMARK:\n- Iteraciones: {}\n- Tiempo total: {:?}\n- Promedio: {:.2}ns\n- Estatus: ✅ Neural Overdrive Active", iters, elapsed, avg) }] }))
+                }
+                "brain_status" => {
+                    let stats = futures::executor::block_on(shared_memory.get_integration_stats());
+                    let hyper_stats = futures::executor::block_on(shared_memory.hyper_memory().get_stats());
+
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!(
+                                "🧠 BRAIN STATUS:\n\nLóbulos Activos:\n- Semántico: {}\n- Episódico: {}\n- Relacional: {}\n- Corto Plazo: {}\n\nMemoria Hiperestructurada:\n- Entradas: {}\n- Con Embeddings: {}\n- Latencia búsqueda: {:.2}μs\n\nFFI Status:\n- Multi-lenguaje: Julia, JAX, Mojo, Pony, Zig\n- Estatus: ✅ Neural Overdrive Active",
+                                if stats.semantic_lobe_enabled { "ON" } else { "OFF" },
+                                if stats.episodic_lobe_enabled { "ON" } else { "OFF" },
+                                if stats.relational_lobe_enabled { "ON" } else { "OFF" },
+                                if stats.short_term_lobe_enabled { "ON" } else { "OFF" },
+                                hyper_stats.total_entries,
+                                hyper_stats.entries_with_embeddings,
+                                hyper_stats.avg_search_time_us
+                            )
+                        }]
+                    }))
+                }
+                "hybrid_search" => {
+                    let query = arguments.get("query").and_then(|v| v.as_str()).unwrap_or("");
+                    let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+                    let vector: Option<Vec<f32>> = arguments.get("vector").and_then(|v| {
+                        v.as_array().map(|a| a.iter().filter_map(|x| x.as_f64().map(|f| f as f32)).collect())
+                    });
+
+                    let hyper_memory = shared_memory.hyper_memory();
+                    match futures::executor::block_on(hyper_memory.search_hybrid(query, vector.as_deref(), limit)) {
+                        Ok(entries) => {
+                            let text = entries.iter().map(|e| format!("- [{}] (Prioridad: {}): {}", e.id, e.priority, e.content)).collect::<Vec<_>>().join("\n");
+                            Some(json!({ "content": [{ "type": "text", "text": format!("🧠 RESULTADOS HÍBRIDOS:\n{}", text) }] }))
+                        },
+                        Err(e) => Some(json!({ "content": [{ "type": "text", "text": format!("Error: {}", e) }] })),
+                    }
                 }
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
