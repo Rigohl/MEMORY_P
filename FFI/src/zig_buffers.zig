@@ -47,15 +47,19 @@ pub const SharedMemoryContext = struct {
         return buffer;
     }
     
-    /// Incrementa reference count
+    /// Incrementa reference count (atomic)
     pub fn retainBuffer(buffer: *SharedBuffer) void {
-        buffer.ref_count += 1;
+        const ref_ptr: *volatile usize = @ptrCast(&buffer.ref_count);
+        _ = @atomicRmw(usize, ref_ptr, .Add, 1, .SeqCst);
     }
     
-    /// Decrementa reference count y libera si es 0
+    /// Decrementa reference count y libera si es 0 (atomic)
     pub fn releaseBuffer(self: *SharedMemoryContext, buffer: *SharedBuffer) void {
-        buffer.ref_count -= 1;
-        if (buffer.ref_count == 0) {
+        const ref_ptr: *volatile usize = @ptrCast(&buffer.ref_count);
+        const prev = @atomicRmw(usize, ref_ptr, .Sub, 1, .SeqCst);
+        
+        // If we just decremented from 1 to 0, we're the last reference
+        if (prev == 1) {
             // Remove buffer from tracking list to avoid double free in deinit
             var index_opt: ?usize = null;
             for (self.buffers.items, 0..) |b, i| {
@@ -63,6 +67,9 @@ pub const SharedMemoryContext = struct {
                     index_opt = i;
                     break;
                 }
+            }
+            if (index_opt) |idx| {
+                _ = self.buffers.swapRemove(idx);
             }
             if (index_opt) |idx| {
                 _ = self.buffers.swapRemove(idx);

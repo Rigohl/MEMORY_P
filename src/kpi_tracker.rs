@@ -356,7 +356,8 @@ impl KpiTracker {
                 // Limpiar métricas antiguas
                 for mut entry in metrics.iter_mut() {
                     let metric_list = entry.value_mut();
-                    let cutoff = Utc::now() - chrono::Duration::from_std(retention_period).unwrap();
+                    let cutoff = Utc::now() - chrono::Duration::from_std(retention_period)
+                        .unwrap_or_else(|_| chrono::Duration::days(7));  // Fallback to 7 days
                     
                     metric_list.retain(|m| m.timestamp > cutoff);
                 }

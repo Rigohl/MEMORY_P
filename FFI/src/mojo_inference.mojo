@@ -39,6 +39,10 @@ struct InferenceEngine:
         var output = Tensor[DType.float64](output_dim)
         let input_dim = input.num_elements()
         
+        # Guard against division by zero
+        if input_dim == 0 or (input_dim + output_dim) == 0:
+            return output
+        
         for i in range(output_dim):
             var sum: Float64 = 0.0
             for j in range(input_dim):
@@ -46,7 +50,11 @@ struct InferenceEngine:
                 let weight = Float64((i + j + 1)) / Float64(input_dim + output_dim)
                 sum += input[j] * weight
             
-            output[i] = sum / Float64(input_dim)
+            # Safe division
+            if input_dim > 0:
+                output[i] = sum / Float64(input_dim)
+            else:
+                output[i] = 0.0
         
         return output
     

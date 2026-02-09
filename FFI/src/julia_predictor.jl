@@ -16,8 +16,8 @@ function generate_embedding(text::String, dimensions::Int=1536)::Vector{Float64}
     chars = collect(text)
     char_codes = Float64[Int(c) for c in chars]
     
-    # Normalizar
-    if length(char_codes) > 0
+    # Normalizar (safe division)
+    if length(char_codes) > 0 && maximum(char_codes) > 0
         char_codes = char_codes ./ maximum(char_codes)
     end
     
@@ -27,13 +27,15 @@ function generate_embedding(text::String, dimensions::Int=1536)::Vector{Float64}
         embedding[i] = char_codes[i]
     end
     
-    # Aplicar transformaciones no lineales
-    for i in (length(char_codes)+1):dimensions
-        idx = mod(i-1, length(char_codes)) + 1
-        embedding[i] = sin(char_codes[idx] * π * i / dimensions)
+    # Aplicar transformaciones no lineales (safe division)
+    if dimensions > 0 && length(char_codes) > 0
+        for i in (length(char_codes)+1):dimensions
+            idx = mod(i-1, length(char_codes)) + 1
+            embedding[i] = sin(char_codes[idx] * π * i / dimensions)
+        end
     end
     
-    # Normalizar vector
+    # Normalizar vector (safe division)
     norm_val = norm(embedding)
     if norm_val > 0
         embedding = embedding ./ norm_val

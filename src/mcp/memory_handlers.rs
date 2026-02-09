@@ -45,13 +45,25 @@ pub async fn store_context_handler(
 
     let mut ctx = MemoryContext::new(content);
 
-    // Optional embedding
+    // Optional embedding with validation
     if let Some(embedding) = payload.get("embedding").and_then(|v| v.as_array()) {
         let emb: Vec<f64> = embedding
             .iter()
             .filter_map(|v| v.as_f64())
             .collect();
+        
+        // Validate embedding dimensions (expected: 1536 for OpenAI compatibility)
         if !emb.is_empty() {
+            const EXPECTED_DIM: usize = 1536;
+            if emb.len() != EXPECTED_DIM {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({ 
+                        "error": format!("Invalid embedding dimension: expected {}, got {}", EXPECTED_DIM, emb.len()) 
+                    })),
+                )
+                    .into_response();
+            }
             ctx = ctx.with_embedding(emb);
         }
     }

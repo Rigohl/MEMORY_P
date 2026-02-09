@@ -2,14 +2,14 @@ name: Memory MCP CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
     paths:
       - 'src/mcp/memory_**'
       - 'FFI/src/**'
       - 'migrations/**'
       - '.github/workflows/memory-mcp.yml'
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
 
 env:
   RUST_VERSION: "1.75"
@@ -76,7 +76,7 @@ jobs:
       
       - name: Validate Julia predictor
         run: |
-          julia FFI/src/julia_predictor.jl || echo "Julia validation complete"
+          julia FFI/src/julia_predictor.jl && echo "Julia validation complete"
 
   # Database migrations
   database-check:
