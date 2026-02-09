@@ -96,6 +96,8 @@ pub struct AutonomousDaemon {
     shared_memory: Arc<SharedMemorySystem>,
     /// Tiempo de inicio
     start_time: Instant,
+    /// Bridge de alto rendimiento para memoria compartida multi-lenguaje
+    zig_bridge: Option<Arc<crate::ffi::zig::ZigBridge>>,
 }
 
 impl AutonomousDaemon {
@@ -103,6 +105,8 @@ impl AutonomousDaemon {
     pub fn new(config: DaemonConfig, shared_memory: Arc<SharedMemorySystem>) -> Self {
         info!("🤖 Inicializando Daemon Autónomo...");
         
+        let zig_bridge = crate::ffi::zig::ZigBridge::new(1024 * 1024).ok().map(Arc::new);
+
         Self {
             config,
             state: Arc::new(RwLock::new(DaemonState::Starting)),
@@ -111,6 +115,7 @@ impl AutonomousDaemon {
             context_detector: Arc::new(ContextDetector::new()),
             shared_memory,
             start_time: Instant::now(),
+            zig_bridge,
         }
     }
 
@@ -152,6 +157,13 @@ impl AutonomousDaemon {
         tokio::spawn(async move {
             if let Err(e) = daemon_scan.workspace_scanning_loop().await {
                 error!("❌ Error en workspace scanning loop: {}", e);
+            }
+        });
+
+        let daemon_speculative = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_speculative.speculative_task_loop().await {
+                error!("❌ Error en speculative task loop: {}", e);
             }
         });
 
@@ -382,6 +394,33 @@ impl AutonomousDaemon {
             if self.config.auto_correction_enabled {
                 if let Err(e) = self.perform_auto_heal().await {
                     error!("❌ Error en auto-sanación: {}", e);
+                }
+            }
+        }
+    }
+
+    /// Loop de tareas especulativas: se adelanta al agente
+    async fn speculative_task_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(45));
+
+        loop {
+            interval.tick().await;
+            debug!("🧠 Ejecutando multitarea especulativa...");
+
+            // 1. Predicción de carga y pre-limpieza de cache
+            if let Some(bridge) = &self.zig_bridge {
+                let msg = b"OPTIMIZE_MEMORY_NOW";
+                let _ = bridge.write(msg);
+            }
+
+            // 2. Simular pre-compilación de archivos recientemente tocados
+            let agent_id = crate::shared_memory::AgentId::new("autonomous-daemon".to_string());
+            if let Ok(ctx) = self.shared_memory.get_or_create_context(agent_id).await {
+                for (key, _value) in ctx.shared_data.iter() {
+                    if key.starts_with("file_seen:") {
+                        // Aquí se podría lanzar un 'cargo check' en background para archivos críticos
+                        debug!("🚀 Speculative: Preparando contexto para {}", key);
+                    }
                 }
             }
         }

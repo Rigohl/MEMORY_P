@@ -1,4 +1,5 @@
 use crate::analyzer::CodeAnalyzer;
+use crate::backpack::Backpack; // La Mochila v2.1
 use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
 use crate::kpi_tracker::KpiTracker; // KPI Tracking Six Sigma
@@ -371,22 +372,32 @@ pub async fn mcp_json_rpc_handler(
                 system_metrics: crate::prediction_engine::SystemMetrics::default(),
             };
 
+            let stats = shared_memory.get_stats().await;
+            let mut backpack = Backpack::new(agent_id.to_string());
+            backpack.memory_agility = stats.clone();
+
             if let Ok(prediction) = prediction_engine.predict(crate::prediction_engine::PredictionType::NextAgentMoves, &action_context).await {
-                content.push(json!({ "type": "text", "text": format!("\n🔮 PROACTIVE: {}", prediction.recommendation) }));
+                backpack.predictions = serde_json::from_value(prediction.prediction_data.clone()).unwrap_or(backpack.predictions);
+                content.push(json!({ "type": "text", "text": format!("\n🎒 MOCHILA (Proactiva):\n- 🔮 Siguiente: {}\n- ⏭️ Después: {}\n- 🧠 Razón: {}",
+                    backpack.predictions.next_step,
+                    backpack.predictions.following_step,
+                    backpack.predictions.rationale) }));
             }
 
-            // Inyectar Alertas
+            // Inyectar Alertas en Mochila
             for (key, value) in shared_context.shared_data.iter() {
                 if key.starts_with("alarm:") {
                     if let Some(msg) = value.get("message") {
-                        content.push(json!({ "type": "text", "text": format!("⚠️ ALERTA: {}", msg) }));
+                        backpack.add_alert(msg.as_str().unwrap_or("Unknown alert").to_string());
                     }
                 }
             }
 
-            // Inyectar Dashboard de Salud
-            let stats = shared_memory.get_stats().await;
-            content.push(json!({ "type": "text", "text": format!("\n🚀 HEALTH: DISK {:.0}% | PRED {:.0}%", stats.disk_agility_score * 100.0, stats.predictive_accuracy * 100.0) }));
+            if !backpack.proactive_alerts.is_empty() {
+                content.push(json!({ "type": "text", "text": format!("⚠️ ALERTAS EN MOCHILA: {:?}", backpack.proactive_alerts) }));
+            }
+
+            content.push(json!({ "type": "text", "text": format!("\n🚀 SISTEMA: DISK {:.0}% | PRED {:.0}%", stats.disk_agility_score * 100.0, stats.predictive_accuracy * 100.0) }));
         }
     }
 

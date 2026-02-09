@@ -6,6 +6,7 @@
 //! - 2 Specialized Engines (Julia NLP, MemoryBank Ultra)
 
 pub mod analyzer;
+pub mod backpack; // La "Mochila" del Agente v2.1
 pub mod auto_manager; // Sistema de auto-gestión MCP 2026
 pub mod cli; // CLI stub para JAR
 pub mod config;

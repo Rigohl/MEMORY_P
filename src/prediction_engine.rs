@@ -36,6 +36,15 @@ pub enum PredictionType {
     NextAgentMoves,
 }
 
+/// Estructura detallada para los próximos movimientos del agente
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NextAgentMoves {
+    pub next_step: String,
+    pub following_step: String,
+    pub confidence: f64,
+    pub rationale: String,
+}
+
 /// Resultado de una predicción
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prediction {
@@ -49,6 +58,8 @@ pub struct Prediction {
     pub metrics: HashMap<String, f64>,
     /// Recomendación basada en la predicción
     pub recommendation: String,
+    /// Datos estructurados de la predicción (ej: NextAgentMoves)
+    pub prediction_data: serde_json::Value,
     /// Timestamp de la predicción
     pub timestamp: SystemTime,
 }
@@ -243,6 +254,7 @@ impl PredictionEngine {
             confidence,
             metrics,
             recommendation,
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -264,6 +276,7 @@ impl PredictionEngine {
                 confidence: 0.3,
                 metrics: HashMap::new(),
                 recommendation: "⚠️  Sin historial - estimación conservadora".to_string(),
+                prediction_data: serde_json::Value::Null,
                 timestamp: SystemTime::now(),
             });
         }
@@ -299,6 +312,7 @@ impl PredictionEngine {
                 "⏱️  Tiempo estimado: {:.0}ms (±{:.0}ms)",
                 predicted_time, std_dev
             ),
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -340,6 +354,7 @@ impl PredictionEngine {
             } else {
                 "❌ Recursos insuficientes - retrasar acción".to_string()
             },
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -361,6 +376,7 @@ impl PredictionEngine {
             confidence: 0.7,
             metrics: HashMap::new(),
             recommendation: format!("📊 Calidad esperada: {:.0}%", predicted_quality * 100.0),
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -420,12 +436,20 @@ impl PredictionEngine {
         let mut metrics = HashMap::new();
         metrics.insert("prediction_depth".to_string(), 2.0);
 
+        let data = NextAgentMoves {
+            next_step: predicted_moves[0].clone(),
+            following_step: predicted_moves[1].clone(),
+            confidence: 0.8,
+            rationale: "Análisis de entropía de workspace y patrones históricos".to_string(),
+        };
+
         Ok(Prediction {
             prediction_type: PredictionType::NextAgentMoves,
             value: 0.9, // Probabilidad de acierto estimada
             confidence: 0.8,
             metrics,
             recommendation,
+            prediction_data: serde_json::to_value(data).unwrap_or(serde_json::Value::Null),
             timestamp: SystemTime::now(),
         })
     }
@@ -457,6 +481,7 @@ impl PredictionEngine {
             } else {
                 "❌ Alto impacto - considerar retrasar".to_string()
             },
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }

@@ -8,6 +8,7 @@ use tokio::net::TcpListener;
 static GLOBAL: MiMalloc = MiMalloc;
 
 mod analyzer;
+mod backpack;
 mod auto_manager;
 mod config;
 mod error;
