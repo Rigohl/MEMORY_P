@@ -56,6 +56,17 @@ pub const SharedMemoryContext = struct {
     pub fn releaseBuffer(self: *SharedMemoryContext, buffer: *SharedBuffer) void {
         buffer.ref_count -= 1;
         if (buffer.ref_count == 0) {
+            // Remove buffer from tracking list to avoid double free in deinit
+            var index_opt: ?usize = null;
+            for (self.buffers.items, 0..) |b, i| {
+                if (b == buffer) {
+                    index_opt = i;
+                    break;
+                }
+            }
+            if (index_opt) |idx| {
+                _ = self.buffers.swapRemove(idx);
+            }
             self.destroyBuffer(buffer);
         }
     }
