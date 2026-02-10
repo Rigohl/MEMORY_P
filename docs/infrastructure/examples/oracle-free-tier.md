@@ -20,9 +20,13 @@
 ### Prerequisites
 
 ```bash
-# Install required tools
-curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+# Install required tools (modern method without deprecated apt-key)
+wget -O- https://apt.releases.hashicorp.com/gpg | \
+  gpg --dearmor | \
+  sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] \
+  https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+  sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt-get update && sudo apt-get install terraform
 
 # Install OCI CLI
@@ -50,10 +54,14 @@ oci setup config
 
 ### Step 3: Deploy with Terraform
 
+**Note**: The Terraform configuration examples below should be created in your own infrastructure directory (e.g., `infra/oracle-free-tier/`). The complete configuration includes `main.tf`, `free-tier.tfvars`, and `cloud-init.yaml` as shown in the sections below.
+
 ```bash
-# Clone MEMORY_P
-git clone https://github.com/Rigohl/MEMORY_P.git
-cd MEMORY_P/docs/infrastructure/examples/oracle-free-tier
+# Create your infrastructure directory
+mkdir -p infra/oracle-free-tier
+cd infra/oracle-free-tier
+
+# Create the configuration files shown below (main.tf, free-tier.tfvars, cloud-init.yaml)
 
 # Initialize Terraform
 terraform init
@@ -317,6 +325,7 @@ packages:
   - pkg-config
   - libssl-dev
   - ca-certificates
+  - iptables-persistent  # For netfilter-persistent
 
 runcmd:
   # Configure firewall for Oracle Cloud
@@ -338,11 +347,11 @@ runcmd:
   - sudo -u ubuntu curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sudo -u ubuntu sh -s -- -y
   
   # Install Julia (ARM)
-  - wget -q https://julialang-s3.julialang.org/bin/linux/aarch64/1.10/julia-1.10.0-linux-aarch64.tar.gz -O /tmp/julia.tar.gz
+  - curl -fsSL https://julialang-s3.julialang.org/bin/linux/aarch64/1.10/julia-1.10.0-linux-aarch64.tar.gz -o /tmp/julia.tar.gz
   - tar -xzf /tmp/julia.tar.gz -C /opt/
   - ln -s /opt/julia-1.10.0/bin/julia /usr/local/bin/julia
   
-  # Clone MEMORY_P
+  # Clone MEMORY_P (fix directory conflict)
   - cd /home/ubuntu
   - sudo -u ubuntu git clone https://github.com/Rigohl/MEMORY_P.git
   - cd MEMORY_P
@@ -351,8 +360,9 @@ runcmd:
   # Configure for ARM
   - cp config/oracle-cloud-arm.toml config/production.toml
   
-  # Start services
-  - sudo -u ubuntu docker-compose up -d
+  # Start services (run as root during cloud-init, group membership applies on next login)
+  - cd /home/ubuntu/MEMORY_P
+  - docker-compose up -d
   
   # Setup systemd service
   - |

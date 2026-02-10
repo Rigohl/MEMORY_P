@@ -426,22 +426,27 @@ sudo ufw enable
 **Free tier includes**: 2 Autonomous Databases (1 OCPU each, 20 GB storage)
 
 ```rust
-// src/storage/oracle_adb.rs
-use sqlx::postgres::PgPoolOptions;
+// Example: Oracle Autonomous Database connection (pseudocode, not an in-repo module)
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
+    Error, Pool, Postgres,
+};
+
+pub type PgPool = Pool<Postgres>;
 
 pub async fn connect_oracle_adb() -> Result<PgPool, Error> {
     // Oracle Autonomous DB uses TLS
+    let connect_options = PgConnectOptions::new()
+        .host("adb.us-phoenix-1.oraclecloud.com")
+        .port(1522)
+        .username("ADMIN")
+        .password(&std::env::var("ORACLE_DB_PASSWORD")?)
+        .database("MEMORYP_HIGH")  // _HIGH for high connection pool
+        .ssl_mode(PgSslMode::Require);
+
     let pool = PgPoolOptions::new()
         .max_connections(10)
-        .connect_with(
-            PgConnectOptions::new()
-                .host("adb.us-phoenix-1.oraclecloud.com")
-                .port(1522)
-                .username("ADMIN")
-                .password(&std::env::var("ORACLE_DB_PASSWORD")?)
-                .database("MEMORYP_HIGH")  // _HIGH for high connection pool
-                .ssl_mode(PgSslMode::Require)
-        )
+        .connect_with(connect_options)
         .await?;
     
     Ok(pool)

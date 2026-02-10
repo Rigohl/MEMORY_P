@@ -183,8 +183,12 @@ docker-compose up -d
 terraform -v  # Should be 1.6+
 oci --version
 
-# Deploy to Oracle Cloud
-cd docs/infrastructure/examples/oracle-free-tier
+# Follow the complete guide to set up Terraform configuration:
+# docs/infrastructure/examples/oracle-free-tier.md
+# The guide includes main.tf, free-tier.tfvars, and cloud-init.yaml examples
+
+# Once you have your Terraform files ready, deploy:
+# (from your infrastructure directory containing the .tf files)
 terraform init
 terraform apply -var-file="free-tier.tfvars"
 
@@ -474,8 +478,8 @@ curl -X POST http://localhost:4040/mcp \
 
 - **[docs/infrastructure/](docs/infrastructure/)** - Practical examples
   - [Oracle Cloud Free Tier](docs/infrastructure/examples/oracle-free-tier.md) - $0/month deployment
-  - [Rocky Linux + K3s](docs/infrastructure/examples/rocky-k3s-cluster.md) - Production cluster
-  - [Ubuntu + MicroK8s](docs/infrastructure/examples/ubuntu-microk8s.md) - Developer setup
+  - Rocky Linux + K3s (TODO: production cluster guide)
+  - Ubuntu + MicroK8s (TODO: developer setup guide)
   - [Troubleshooting Playbooks](docs/infrastructure/playbooks/) - Common issues & fixes
 
 ### Architecture Resources

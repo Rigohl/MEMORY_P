@@ -595,28 +595,44 @@ ENTRYPOINT ["/usr/local/bin/memory_p"]
 ### Build Metadata Injection
 
 ```rust
-// build.rs - Inject build metadata for reproducibility
+// build.rs - Inject build metadata for traceability
+// Note: BUILD_TIMESTAMP uses SOURCE_DATE_EPOCH for reproducible builds when set
 
+use std::env;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() {
-    // Git commit hash
-    let output = Command::new("git")
+    // Git commit hash (optional, for traceability)
+    let git_hash = Command::new("git")
         .args(&["rev-parse", "HEAD"])
         .output()
-        .unwrap();
-    let git_hash = String::from_utf8(output.stdout).unwrap();
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
     println!("cargo:rustc-env=GIT_HASH={}", git_hash);
     
-    // Build timestamp
-    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", chrono::Utc::now().to_rfc3339());
+    // Build timestamp:
+    // - Prefer SOURCE_DATE_EPOCH for reproducible builds.
+    // - Fall back to current Unix time for additional traceability (non-reproducible).
+    let build_timestamp = match env::var("SOURCE_DATE_EPOCH") {
+        Ok(epoch) => epoch,
+        Err(_) => SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs().to_string())
+            .unwrap_or_else(|_| "0".to_string()),
+    };
+    println!("cargo:rustc-env=BUILD_TIMESTAMP={}", build_timestamp);
     
-    // Rust version
-    let output = Command::new("rustc")
+    // Rust version (optional, for traceability)
+    let rust_version = Command::new("rustc")
         .args(&["--version"])
         .output()
-        .unwrap();
-    let rust_version = String::from_utf8(output.stdout).unwrap();
+        .ok()
+        .and_then(|output| String::from_utf8(output.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
     println!("cargo:rustc-env=RUST_VERSION={}", rust_version);
 }
 ```

@@ -5,21 +5,14 @@
 ## 📁 Directory Structure
 
 ```
-infrastructure/
-├── examples/
-│   ├── oracle-free-tier/      # Oracle Cloud always-free deployment
-│   ├── rocky-k3s-cluster/     # Rocky Linux + K3s cluster
-│   ├── ubuntu-microk8s/       # Ubuntu Pro + MicroK8s
-│   ├── docker-compose/        # Docker Compose stacks
-│   └── hybrid-deployment/     # Hybrid cloud + on-premise
-├── templates/
-│   ├── terraform/             # Terraform modules
-│   ├── ansible/               # Ansible playbooks
-│   └── kubernetes/            # K8s manifests
-└── playbooks/
-    ├── troubleshooting/       # Common issue fixes
-    ├── optimization/          # Performance tuning
-    └── migration/             # Migration guides
+docs/
+└── infrastructure/
+    ├── README.md              # This overview file
+    ├── examples/
+    │   └── oracle-free-tier.md   # Oracle Cloud always-free deployment guide
+    ├── playbooks/
+    │   └── high-cpu.md        # High CPU troubleshooting playbook
+    └── templates/             # (Coming soon: IaC templates)
 ```
 
 ## 🚀 Quick Start Examples
@@ -34,17 +27,15 @@ infrastructure/
 
 **Time to deploy**: 15 minutes
 
-```bash
-cd examples/oracle-free-tier
-terraform init
-terraform apply -var-file="free-tier.tfvars"
-```
+See the complete guide: [Oracle Free Tier Deployment](./examples/oracle-free-tier.md)
 
-[📖 Full Guide →](./examples/oracle-free-tier.md)
+The guide includes complete Terraform configuration examples and cloud-init automation.
 
 ---
 
 ### 2. Rocky Linux + K3s Cluster (Production-Ready)
+
+**Coming soon**: Complete guide for Rocky Linux 9 with K3s cluster deployment.
 
 **Stack**:
 - Rocky Linux 9 (3 nodes)
@@ -52,18 +43,13 @@ terraform apply -var-file="free-tier.tfvars"
 - PostgreSQL + Redis
 - Prometheus monitoring
 
-**Time to deploy**: 30 minutes
-
-```bash
-cd examples/rocky-k3s-cluster
-ansible-playbook -i inventory.yml deploy.yml
-```
-
-[📖 Full Guide →](./examples/rocky-k3s-cluster.md)
+**Time to deploy**: 30 minutes (estimated)
 
 ---
 
 ### 3. Ubuntu Pro + MicroK8s (Developer-Friendly)
+
+**Coming soon**: Complete guide for Ubuntu 22.04 LTS Pro with MicroK8s.
 
 **Stack**:
 - Ubuntu 22.04 LTS Pro
@@ -71,14 +57,7 @@ ansible-playbook -i inventory.yml deploy.yml
 - All MEMORY_P services
 - GPU support optional
 
-**Time to deploy**: 10 minutes
-
-```bash
-cd examples/ubuntu-microk8s
-./quick-setup.sh
-```
-
-[📖 Full Guide →](./examples/ubuntu-microk8s.md)
+**Time to deploy**: 10 minutes (estimated)
 
 ---
 
@@ -116,23 +95,23 @@ Common issues and their solutions:
 ### Performance Issues
 
 - [High CPU Usage](./playbooks/high-cpu.md)
-- [Memory Leaks](./playbooks/memory-leaks.md)
-- [Slow Search Queries](./playbooks/slow-search.md)
-- [Disk Space Full](./playbooks/disk-space.md)
+- Memory Leaks (TODO: playbook)
+- Slow Search Queries (TODO: playbook)
+- Disk Space Full (TODO: playbook)
 
 ### Connectivity Issues
 
-- [Database Connection Errors](./playbooks/db-connection.md)
-- [Redis Connection Pool](./playbooks/redis-pool.md)
-- [Qdrant Unavailable](./playbooks/qdrant-down.md)
-- [Kubernetes DNS Issues](./playbooks/k8s-dns.md)
+- Database Connection Errors (TODO: playbook)
+- Redis Connection Pool (TODO: playbook)
+- Qdrant Unavailable (TODO: playbook)
+- Kubernetes DNS Issues (TODO: playbook)
 
 ### Deployment Issues
 
-- [Failed Docker Build](./playbooks/docker-build.md)
-- [K8s Pod CrashLoopBackOff](./playbooks/crashloop.md)
-- [Terraform State Lock](./playbooks/tf-state-lock.md)
-- [Ansible Connection Timeout](./playbooks/ansible-timeout.md)
+- Failed Docker Build (TODO: playbook)
+- K8s Pod CrashLoopBackOff (TODO: playbook)
+- Terraform State Lock (TODO: playbook)
+- Ansible Connection Timeout (TODO: playbook)
 
 [All Playbooks →](./playbooks/)
 
@@ -142,24 +121,24 @@ Common issues and their solutions:
 
 ### By Team Size
 
-- **Solo Developer**: [Ubuntu MicroK8s](./examples/ubuntu-microk8s.md)
+- **Solo Developer**: Ubuntu MicroK8s (TODO: guide)
 - **Small Team (2-5)**: [Oracle Free Tier](./examples/oracle-free-tier.md)
-- **Startup (5-20)**: [Rocky K3s Cluster](./examples/rocky-k3s-cluster.md)
-- **Enterprise**: [Hybrid Deployment](./examples/hybrid-deployment.md)
+- **Startup (5-20)**: Rocky K3s Cluster (TODO: guide)
+- **Enterprise**: Hybrid Deployment (TODO: guide)
 
 ### By Budget
 
 - **$0/month**: [Oracle Free Tier](./examples/oracle-free-tier.md)
-- **<$50/month**: [Oracle + 2 Workers](./examples/oracle-scale-out.md)
-- **<$200/month**: [Multi-cloud HA](./examples/hybrid-deployment.md)
-- **Enterprise**: [Full Production Stack](./examples/enterprise-stack.md)
+- **<$50/month**: Oracle + 2 Workers (TODO: guide)
+- **<$200/month**: Multi-cloud HA (TODO: guide)
+- **Enterprise**: Full Production Stack (TODO: guide)
 
 ### By Workload
 
-- **Development**: [Docker Compose](./examples/docker-compose-dev.md)
-- **Staging**: [Ubuntu MicroK8s](./examples/ubuntu-microk8s.md)
-- **Production**: [Rocky K3s](./examples/rocky-k3s-cluster.md)
-- **GPU Workloads**: [GPU-Enabled Setup](./examples/gpu-deployment.md)
+- **Development**: Docker Compose (TODO: guide)
+- **Staging**: Ubuntu MicroK8s (TODO: guide)
+- **Production**: Rocky K3s (TODO: guide)
+- **GPU Workloads**: GPU-Enabled Setup (TODO: guide)
 
 ---
 

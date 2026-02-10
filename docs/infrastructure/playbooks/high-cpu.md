@@ -28,7 +28,7 @@ top -o %CPU
 # Press '1' to see per-core usage
 
 # Check which container is the problem
-docker ps --format "table {{.Names}}\t{{.CPUPerc}}\t{{.MemPerc}}"
+docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemPerc}}"
 ```
 
 ### Step 2: Analyze Logs
@@ -221,7 +221,7 @@ use rayon::ThreadPoolBuilder;
 ThreadPoolBuilder::new()
     .num_threads(4)  // Match physical cores
     .build_global()
-    .unwrap();
+    .expect("Failed to initialize Rayon thread pool");
 ```
 
 ### Optimization 4: Database Connection Pooling
@@ -361,9 +361,9 @@ tokio::spawn(async move {
 
 ## 🔗 Related Guides
 
-- [Memory Leaks](./memory-leaks.md) - High memory usage
-- [Slow Search Queries](./slow-search.md) - Query optimization
-- [Performance Tuning](./performance-tuning.md) - General optimization
+- Memory Leaks (TODO: guide) - High memory usage
+- Slow Search Queries (TODO: guide) - Query optimization
+- Performance Tuning (TODO: guide) - General optimization
 
 ---
 
@@ -373,7 +373,25 @@ If CPU usage remains high after these fixes:
 
 1. Collect diagnostics:
 ```bash
-./scripts/collect_diagnostics.sh
+# Create diagnostics directory with timestamp
+TS="$(date +%Y%m%d-%H%M%S)"
+DIAG_DIR="diagnostics-high-cpu-$TS"
+mkdir -p "$DIAG_DIR"
+
+echo "Collecting docker stats..."
+docker stats --no-stream > "$DIAG_DIR/docker-stats.txt" 2>&1 || echo "docker stats failed" >> "$DIAG_DIR/errors.log"
+
+echo "Collecting top CPU processes..."
+ps aux --sort=-%cpu | head -50 > "$DIAG_DIR/top-cpu-processes.txt" 2>&1
+
+echo "Collecting recent docker logs (last 1 hour) for all containers..."
+for c in $(docker ps --format '{{.Names}}'); do
+  echo "=== Logs for $c (last 1h) ===" >> "$DIAG_DIR/docker-logs.txt"
+  docker logs --since=1h "$c" >> "$DIAG_DIR/docker-logs.txt" 2>&1
+  echo "" >> "$DIAG_DIR/docker-logs.txt"
+done
+
+echo "Diagnostics collected in: $DIAG_DIR"
 ```
 
 2. Open an issue with:

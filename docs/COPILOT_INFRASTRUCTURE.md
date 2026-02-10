@@ -709,7 +709,7 @@ groups:
       # COPILOT: Alert on high CPU usage
       - alert: HighCPUUsage
         # WHY: ARM instances have limited CPU, need to detect overload early
-        expr: node_cpu_seconds_total{mode="idle"} < 20
+        expr: 100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 80
         for: 5m
         labels:
           severity: warning
