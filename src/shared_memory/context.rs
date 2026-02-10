@@ -191,8 +191,8 @@ impl ContextManager {
 
         // Obtener predicciones de movimientos
         let current_embedding = vec![0.0f32; 384]; // Placeholder
-        let next_moves = crate::ffi::jax::predict_next_moves(&current_embedding, 2)
-            .unwrap_or_default();
+        let next_moves =
+            crate::ffi::jax::predict_next_moves(&current_embedding, 2).unwrap_or_default();
 
         // Obtener decisión de estrategia
         let strategy = crate::ffi::julia::get_search_decision(1.5, 0.2, 0.9)

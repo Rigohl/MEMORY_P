@@ -6,8 +6,8 @@ pub mod qdrant;
 pub mod scann;
 
 pub use advanced_engine::{
-    AdvancedVectorEngine, DistanceMetric, EngineStats,
-    HnswConfig, VectorDocument, VectorFilter, VectorSearchResult,
+    AdvancedVectorEngine, DistanceMetric, EngineStats, HnswConfig, VectorDocument, VectorFilter,
+    VectorSearchResult,
 };
 pub use faiss::FaissEngine;
 pub use qdrant::QdrantEngine;

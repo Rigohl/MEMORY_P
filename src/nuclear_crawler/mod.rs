@@ -243,7 +243,7 @@ impl NuclearCrawler {
         Ok(vec![
             format!("Result for {}: Documentation from official source", query),
             format!("Result for {}: StackOverflow discussion", query),
-            format!("Result for {}: GitHub repository example", query)
+            format!("Result for {}: GitHub repository example", query),
         ])
     }
 }

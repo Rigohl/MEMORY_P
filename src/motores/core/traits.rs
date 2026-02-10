@@ -128,7 +128,10 @@ pub trait AdvancedQueryEngine: SearchEngine {
     ) -> Result<Vec<SearchResult>, Box<dyn Error>>;
 
     /// Execute a boolean query
-    async fn boolean_search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>>;
+    async fn boolean_search(
+        &self,
+        _query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn Error>>;
 
     /// Get query suggestions
     async fn suggest(&self, _prefix: &str, _limit: usize) -> Result<Vec<String>, Box<dyn Error>>;

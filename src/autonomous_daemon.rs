@@ -433,7 +433,8 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_creation() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
+        let daemon =
+            AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
 
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Starting);
@@ -442,7 +443,10 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_start() {
         let config = DaemonConfig::default();
-        let daemon = Arc::new(AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap())));
+        let daemon = Arc::new(AutonomousDaemon::new(
+            config,
+            Arc::new(SharedMemorySystem::new().await.unwrap()),
+        ));
 
         let result = daemon.clone().start().await;
         assert!(result.is_ok());
@@ -454,7 +458,8 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_stop() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
+        let daemon =
+            AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
 
         let result = daemon.stop().await;
         assert!(result.is_ok());
@@ -478,16 +483,21 @@ impl AutonomousDaemon {
             let query = "best practices for Rust FFI and Zig integration";
 
             if let Ok(results) = self.nuclear_crawler.search_internet(query).await {
-                let mut ctx = self.shared_memory.get_or_create_context(
-                    crate::shared_memory::AgentId::new("proactive-search".to_string())
-                ).await?;
+                let mut ctx = self
+                    .shared_memory
+                    .get_or_create_context(crate::shared_memory::AgentId::new(
+                        "proactive-search".to_string(),
+                    ))
+                    .await?;
 
                 ctx.shared_data.insert(format!("search_results:{}", query), serde_json::json!({
                     "results": results,
                     "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
                 }));
 
-                self.shared_memory.update_context(ctx.agent_id.clone(), ctx).await?;
+                self.shared_memory
+                    .update_context(ctx.agent_id.clone(), ctx)
+                    .await?;
             }
         }
     }

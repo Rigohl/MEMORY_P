@@ -47,16 +47,22 @@ async fn http_server_mode() -> error::Result<()> {
     tracing::info!("╚══════════════════════════════════════════════════╝");
 
     let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
-    let auto_manager = Arc::new(auto_manager::AutoManager::new(auto_manager::ManagerConfig::default()));
+    let auto_manager = Arc::new(auto_manager::AutoManager::new(
+        auto_manager::ManagerConfig::default(),
+    ));
 
     if let Err(e) = auto_manager.auto_start(shared_memory.clone()).await {
         tracing::error!("❌ Error al iniciar AutoManager: {}", e);
     }
 
-    let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(kpi_tracker::KpiConfig::default()));
+    let kpi_tracker = Arc::new(kpi_tracker::KpiTracker::new(
+        kpi_tracker::KpiConfig::default(),
+    ));
     let _ = kpi_tracker.start().await;
 
-    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(prediction_engine::PredictionConfig::default()));
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
+        prediction_engine::PredictionConfig::default(),
+    ));
 
     let app = Router::new()
         .merge(mcp_api::routes())
@@ -67,9 +73,13 @@ async fn http_server_mode() -> error::Result<()> {
         .layer(axum::Extension(prediction_engine.clone()));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 4040));
-    let listener = TcpListener::bind(addr).await.map_err(|e| error::MemoryPError::Io(e))?;
+    let listener = TcpListener::bind(addr)
+        .await
+        .map_err(|e| error::MemoryPError::Io(e))?;
 
-    axum::serve(listener, app).await.map_err(|e| error::MemoryPError::Io(e))?;
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| error::MemoryPError::Io(e))?;
     Ok(())
 }
 
@@ -79,7 +89,9 @@ async fn mcp_stdio_mode() -> error::Result<()> {
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
     let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
-    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(prediction_engine::PredictionConfig::default()));
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
+        prediction_engine::PredictionConfig::default(),
+    ));
 
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin());
     let mut stdout = tokio::io::stdout();
@@ -91,9 +103,13 @@ async fn mcp_stdio_mode() -> error::Result<()> {
                 axum::extract::Extension(shared_memory.clone()),
                 axum::extract::Extension(prediction_engine.clone()),
                 axum::Json(req),
-            ).await;
-            let resp_json = serde_json::to_string(&response.0).map_err(error::MemoryPError::Json)?;
-            stdout.write_all(format!("{}\n", resp_json).as_bytes()).await?;
+            )
+            .await;
+            let resp_json =
+                serde_json::to_string(&response.0).map_err(error::MemoryPError::Json)?;
+            stdout
+                .write_all(format!("{}\n", resp_json).as_bytes())
+                .await?;
             stdout.flush().await?;
         }
         line.clear();

@@ -45,8 +45,6 @@
 //! bridge::shutdown();
 //! ```
 
-
-
 pub mod bridge;
 pub mod error;
 pub mod jax;
@@ -58,7 +56,6 @@ pub mod pony;
 mod benchmarks;
 
 // Re-export FFI error types
-
 
 // Re-export bridge types para uso público
 // Nota: Language, dispatch_fast, dispatch_batch, get_metrics, reset_metrics

@@ -156,13 +156,14 @@ impl RoutingAI {
 
     /// Update engine performance statistics
     pub fn update_engine_stats(&mut self, engine: &str, latency_ms: f64, success: bool) {
-        let stats = self.engine_stats.entry(engine.to_string()).or_insert(
-            EnginePerformanceStats {
+        let stats = self
+            .engine_stats
+            .entry(engine.to_string())
+            .or_insert(EnginePerformanceStats {
                 avg_latency_ms: 0.0,
                 success_rate: 1.0,
                 recent_errors: 0,
-            },
-        );
+            });
 
         // Update exponential moving average
         stats.avg_latency_ms = stats.avg_latency_ms * 0.9 + latency_ms * 0.1;
@@ -212,7 +213,7 @@ mod tests {
 
         let engines = router.route_query(&query);
         assert!(!engines.is_empty());
-        
+
         if let EngineSelection::Primary(name) = engines[0] {
             assert_eq!(name, "qdrant");
         }

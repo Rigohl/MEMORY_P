@@ -1,6 +1,9 @@
 //! Toshi distributed text search engine - Experimental
 
-use crate::motores::core::{traits::{DistributedEngine, SearchEngine}, types::*};
+use crate::motores::core::{
+    traits::{DistributedEngine, SearchEngine},
+    types::*,
+};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::error::Error;
@@ -23,30 +26,45 @@ impl ToshiEngine {
     }
 
     fn current_timestamp() -> i64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64
     }
 }
 
 #[async_trait]
 impl SearchEngine for ToshiEngine {
     async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized { return Err("Engine not initialized".into()); }
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
         Ok(vec![])
     }
 
     async fn index(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
-        if !self.initialized { return Err("Engine not initialized".into()); }
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
         Ok(())
     }
 
-    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> { Ok(()) }
-    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> { Ok(()) }
+    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
 
     async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
         Ok(EngineHealth {
             engine: "toshi".to_string(),
             healthy: self.initialized,
-            status: if self.initialized { "Running".to_string() } else { "Not initialized".to_string() },
+            status: if self.initialized {
+                "Running".to_string()
+            } else {
+                "Not initialized".to_string()
+            },
             last_check: Self::current_timestamp(),
             details: HashMap::new(),
         })
@@ -66,7 +84,9 @@ impl SearchEngine for ToshiEngine {
         })
     }
 
-    fn engine_name(&self) -> &'static str { "toshi" }
+    fn engine_name(&self) -> &'static str {
+        "toshi"
+    }
 
     fn capabilities(&self) -> EngineCapabilities {
         EngineCapabilities {
@@ -96,7 +116,9 @@ impl SearchEngine for ToshiEngine {
 
 #[async_trait]
 impl DistributedEngine for ToshiEngine {
-    async fn cluster_info(&self) -> Result<super::super::super::core::traits::ClusterInfo, Box<dyn Error>> {
+    async fn cluster_info(
+        &self,
+    ) -> Result<super::super::super::core::traits::ClusterInfo, Box<dyn Error>> {
         Ok(super::super::super::core::traits::ClusterInfo {
             node_count: self.cluster_nodes.len(),
             nodes: vec![],
@@ -105,7 +127,9 @@ impl DistributedEngine for ToshiEngine {
         })
     }
 
-    async fn shard_status(&self) -> Result<Vec<super::super::super::core::traits::ShardStatus>, Box<dyn Error>> {
+    async fn shard_status(
+        &self,
+    ) -> Result<Vec<super::super::super::core::traits::ShardStatus>, Box<dyn Error>> {
         Ok(vec![])
     }
 
