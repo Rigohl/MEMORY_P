@@ -148,7 +148,7 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: memory_p-${{ github.sha }}
           path: ./build
