@@ -15,6 +15,7 @@ use tracing::{debug, error, info, warn};
 use crate::analyzer::CodeAnalyzer;
 use crate::context_detector::ContextDetector;
 use crate::error::{MemoryPError as Error, Result};
+use crate::nuclear_crawler::{CrawlerConfig, NuclearCrawler};
 use crate::predictive_engine::PredictiveEngine;
 use crate::shared_memory::SharedMemorySystem;
 
@@ -94,6 +95,8 @@ pub struct AutonomousDaemon {
     context_detector: Arc<ContextDetector>,
     /// Sistema de memoria compartida
     shared_memory: Arc<SharedMemorySystem>,
+    /// Nuclear Crawler para búsquedas en internet
+    nuclear_crawler: Arc<NuclearCrawler>,
     /// Tiempo de inicio
     start_time: Instant,
 }
@@ -110,6 +113,7 @@ impl AutonomousDaemon {
             predictive_engine: Arc::new(PredictiveEngine::new()),
             context_detector: Arc::new(ContextDetector::new()),
             shared_memory,
+            nuclear_crawler: Arc::new(NuclearCrawler::new(CrawlerConfig::default())),
             start_time: Instant::now(),
         }
     }
@@ -152,6 +156,13 @@ impl AutonomousDaemon {
         tokio::spawn(async move {
             if let Err(e) = daemon_scan.workspace_scanning_loop().await {
                 error!("❌ Error en workspace scanning loop: {}", e);
+            }
+        });
+
+        let daemon_search = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_search.background_internet_search_loop().await {
+                error!("❌ Error en background internet search loop: {}", e);
             }
         });
 
@@ -422,7 +433,7 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_creation() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config);
+        let daemon = AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
 
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Starting);
@@ -431,7 +442,7 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_start() {
         let config = DaemonConfig::default();
-        let daemon = Arc::new(AutonomousDaemon::new(config));
+        let daemon = Arc::new(AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap())));
 
         let result = daemon.clone().start().await;
         assert!(result.is_ok());
@@ -443,12 +454,41 @@ mod tests {
     #[tokio::test]
     async fn test_daemon_stop() {
         let config = DaemonConfig::default();
-        let daemon = AutonomousDaemon::new(config);
+        let daemon = AutonomousDaemon::new(config, Arc::new(SharedMemorySystem::new().await.unwrap()));
 
         let result = daemon.stop().await;
         assert!(result.is_ok());
 
         let state = daemon.get_state().await;
         assert_eq!(state, DaemonState::Stopped);
+    }
+}
+
+impl AutonomousDaemon {
+    /// Loop de búsqueda en internet proactiva
+    async fn background_internet_search_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(30)); // Cada 30 segundos
+
+        loop {
+            interval.tick().await;
+
+            debug!("🔍 Ejecutando búsqueda en internet proactiva...");
+
+            // Buscar temas de interés basados en el contexto actual
+            let query = "best practices for Rust FFI and Zig integration";
+
+            if let Ok(results) = self.nuclear_crawler.search_internet(query).await {
+                let mut ctx = self.shared_memory.get_or_create_context(
+                    crate::shared_memory::AgentId::new("proactive-search".to_string())
+                ).await?;
+
+                ctx.shared_data.insert(format!("search_results:{}", query), serde_json::json!({
+                    "results": results,
+                    "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs()
+                }));
+
+                self.shared_memory.update_context(ctx.agent_id.clone(), ctx).await?;
+            }
+        }
     }
 }

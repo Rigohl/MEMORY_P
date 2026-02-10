@@ -419,3 +419,67 @@ if __name__ != "__main__":
         'JaxInferenceEngine',
         'get_engine'
     ]
+
+# ============================================================================
+# Transformer Prediction for Agent Moves
+# ============================================================================
+
+def init_transformer_params(rng, embed_dim):
+    k1, k2, k3, k4 = jax.random.split(rng, 4)
+    return {
+        "wq": jax.random.normal(k1, (embed_dim, embed_dim)) * 0.1,
+        "wk": jax.random.normal(k2, (embed_dim, embed_dim)) * 0.1,
+        "wv": jax.random.normal(k3, (embed_dim, embed_dim)) * 0.1,
+        "wo": jax.random.normal(k4, (embed_dim, embed_dim)) * 0.1,
+    }
+
+@jit
+def jax_transformer_predict(params, x):
+    # Simplified Self-Attention Prediction
+    q = jnp.dot(x, params["wq"])
+    k = jnp.dot(x, params["wk"])
+    v = jnp.dot(x, params["wv"])
+
+    d_k = q.shape[-1]
+    scores = jnp.dot(q, k.T) / jnp.sqrt(d_k)
+    weights = jax.nn.softmax(scores)
+    attn = jnp.dot(weights, v)
+
+    next_state = x + jnp.dot(attn, params["wo"])
+    return next_state / (jnp.linalg.norm(next_state) + 1e-8)
+
+_TRANSFORMER_PARAMS = None
+
+def get_transformer_params(dim=384):
+    global _TRANSFORMER_PARAMS
+    if _TRANSFORMER_PARAMS is None:
+        rng = jax.random.PRNGKey(42)
+        _TRANSFORMER_PARAMS = init_transformer_params(rng, dim)
+    return _TRANSFORMER_PARAMS
+
+def jax_predict_next_moves_ffi(
+    context_vec_ptr: ctypes.POINTER(ctypes.c_float),
+    dim: ctypes.c_size_t,
+    n_moves: ctypes.c_size_t,
+    result: ctypes.POINTER(ctypes.c_float)
+) -> int:
+    """
+    Predict next n_moves agent embeddings based on current context vector.
+    """
+    try:
+        # Convert pointer to jnp array
+        current_vec = jnp.array(np.ctypeslib.as_array(context_vec_ptr, shape=(dim,)))
+        params = get_transformer_params(int(dim))
+
+        state = current_vec
+        for i in range(n_moves):
+            state = jax_transformer_predict(params, state)
+            # Copy to result buffer
+            offset = i * dim
+            for j in range(dim):
+                result[offset + j] = float(state[j])
+
+        return 0
+    except Exception as e:
+        print(f"[JAX FFI] Prediction failed: {e}", file=sys.stderr)
+        return -1
