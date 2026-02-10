@@ -7,8 +7,8 @@ use crate::motores::core::types::*;
 use anyhow::{anyhow, Result};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -30,7 +30,11 @@ impl DistanceMetric {
     /// Calcula la distancia entre dos vectores según la métrica
     pub fn calculate(&self, a: &[f32], b: &[f32]) -> Result<f32> {
         if a.len() != b.len() {
-            return Err(anyhow!("Vector dimension mismatch: {} vs {}", a.len(), b.len()));
+            return Err(anyhow!(
+                "Vector dimension mismatch: {} vs {}",
+                a.len(),
+                b.len()
+            ));
         }
 
         match self {
@@ -38,7 +42,7 @@ impl DistanceMetric {
                 let dot: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
                 let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
                 let norm_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-                
+
                 if norm_a < 1e-8 || norm_b < 1e-8 {
                     Ok(1.0) // Distancia máxima si algún vector es cero
                 } else {
@@ -46,7 +50,8 @@ impl DistanceMetric {
                 }
             }
             DistanceMetric::Euclidean => {
-                let dist: f32 = a.iter()
+                let dist: f32 = a
+                    .iter()
                     .zip(b.iter())
                     .map(|(x, y)| (x - y).powi(2))
                     .sum::<f32>()
@@ -58,10 +63,7 @@ impl DistanceMetric {
                 Ok(-dot) // Negativo porque menor distancia = mayor similitud
             }
             DistanceMetric::Manhattan => {
-                let dist: f32 = a.iter()
-                    .zip(b.iter())
-                    .map(|(x, y)| (x - y).abs())
-                    .sum();
+                let dist: f32 = a.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).sum();
                 Ok(dist)
             }
         }
@@ -72,9 +74,7 @@ impl DistanceMetric {
         match self {
             DistanceMetric::Cosine => 1.0 - distance.max(0.0).min(2.0),
             DistanceMetric::DotProduct => (-distance).max(0.0),
-            DistanceMetric::Euclidean | DistanceMetric::Manhattan => {
-                1.0 / (1.0 + distance)
-            }
+            DistanceMetric::Euclidean | DistanceMetric::Manhattan => 1.0 / (1.0 + distance),
         }
     }
 }
@@ -256,28 +256,27 @@ impl AdvancedVectorEngine {
 
         let id = doc.id.clone();
         let vector = doc.vector.clone();
-        
+
         self.documents.insert(id.clone(), doc);
         self.index.insert(id, vector);
-        
-        self.total_docs.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        
+
+        self.total_docs
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
         Ok(())
     }
 
     /// Indexa múltiples documentos en paralelo
     pub async fn index_batch(&self, docs: Vec<VectorDocument>) -> Result<usize> {
         use rayon::prelude::*;
-        
+
         let results: Vec<Result<()>> = docs
             .into_par_iter()
-            .map(|doc| {
-                futures::executor::block_on(self.index_document(doc))
-            })
+            .map(|doc| futures::executor::block_on(self.index_document(doc)))
             .collect();
 
         let success_count = results.iter().filter(|r| r.is_ok()).count();
-        
+
         Ok(success_count)
     }
 
@@ -296,14 +295,15 @@ impl AdvancedVectorEngine {
             ));
         }
 
-        self.total_queries.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.total_queries
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         let mut heap = BinaryHeap::new();
 
         // Buscar en todos los documentos (en producción usar HNSW real)
         for entry in self.documents.iter() {
             let doc = entry.value();
-            
+
             // Aplicar filtros si existen
             if let Some(ref f) = filter {
                 if !f.matches(doc) {
@@ -330,7 +330,7 @@ impl AdvancedVectorEngine {
         // Convertir heap a vector ordenado
         let mut results: Vec<_> = heap.into_sorted_vec();
         results.reverse(); // Mayor score primero
-        
+
         Ok(results)
     }
 
@@ -345,11 +345,7 @@ impl AdvancedVectorEngine {
 
         let results: Vec<Result<Vec<VectorSearchResult>>> = query_vectors
             .par_iter()
-            .map(|qv| {
-                futures::executor::block_on(
-                    self.search(qv, limit, filter.clone())
-                )
-            })
+            .map(|qv| futures::executor::block_on(self.search(qv, limit, filter.clone())))
             .collect();
 
         results.into_iter().collect()
@@ -359,7 +355,8 @@ impl AdvancedVectorEngine {
     pub async fn delete_document(&self, id: &str) -> Result<()> {
         self.documents.remove(id);
         self.index.remove(id);
-        self.total_docs.fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
+        self.total_docs
+            .fetch_sub(1, std::sync::atomic::Ordering::Relaxed);
         Ok(())
     }
 
@@ -372,7 +369,9 @@ impl AdvancedVectorEngine {
     pub fn get_stats(&self) -> EngineStats {
         EngineStats {
             total_documents: self.total_docs.load(std::sync::atomic::Ordering::Relaxed),
-            total_queries: self.total_queries.load(std::sync::atomic::Ordering::Relaxed),
+            total_queries: self
+                .total_queries
+                .load(std::sync::atomic::Ordering::Relaxed),
             dimension: self.config.dimension,
             metric: self.config.metric,
         }
@@ -382,7 +381,8 @@ impl AdvancedVectorEngine {
     pub async fn clear(&self) -> Result<()> {
         self.documents.clear();
         self.index.clear();
-        self.total_docs.store(0, std::sync::atomic::Ordering::Relaxed);
+        self.total_docs
+            .store(0, std::sync::atomic::Ordering::Relaxed);
         Ok(())
     }
 }
@@ -413,7 +413,7 @@ mod tests {
         );
 
         engine.index_document(doc).await.unwrap();
-        
+
         let stats = engine.get_stats();
         assert_eq!(stats.total_documents, 1);
     }
@@ -424,21 +424,27 @@ mod tests {
         let engine = AdvancedVectorEngine::new(config);
 
         // Indexar documentos
-        engine.index_document(VectorDocument::new(
-            "doc1".to_string(),
-            vec![1.0; 384],
-            json!({"category": "tech"}),
-        )).await.unwrap();
+        engine
+            .index_document(VectorDocument::new(
+                "doc1".to_string(),
+                vec![1.0; 384],
+                json!({"category": "tech"}),
+            ))
+            .await
+            .unwrap();
 
-        engine.index_document(VectorDocument::new(
-            "doc2".to_string(),
-            vec![0.5; 384],
-            json!({"category": "science"}),
-        )).await.unwrap();
+        engine
+            .index_document(VectorDocument::new(
+                "doc2".to_string(),
+                vec![0.5; 384],
+                json!({"category": "science"}),
+            ))
+            .await
+            .unwrap();
 
         // Buscar
         let results = engine.search(&vec![1.0; 384], 2, None).await.unwrap();
-        
+
         assert_eq!(results.len(), 2);
         assert_eq!(results[0].id, "doc1"); // Más similar
     }
@@ -448,26 +454,36 @@ mod tests {
         let config = HnswConfig::default();
         let engine = AdvancedVectorEngine::new(config);
 
-        engine.index_document(VectorDocument::new(
-            "doc1".to_string(),
-            vec![1.0; 384],
-            json!({"category": "tech"}),
-        )).await.unwrap();
+        engine
+            .index_document(VectorDocument::new(
+                "doc1".to_string(),
+                vec![1.0; 384],
+                json!({"category": "tech"}),
+            ))
+            .await
+            .unwrap();
 
-        engine.index_document(VectorDocument::new(
-            "doc2".to_string(),
-            vec![1.0; 384],
-            json!({"category": "science"}),
-        )).await.unwrap();
+        engine
+            .index_document(VectorDocument::new(
+                "doc2".to_string(),
+                vec![1.0; 384],
+                json!({"category": "science"}),
+            ))
+            .await
+            .unwrap();
 
         // Buscar solo categoría "tech"
         let mut filter = VectorFilter::new();
-        filter.must = Some(serde_json::Map::from_iter(vec![
-            ("category".to_string(), json!("tech"))
-        ]));
+        filter.must = Some(serde_json::Map::from_iter(vec![(
+            "category".to_string(),
+            json!("tech"),
+        )]));
 
-        let results = engine.search(&vec![1.0; 384], 10, Some(filter)).await.unwrap();
-        
+        let results = engine
+            .search(&vec![1.0; 384], 10, Some(filter))
+            .await
+            .unwrap();
+
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].id, "doc1");
     }

@@ -685,6 +685,20 @@ pub async fn mcp_json_rpc_handler(
                     system_metrics: crate::prediction_engine::SystemMetrics::default(),
                 };
 
+                // 🎒 ENSAMBLAR BACKPACK (CONTEXTO INMEDIATO)
+                if let Ok(backpack) = shared_memory
+                    .get_context_manager()
+                    .assemble_backpack(&agent_id)
+                    .await
+                {
+                    let backpack_json = serde_json::to_string_pretty(&backpack).unwrap_or_default();
+                    let backpack_text = format!(
+                        "\n\n--- 🎒 MEMORY_P BACKPACK (IMMEDIATE CONTEXT) ---\n{}\n---------------------------------------------",
+                        backpack_json
+                    );
+                    content.push(json!({ "type": "text", "text": backpack_text }));
+                }
+
                 if let Ok(prediction) = prediction_engine
                     .predict(
                         crate::prediction_engine::PredictionType::NextAgentMoves,

@@ -4,15 +4,26 @@
 //! characteristics, scale requirements, and engine capabilities.
 
 use super::types::{EngineSelection, QueryPattern, QueryType, SearchQuery};
+use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
+pub struct EnginePerformanceStats {
+    pub avg_latency_ms: f64,
+    pub success_rate: f64,
+    pub recent_errors: u32,
+}
 
 /// Query analyzer and router
-pub struct RoutingAI;
+pub struct RoutingAI {
+    pub engine_stats: HashMap<String, EnginePerformanceStats>,
+}
 
 impl RoutingAI {
     /// Create a new routing AI instance
     pub fn new() -> Self {
-        Self
+        Self {
+            engine_stats: HashMap::new(),
+        }
     }
 
     /// Analyze query and determine optimal routing
@@ -145,13 +156,14 @@ impl RoutingAI {
 
     /// Update engine performance statistics
     pub fn update_engine_stats(&mut self, engine: &str, latency_ms: f64, success: bool) {
-        let stats = self.engine_stats.entry(engine.to_string()).or_insert(
-            EnginePerformanceStats {
+        let stats = self
+            .engine_stats
+            .entry(engine.to_string())
+            .or_insert(EnginePerformanceStats {
                 avg_latency_ms: 0.0,
                 success_rate: 1.0,
                 recent_errors: 0,
-            },
-        );
+            });
 
         // Update exponential moving average
         stats.avg_latency_ms = stats.avg_latency_ms * 0.9 + latency_ms * 0.1;
@@ -201,7 +213,7 @@ mod tests {
 
         let engines = router.route_query(&query);
         assert!(!engines.is_empty());
-        
+
         if let EngineSelection::Primary(name) = engines[0] {
             assert_eq!(name, "qdrant");
         }

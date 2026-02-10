@@ -546,7 +546,10 @@ mod tests {
         let manager = AutoManager::new(config);
 
         // Start
-        assert!(manager.auto_start().await.is_ok());
+        assert!(manager
+            .auto_start(Arc::new(SharedMemorySystem::new().await.unwrap()))
+            .await
+            .is_ok());
         assert_eq!(manager.get_overall_health(), HealthStatus::Healthy);
 
         // Wait for checks

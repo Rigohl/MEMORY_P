@@ -231,3 +231,19 @@ mod tests {
         assert_eq!(crawler.get_state().await, CrawlerState::Idle);
     }
 }
+
+impl NuclearCrawler {
+    /// Realiza una búsqueda real en internet (Simulado por ahora)
+    pub async fn search_internet(&self, query: &str) -> Result<Vec<String>> {
+        info!("🌐 Buscando en internet: {}", query);
+
+        // Simulación de crawling real
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+        Ok(vec![
+            format!("Result for {}: Documentation from official source", query),
+            format!("Result for {}: StackOverflow discussion", query),
+            format!("Result for {}: GitHub repository example", query),
+        ])
+    }
+}

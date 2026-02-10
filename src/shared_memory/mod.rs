@@ -24,7 +24,7 @@ pub use context::ContextManager;
 pub use engine_integration::{EngineIntegration, EngineIntegrationConfig, IntegrationStats};
 pub use monitor::MemoryMonitor;
 pub use sync::SyncCoordinator;
-pub use types::{AgentId, ContextId, ContextMetadata, MemoryStats, SharedContext};
+pub use types::{AgentId, MemoryStats, SharedContext};
 
 use crate::error::Result;
 use dashmap::DashMap;
@@ -276,5 +276,12 @@ mod tests {
         assert_eq!(context.agent_id, agent_id);
 
         system.shutdown().await.unwrap();
+    }
+}
+
+impl SharedMemorySystem {
+    /// Obtiene el gestor de contextos
+    pub fn get_context_manager(&self) -> Arc<ContextManager> {
+        self.context_manager.clone()
     }
 }

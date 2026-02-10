@@ -23,17 +23,17 @@ impl EngineFactory {
             "qdrant" => Ok(Arc::new(QdrantEngine::new(config))),
             "faiss" => Ok(Arc::new(FaissEngine::new(config))),
             "scann" => Ok(Arc::new(ScannEngine::new(config))),
-            
+
             // Text search engines
             "tantivy" => Ok(Arc::new(TantivyEngine::new(config))),
             "lnx" => Ok(Arc::new(LnxEngine::new(config))),
             "toshi" => Ok(Arc::new(ToshiEngine::new(config))),
             "meilisearch" => Ok(Arc::new(MeiliSearchEngine::new(config))),
-            
+
             // Specialized engines
             "julia_nlp" => Ok(Arc::new(JuliaNlpEngine::new(config))),
             "memory_bank" => Ok(Arc::new(MemoryBankEngine::new(config))),
-            
+
             _ => Err(format!("Unknown engine: {}", name).into()),
         }
     }
@@ -41,9 +41,15 @@ impl EngineFactory {
     /// Get list of all available engine names
     pub fn available_engines() -> Vec<&'static str> {
         vec![
-            "qdrant", "faiss", "scann",
-            "tantivy", "lnx", "toshi", "meilisearch",
-            "julia_nlp", "memory_bank",
+            "qdrant",
+            "faiss",
+            "scann",
+            "tantivy",
+            "lnx",
+            "toshi",
+            "meilisearch",
+            "julia_nlp",
+            "memory_bank",
         ]
     }
 

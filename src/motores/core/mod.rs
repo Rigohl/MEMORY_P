@@ -1,5 +1,5 @@
 //! Core module for all search engines
-//! 
+//!
 //! Provides traits, types, and utilities shared across all 9 engines
 
 pub mod health_monitor;
