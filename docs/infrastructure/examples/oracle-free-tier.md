@@ -402,7 +402,8 @@ write_files:
       threads = 4
       
       [storage]
-      postgres_url = "postgresql://memory_p:password@postgres:5432/memory_p"
+      # NOTE: Replace <CHANGE_ME> with a strong password or configure this via an environment variable/secret manager.
+      postgres_url = "postgresql://memory_p:<CHANGE_ME>@postgres:5432/memory_p"
       redis_url = "redis://redis:6379"
       
       [monitoring]
