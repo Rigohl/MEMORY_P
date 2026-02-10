@@ -174,6 +174,30 @@ docker-compose up -d
 
 **📖 For complete DevOps guide, see [DEVOPS.md](DEVOPS.md)**
 
+### Cloud Deployment (Zero Cost)
+
+**Deploy on Oracle Cloud Free Tier** - 4 ARM cores, 24GB RAM, $0/month forever:
+
+```bash
+# Prerequisites: Terraform + OCI CLI
+terraform -v  # Should be 1.6+
+oci --version
+
+# Deploy to Oracle Cloud
+cd docs/infrastructure/examples/oracle-free-tier
+terraform init
+terraform apply -var-file="free-tier.tfvars"
+
+# Get instance IP and access
+terraform output instance_public_ip
+# Access: http://<IP>:4040
+```
+
+**📖 Full infrastructure guides:**
+- [Oracle Cloud Free Tier Guide](docs/infrastructure/examples/oracle-free-tier.md) - Complete setup
+- [INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) - RHEL alternatives, Kubernetes, cloud options
+- [CICD_BEST_PRACTICES.md](docs/CICD_BEST_PRACTICES.md) - Automation & IaC
+
 ### Quick Start (Rust Core Only)
 
 ```bash
@@ -422,6 +446,37 @@ curl -X POST http://localhost:4040/mcp \
   - 🤖 Intelligent DevOps agents
   - 🔧 Troubleshooting & optimization
   - 💾 Backup & recovery strategies
+
+### Infrastructure & Cloud (🆕 NEW)
+- **[docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md)** - RHEL alternatives & cloud platforms
+  - 🐧 Linux distributions (Rocky, AlmaLinux, Ubuntu Pro)
+  - ⎈ Kubernetes options (MicroK8s, K3s, K8s)
+  - ☁️ Oracle Cloud Free Tier integration ($0/month)
+  - 🤖 AI/ML infrastructure requirements
+  - 💰 Cost optimization strategies
+  - 🔄 Migration guide from RHEL
+
+- **[docs/CICD_BEST_PRACTICES.md](docs/CICD_BEST_PRACTICES.md)** - CI/CD automation
+  - 📝 Pipeline documentation standards
+  - ⚙️ Infrastructure as Code (Terraform, Ansible)
+  - 🔁 Reproducibility guarantees
+  - ⚡ GitHub Actions optimization
+  - 🌈 Multi-language CI/CD patterns
+  - 🧪 Testing & deployment strategies
+
+- **[docs/COPILOT_INFRASTRUCTURE.md](docs/COPILOT_INFRASTRUCTURE.md)** - AI-assisted DevOps
+  - 🤖 Documentation for Copilot understanding
+  - 📋 Version control best practices
+  - 🔍 Audit and monitoring with AI
+  - 🔄 Automated improvement pipelines
+  - 🐛 AI-powered troubleshooting
+  - 🧠 Knowledge graph integration
+
+- **[docs/infrastructure/](docs/infrastructure/)** - Practical examples
+  - [Oracle Cloud Free Tier](docs/infrastructure/examples/oracle-free-tier.md) - $0/month deployment
+  - [Rocky Linux + K3s](docs/infrastructure/examples/rocky-k3s-cluster.md) - Production cluster
+  - [Ubuntu + MicroK8s](docs/infrastructure/examples/ubuntu-microk8s.md) - Developer setup
+  - [Troubleshooting Playbooks](docs/infrastructure/playbooks/) - Common issues & fixes
 
 ### Architecture Resources
 - 📐 **Architecture Diagrams**: See [BLUEPRINT.md](BLUEPRINT.md)
