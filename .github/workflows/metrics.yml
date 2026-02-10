@@ -133,7 +133,7 @@ jobs:
           echo "- Test modules: ${cfg_test_count}" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload statistics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: code-statistics
           path: tokei.json

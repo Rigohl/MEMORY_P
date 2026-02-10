@@ -62,7 +62,7 @@ jobs:
           cargo audit || true
       
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.rust == 'stable'
         with:
           name: memory_p-rust-${{ github.sha }}
@@ -315,7 +315,7 @@ jobs:
           cargo bench || echo "⚠️  Benchmarks not configured"
       
       - name: Upload performance results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: performance-results
           path: target/criterion/

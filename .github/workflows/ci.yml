@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload artifacts
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: memory_p-${{ runner.os }}
           path: target/release/memory_p

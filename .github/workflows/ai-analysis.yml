@@ -91,7 +91,7 @@ jobs:
               .write();
       
       - name: Upload metrics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-metrics
           path: ci-metrics.json
@@ -211,7 +211,7 @@ jobs:
           cat prediction-output.txt >> $GITHUB_STEP_SUMMARY
       
       - name: Upload predictions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: failure-predictions
           path: predictions.json

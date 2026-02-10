@@ -85,7 +85,7 @@ jobs:
         run: cargo test --all-features --verbose
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: memory_p-${{ github.sha }}
           path: target/release/memory_p

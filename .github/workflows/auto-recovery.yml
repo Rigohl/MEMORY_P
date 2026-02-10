@@ -214,7 +214,7 @@ jobs:
 
       - name: Guardar logs de recuperación
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: recovery-build-logs
           path: build.log
