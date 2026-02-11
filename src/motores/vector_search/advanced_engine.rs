@@ -3,7 +3,6 @@
 //! Implementación de motor de búsqueda vectorial avanzado similar a Qdrant
 //! con índices HNSW (Hierarchical Navigable Small World) para alta performance.
 
-use crate::motores::core::types::*;
 use anyhow::{anyhow, Result};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};

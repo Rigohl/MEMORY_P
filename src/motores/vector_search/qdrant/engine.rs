@@ -13,6 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Qdrant search engine implementation
 pub struct QdrantEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     collection_name: String,
     vector_size: usize,

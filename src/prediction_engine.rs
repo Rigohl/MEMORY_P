@@ -13,11 +13,10 @@ use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
-use tracing::{debug, info, warn};
+use std::time::SystemTime;
+use tracing::{debug, info};
 
-use crate::error::{MemoryPError, Result};
-use crate::ffi;
+use crate::error::Result;
 
 /// Tipo de predicción
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

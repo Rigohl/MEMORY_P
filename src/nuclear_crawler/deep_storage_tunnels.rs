@@ -19,6 +19,7 @@ pub struct StorageTunnel {
 /// Sistema de túneles de almacenamiento profundo
 pub struct DeepStorageTunnels {
     tunnels: Arc<RwLock<Vec<StorageTunnel>>>,
+    #[allow(dead_code)]
     parallel_buffer_size: usize,
 }
 
