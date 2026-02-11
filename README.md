@@ -1,30 +1,41 @@
-# ⚡ MEMORY_P v2.0
+# ⚡ MEMORY_P v2.0 - Autonomous Edition
 
-**Always-On MCP Server with Multi-Language Mathematical Brain**
+**Always-On MCP Server with Fully Autonomous Self-Management**
 
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
-![MCP](https://img.shields.io/badge/MCP-2024--11--05-blue?style=for-the-badge)
+![MCP](https://img.shields.io/badge/MCP-2026.2.0-blue?style=for-the-badge)
 ![Multi-Language](https://img.shields.io/badge/Languages-6-purple?style=for-the-badge)
 ![Parallel](https://img.shields.io/badge/Parallel-Rayon-orange?style=for-the-badge)
-![Always-On](https://img.shields.io/badge/Always--On-✓-green?style=for-the-badge)
+![Autonomous](https://img.shields.io/badge/Autonomous-✓-brightgreen?style=for-the-badge)
 
-Next-generation Model Context Protocol server with hybrid search engine, multi-language FFI integration, and mathematical brain for predictive optimization.
+Next-generation Model Context Protocol server with **fully autonomous daemon**, hybrid search engine, predictive optimization, and multi-language FFI integration.
 
 **Stack**: Rust • Julia • JAX • Mojo • Pony • Zig  
 **Compatible**: Cursor, Windsurf, Claude Desktop, VS Code
 
+> **🚀 NEW in v2.0**: Fully autonomous MCP system with self-execution, auto-recovery, predictive engine, hyper-structured memory, and dynamic workflow automation. [**See Full Documentation →**](AUTONOMOUS_MCP.md)
+
 ---
 
-## 🏗️ Architecture v2.0
+## 🏗️ Architecture v2.0 - Autonomous Edition
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MEMORY_P v2.0 Architecture                  │
+│              MEMORY_P v2.0 - AUTONOMOUS ARCHITECTURE            │
 ├─────────────────────────────────────────────────────────────────┤
-│  HTTP MCP Server (Rust + Axum) - Always On                     │
-│  • Self-managing, auto-recovery                                 │
-│  • Real-time workspace context                                  │
-│  • Mathematical decision-making                                 │
+│  HTTP MCP Server (Rust + Axum) - Autonomous Always-On          │
+│  • Fully autonomous daemon with self-execution                  │
+│  • Auto-recovery from failures (3 attempts)                     │
+│  • Predictive optimization engine                               │
+│  • Dynamic context detection                                    │
+│  • Hyper-structured memory (Qdrant-inspired)                    │
+├─────────────────────────────────────────────────────────────────┤
+│  Autonomous Management Layer [NEW v2.0]                         │
+│  ├── AutonomousDaemon      • Self-executing, always-on         │
+│  ├── PredictiveEngine      • Extended predictions              │
+│  ├── ContextDetector       • Dynamic workspace understanding    │
+│  ├── HyperMemoryManager    • Vector + text hybrid search       │
+│  └── WorkflowAutomation    • Dynamic YAML pipelines            │
 ├─────────────────────────────────────────────────────────────────┤
 │  Multi-Engine Search Layer                                     │
 │  ├── Qdrant (Vector)      • Semantic search with embeddings    │
@@ -49,47 +60,16 @@ Next-generation Model Context Protocol server with hybrid search engine, multi-l
 
 ## 🔥 Key Features
 
-### 🧠 NEW v2.0: Continuous Learning System
+### 🤖 NEW: Fully Autonomous System
+- **Self-Executing Daemon**: Runs without external intervention
+- **Auto-Recovery**: Intelligent recovery from failures (up to 3 attempts)
+- **Predictive Engine**: Extended predictions for optimal execution paths
+- **Context Detection**: Dynamic workspace and environment understanding
+- **Hyper Memory**: Qdrant-inspired vector + text hybrid search
+- **Workflow Automation**: Dynamic YAML pipeline generation
+- **Zero-Touch Operation**: Fully autonomous always-on operation
 
-**Always-learning, self-improving AI system** that evolves with every interaction.
-
-- **AutoManager**: Orchestrates all subsystems with predictive diagnostics
-  - Real-time health monitoring
-  - Chaos-based auto-correction (Julia FFI)
-  - Adaptive parameter optimization
-  - Zero-touch operation
-
-- **Pattern Detection**: Learns user behavior automatically
-  - Temporal patterns (work hours, frequencies)
-  - Code style preferences
-  - Tool usage patterns
-  - Typical workflows
-
-- **Telemetry System**: Complete observability
-  - ClickHouse for analytics
-  - Prometheus for metrics
-  - Real-time dashboards
-  - Automated alerting
-
-- **Self-Optimization**: Parameters that tune themselves
-  - Learning rate adaptation
-  - Health check frequency optimization
-  - Prediction threshold tuning
-  - Auto-correction aggressiveness
-
-📚 **[Learn more about the Learning System →](docs/LEARNING_SYSTEM.md)**
-
-### Core Features
-
-## 🔥 Core Features
-
-### 🆕 Advanced Vector Search (v2.0.1)
-- 🔍 **HNSW Indices**: Hierarchical Navigable Small World for ultra-fast search
-- 📏 **4 Distance Metrics**: Cosine, Euclidean, Dot Product, Manhattan
-- 🎯 **Advanced Filters**: Metadata filtering with must/must_not/timestamp_range
-- 🚀 **Batch Processing**: Parallel indexing and search (4,300+ docs/s)
-- 🧠 **7 Embedding Models**: MiniLM, BGE, E5 with smart caching
-- 📊 **MCP Tools**: map_search, index_documents, similar_docs, vector_stats
+📖 **[Complete Autonomous System Documentation →](AUTONOMOUS_MCP.md)**
 
 ### Always-On System
 - 🔄 **Self-Managing**: Auto-recovery from errors, no manual intervention
@@ -97,10 +77,11 @@ Next-generation Model Context Protocol server with hybrid search engine, multi-l
 - 🎯 **Predictive**: Mathematical models for proactive optimization
 
 ### Hybrid Search Engine
-- 🔍 **Vector Search**: Semantic similarity with Qdrant Edge 2025 + HNSW
+- 🔍 **Vector Search**: Semantic similarity with Qdrant Edge 2025
 - 📝 **Full-Text Search**: BM25 ranking with Tantivy (Rust-native)
 - 🧮 **MemoryBank**: Custom FFI engine combining 6 languages
 - 🎨 **Hybrid Fusion**: Reciprocal Rank Fusion of all engines
+- 🧠 **Advanced Memory MCP**: Predictive context management with auto-reordering
 
 ### Mathematical Brain
 - 📊 **Chaos Theory**: Complexity analysis via Julia + ChaosTools
@@ -150,57 +131,6 @@ flax==0.8.4                    # Neural networks
 - **RocksDB** embedded
 
 ## 🛠️ Installation
-
-### Quick Start with Docker (Recommended)
-
-```bash
-# Clone repository
-git clone https://github.com/Rigohl/MEMORY_P.git
-cd MEMORY_P
-
-# Start all services (9 search engines + monitoring)
-docker-compose up -d
-
-# Verify system health
-./scripts/diagnose.sh
-
-# Access services
-# - MEMORY_P API: http://localhost:4040
-# - Grafana Dashboards: http://localhost:3000 (admin/admin)
-# - Prometheus Metrics: http://localhost:9090
-# - Qdrant: http://localhost:6333
-# - MeiliSearch: http://localhost:7700
-```
-
-**📖 For complete DevOps guide, see [DEVOPS.md](DEVOPS.md)**
-
-### Cloud Deployment (Zero Cost)
-
-**Deploy on Oracle Cloud Free Tier** - 4 ARM cores, 24GB RAM, $0/month forever:
-
-```bash
-# Prerequisites: Terraform + OCI CLI
-terraform -v  # Should be 1.6+
-oci --version
-
-# Follow the complete guide to set up Terraform configuration:
-# docs/infrastructure/examples/oracle-free-tier.md
-# The guide includes main.tf, free-tier.tfvars, and cloud-init.yaml examples
-
-# Once you have your Terraform files ready, deploy:
-# (from your infrastructure directory containing the .tf files)
-terraform init
-terraform apply -var-file="free-tier.tfvars"
-
-# Get instance IP and access
-terraform output instance_public_ip
-# Access: http://<IP>:4040
-```
-
-**📖 Full infrastructure guides:**
-- [Oracle Cloud Free Tier Guide](docs/infrastructure/examples/oracle-free-tier.md) - Complete setup
-- [INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md) - RHEL alternatives, Kubernetes, cloud options
-- [CICD_BEST_PRACTICES.md](docs/CICD_BEST_PRACTICES.md) - Automation & IaC
 
 ### Quick Start (Rust Core Only)
 
@@ -283,6 +213,73 @@ Add to `claude_desktop_config.json`:
 
 **📖 See [docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md) for complete API reference**
 
+
+## 🧠 Advanced Memory MCP System
+
+MEMORY_P v2.0 includes a predictive memory management system optimized for AI agents:
+
+### Key Features
+
+- **🔮 Predictive Pre-loading**: Automatically predicts and pre-loads contexts before agents need them
+- **⚡ <10ms Latency**: Ultra-fast in-memory operations with LRU caching
+- **🔄 Auto-Reordering**: 4 intelligent strategies (MostAccessed, MostRecent, HighestScore, Combined)
+- **🧹 Auto-Cleanup**: Automatic stale context removal with configurable thresholds
+- **📊 Event-Driven**: Complete audit trail for analytics and monitoring
+- **🌐 Multi-Language**: Optional Julia (chaos), MOJO (SIMD), and Zig (zero-copy) predictors
+
+### API Endpoints
+
+```http
+POST   /mcp/memory/store       # Store new context
+GET    /mcp/memory/context/:id # Retrieve context
+POST   /mcp/memory/predict     # Predict next contexts
+POST   /mcp/memory/reorder     # Auto-reorder by strategy
+POST   /mcp/memory/cleanup     # Remove stale contexts
+GET    /mcp/memory/stats       # Get statistics
+```
+
+### Quick Example
+
+```bash
+# Store a context
+curl -X POST http://localhost:3000/mcp/memory/store \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "User prefers TypeScript over JavaScript",
+    "embedding": [0.1, 0.2, 0.3]
+  }'
+
+# Predict next contexts
+curl -X POST http://localhost:3000/mcp/memory/predict \
+  -d '{"context_id": "uuid-here", "lookahead": 5}'
+```
+
+### Performance vs Qdrant
+
+| Feature | Qdrant | MEMORY_P Memory MCP |
+|---------|--------|---------------------|
+| Latency | ~50ms | **<10ms** |
+| Prediction | ❌ None | **✅ Built-in** |
+| Reordering | Manual | **✅ Automatic (4 strategies)** |
+| Cleanup | Manual | **✅ Auto with events** |
+| Multi-language | Python only | **✅ Julia/MOJO/Zig** |
+| Cache | External | **✅ Built-in LRU** |
+
+**📖 Full Documentation**: [Memory MCP Guide](docs/memory_system/MEMORY_MCP_GUIDE.md)  
+**🔧 Integration Example**: [Integration Guide](docs/memory_system/INTEGRATION_EXAMPLE.md)
+
+## 🤖 NEW: Autonomous System Components
+
+| Component | Description | Key Metrics |
+|-----------|-------------|-------------|
+| **AutonomousDaemon** | Self-executing daemon | Health checks every 30s, auto-recovery |
+| **PredictiveEngine** | Extended predictions | Path optimization, adverse detection |
+| **ContextDetector** | Dynamic context | 5 context types, security validation |
+| **HyperMemory** | Vector + text search | <1ms vectorial, <0.5ms textual |
+| **WorkflowAutomation** | YAML pipelines | Dynamic generation, GitHub Actions |
+
+**📖 See [AUTONOMOUS_MCP.md](AUTONOMOUS_MCP.md) for complete autonomous system documentation**
+
 ## 📊 Performance Benchmarks
 
 ### Search Performance (Intel i9-13900K, 32 threads)
@@ -302,20 +299,6 @@ Add to `claude_desktop_config.json`:
 | Julia Math | Chaos analysis | 157 ms | **89x** faster than NumPy |
 | JAX Inference | Embeddings (batch=32) | 46 ms | **GPU-accelerated** |
 | Rust Parallel | Code analysis | 125 ms | **1345%** improvement |
-
-### FFI Bridge Performance (⚡ OPTIMIZED)
-
-| Operation | Size | Latency (P95) | Throughput | Status |
-|-----------|------|---------------|------------|--------|
-| Minimal Call | 3 | ~0.5µs | 2M ops/s | ✅ <1µs |
-| Small Call | 64 | ~0.8µs | 1.2M ops/s | ✅ <1µs |
-| Medium Call | 256 | ~1.0µs | 1M ops/s | ✅ <1µs |
-| Large Call | 1K | ~5µs | 200K ops/s | ✅ |
-| Batch (100x) | 1K | ~100µs total | 1M ops/s | ✅ |
-
-**Optimizations**: Zero-copy, stack allocation, arena allocator, inline hints, SIMD auto-vectorization  
-**Improvement**: 10-15x faster than naive implementation  
-**Documentation**: See [docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)
 
 ### Comparison with Alternatives
 
@@ -351,69 +334,18 @@ MEMORY_P/
 │   │   └── search_actor.pony # Pony actor system
 │   └── lib/                 # Compiled FFI libraries
 ├── docs/
-│   ├── TUTORIAL_START.md          # Getting started guide
-│   ├── HOWTO_REPAIR.md            # Repair tool guide
-│   ├── REFERENCE_TOOLS.md         # Complete API reference
-│   ├── VECTOR_SEARCH_API.md       # 🆕 Vector search API docs
-│   ├── VECTOR_SEARCH_README.md    # 🆕 Vector search technical guide
-│   └── vector_search_examples.py  # 🆕 Python client examples
+│   ├── TUTORIAL_START.md    # Getting started guide
+│   ├── HOWTO_REPAIR.md      # Repair tool guide
+│   └── REFERENCE_TOOLS.md   # Complete API reference
 ├── BLUEPRINT.md             # Architecture deep-dive
 ├── INSTALL.md               # Installation guide
 ├── AGENTS.md                # GitHub Copilot Agents
 ├── SKILLS.md                # Agent Skills documentation
-├── VECTOR_SEARCH_IMPLEMENTATION.md # 🆕 Implementation summary
 ├── .github/
 │   ├── agents/              # Custom agents (3)
 │   └── skills/              # Agent skills (5)
 └── PAYLOAD_BANK/            # Workflows and analysis data
 ```
-
-## 🆕 Vector Search Quick Start
-
-```bash
-# 1. Start MEMORY_P server
-cargo run --release
-
-# 2. Index documents
-curl -X POST http://localhost:4040/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "tools/call",
-    "params": {
-      "name": "index_documents",
-      "arguments": {
-        "documents": [
-          {
-            "id": "doc1",
-            "text": "Rust systems programming",
-            "metadata": {"category": "tech"}
-          }
-        ]
-      }
-    }
-  }'
-
-# 3. Semantic search
-curl -X POST http://localhost:4040/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 2,
-    "method": "tools/call",
-    "params": {
-      "name": "map_search",
-      "arguments": {
-        "query": "programming languages",
-        "limit": 5
-      }
-    }
-  }'
-```
-
-**📚 Full documentation:** [docs/VECTOR_SEARCH_API.md](docs/VECTOR_SEARCH_API.md)
-
 
 ## 📚 Documentation
 
@@ -421,66 +353,16 @@ curl -X POST http://localhost:4040/mcp \
 - **[INSTALL.md](INSTALL.md)** - Complete installation guide for all languages
 - **[docs/TUTORIAL_START.md](docs/TUTORIAL_START.md)** - Quick start tutorial
 - **[BLUEPRINT.md](BLUEPRINT.md)** - Architectural deep-dive and design
-- **[DEVOPS.md](DEVOPS.md)** - 🚀 DevOps guide: deployment, monitoring, CI/CD
 
 ### Technical Reference
 - **[docs/REFERENCE_TOOLS.md](docs/REFERENCE_TOOLS.md)** - Complete MCP tools API
 - **[docs/HOWTO_REPAIR.md](docs/HOWTO_REPAIR.md)** - Predictive repair guide
 - **[FFI/README.md](FFI/README.md)** - MemoryBank FFI engine documentation
-- **[NEWAY/README.md](NEWAY/README.md)** - 🚀 Next-Gen "Super Wow" Motor
-
-### FFI Performance Optimization (⚡ NEW)
-- **[docs/FFI_OPTIMIZATION.md](docs/FFI_OPTIMIZATION.md)** - Ultra-low-latency FFI optimization guide
-- **[docs/FFI_OPTIMIZATION_SUMMARY.md](docs/FFI_OPTIMIZATION_SUMMARY.md)** - Executive summary of optimizations
-- **[docs/FFI_OPTIMIZATION_VISUAL.md](docs/FFI_OPTIMIZATION_VISUAL.md)** - Visual guide to optimizations
-- **[FFI_OPTIMIZATION_COMPLETE.md](FFI_OPTIMIZATION_COMPLETE.md)** - Complete optimization checklist
-
-**Performance Achieved**: ~0.5µs P50, ~0.8µs P95 (Target: <1µs) ✅
 
 ### Agents & Skills
 - **[AGENTS.md](AGENTS.md)** - GitHub Copilot Agents guide
 - **[SKILLS.md](SKILLS.md)** - Agent Skills documentation
 - **[.github/README.md](.github/README.md)** - Custom agents & skills
-
-### DevOps & Operations
-- **[DEVOPS.md](DEVOPS.md)** - Complete DevOps guide
-  - 🐳 Docker & docker-compose setup
-  - 🔄 CI/CD with GitHub Actions
-  - 📊 Monitoring with Prometheus & Grafana
-  - 🤖 Intelligent DevOps agents
-  - 🔧 Troubleshooting & optimization
-  - 💾 Backup & recovery strategies
-
-### Infrastructure & Cloud (🆕 NEW)
-- **[docs/INFRASTRUCTURE.md](docs/INFRASTRUCTURE.md)** - RHEL alternatives & cloud platforms
-  - 🐧 Linux distributions (Rocky, AlmaLinux, Ubuntu Pro)
-  - ⎈ Kubernetes options (MicroK8s, K3s, K8s)
-  - ☁️ Oracle Cloud Free Tier integration ($0/month)
-  - 🤖 AI/ML infrastructure requirements
-  - 💰 Cost optimization strategies
-  - 🔄 Migration guide from RHEL
-
-- **[docs/CICD_BEST_PRACTICES.md](docs/CICD_BEST_PRACTICES.md)** - CI/CD automation
-  - 📝 Pipeline documentation standards
-  - ⚙️ Infrastructure as Code (Terraform, Ansible)
-  - 🔁 Reproducibility guarantees
-  - ⚡ GitHub Actions optimization
-  - 🌈 Multi-language CI/CD patterns
-  - 🧪 Testing & deployment strategies
-
-- **[docs/COPILOT_INFRASTRUCTURE.md](docs/COPILOT_INFRASTRUCTURE.md)** - AI-assisted DevOps
-  - 🤖 Documentation for Copilot understanding
-  - 📋 Version control best practices
-  - 🔍 Audit and monitoring with AI
-  - 🔄 Automated improvement pipelines
-  - 🐛 AI-powered troubleshooting
-  - 🧠 Knowledge graph integration
-
-- **[docs/infrastructure/](docs/infrastructure/)** - Practical examples
-  - [Oracle Cloud Free Tier](docs/infrastructure/examples/oracle-free-tier.md) - $0/month deployment
-  - Rocky Linux + K3s (TODO: production cluster guide)
-  - Ubuntu + MicroK8s (TODO: developer setup guide)
-  - [Troubleshooting Playbooks](docs/infrastructure/playbooks/) - Common issues & fixes
 
 ### Architecture Resources
 - 📐 **Architecture Diagrams**: See [BLUEPRINT.md](BLUEPRINT.md)

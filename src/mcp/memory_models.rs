@@ -11,7 +11,7 @@ pub struct MemoryContext {
     pub content: String,
     pub embedding: Option<Vec<f64>>,
     pub metadata: HashMap<String, serde_json::Value>,
-    pub access_count: u32,
+    pub access_count: u64,  // Changed from u32 to prevent overflow in long-running systems
     pub last_accessed: Option<DateTime<Utc>>,
     pub prediction_score: Option<f64>,
     pub created_at: DateTime<Utc>,
@@ -134,6 +134,7 @@ pub struct MemoryEngineConfig {
     pub prediction_cache_size: usize,
     pub max_context_age_hours: i64,
     pub auto_cleanup_interval_secs: u64,
+    pub max_events: usize,  // Maximum events to keep in memory
 }
 
 impl Default for MemoryEngineConfig {
@@ -145,6 +146,7 @@ impl Default for MemoryEngineConfig {
             prediction_cache_size: 1000,
             max_context_age_hours: 24,
             auto_cleanup_interval_secs: 3600,
+            max_events: 10000,  // Keep last 10k events
         }
     }
 }
