@@ -65,9 +65,11 @@ impl SearchEngine for QdrantEngine {
         // 1. Convert query to Qdrant SearchRequest
         // 2. Call client.search(collection, vector, limit, filter)
         // 3. Convert Qdrant ScoredPoint -> SearchResult
-        // 
+        //
         // For now: Return empty results with proper error if vector missing
-        tracing::warn!("Qdrant search called but client not configured - add 'qdrant-client' dependency");
+        tracing::warn!(
+            "Qdrant search called but client not configured - add 'qdrant-client' dependency"
+        );
         Ok(vec![])
     }
 
