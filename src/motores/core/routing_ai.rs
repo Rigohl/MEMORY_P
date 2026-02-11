@@ -4,15 +4,26 @@
 //! characteristics, scale requirements, and engine capabilities.
 
 use super::types::{EngineSelection, QueryPattern, QueryType, SearchQuery};
+use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
+pub struct EnginePerformanceStats {
+    pub avg_latency_ms: f64,
+    pub success_rate: f64,
+    pub recent_errors: u32,
+}
 
 /// Query analyzer and router
-pub struct RoutingAI;
+pub struct RoutingAI {
+    pub engine_stats: HashMap<String, EnginePerformanceStats>,
+}
 
 impl RoutingAI {
     /// Create a new routing AI instance
     pub fn new() -> Self {
-        Self
+        Self {
+            engine_stats: HashMap::new(),
+        }
     }
 
     /// Analyze query and determine optimal routing

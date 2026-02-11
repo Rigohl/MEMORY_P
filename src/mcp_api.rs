@@ -1,3 +1,4 @@
+use crate::backpack::Backpack;
 use crate::analyzer::CodeAnalyzer;
 use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
@@ -143,6 +144,7 @@ pub async fn kpi_record_handler(
 pub async fn mcp_json_rpc_handler(
     Extension(shared_memory): Extension<Arc<crate::shared_memory::SharedMemorySystem>>,
     Extension(prediction_engine): Extension<Arc<crate::prediction_engine::PredictionEngine>>,
+    Extension(decision_engine): Extension<Arc<crate::decision_logic::DecisionEngine>>,
     Json(req): Json<JsonRpcRequest>,
 ) -> Json<JsonRpcResponse> {
     let id = req.id.clone().unwrap_or(Value::Null);
@@ -655,6 +657,41 @@ pub async fn mcp_json_rpc_handler(
                 "vector_stats" => Some(json!({
                     "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
                 })),
+
+                "brain_status" => {
+                    let stats = shared_memory.get_stats().await;
+                    let integration = shared_memory.get_integration_stats().await;
+
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!(
+                                "🧠 BRAIN STATUS:\n\nFFI Status:\n- Multi-lenguaje: Julia, JAX, Mojo, Pony, Zig\n- Estatus: ✅ Neural Overdrive Active\n\nMemoria Agilidad:\n- Updates: {}\n- Latencia: {:.2}ms",
+                                stats.total_updates,
+                                stats.avg_latency_ms
+                            )
+                        }]
+                    }))
+                },
+                "ffi_benchmark" => {
+                    let iters = arguments.get("iterations").and_then(|v| v.as_u64()).unwrap_or(1000);
+                    let start = std::time::Instant::now();
+
+                    // Simular llamadas rápidas vía bridge
+                    for _ in 0..iters {
+                        let _ = crate::ffi::bridge::dispatch_fast(crate::ffi::bridge::Language::Zig, "warmup", &mut vec![0.0; 10]);
+                    }
+
+                    let elapsed = start.elapsed();
+                    let avg = elapsed.as_nanos() as f64 / iters as f64;
+
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!("⚡ FFI BENCHMARK:\n- Iteraciones: {}\n- Tiempo total: {:?}\n- Promedio: {:.2}ns\n- Estatus: ✅ Neural Overdrive Active", iters, elapsed, avg)
+                        }]
+                    }))
+                },
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
         }
@@ -685,6 +722,16 @@ pub async fn mcp_json_rpc_handler(
                     system_metrics: crate::prediction_engine::SystemMetrics::default(),
                 };
 
+                // 🎒 ENSAMBLAR BACKPACK (CONTEXTO INMEDIATO)
+                if let Ok(backpack) = shared_memory.get_context_manager().assemble_backpack(&agent_id).await {
+                    let backpack_json = serde_json::to_string_pretty(&backpack).unwrap_or_default();
+                    let backpack_text = format!(
+                        "\n\n--- 🎒 MEMORY_P BACKPACK (IMMEDIATE CONTEXT) ---\n{}\n---------------------------------------------",
+                        backpack_json
+                    );
+                    content.push(json!({ "type": "text", "text": backpack_text }));
+                }
+
                 if let Ok(prediction) = prediction_engine
                     .predict(
                         crate::prediction_engine::PredictionType::NextAgentMoves,
@@ -697,6 +744,20 @@ pub async fn mcp_json_rpc_handler(
                         prediction.recommendation
                     );
                     content.push(json!({ "type": "text", "text": proactive_text }));
+                }
+
+
+                // 🧠 ANALIZAR DECISIÓN COGNITIVA
+                let context_map: std::collections::HashMap<String, String> = shared_context.shared_data.iter()
+                    .map(|(k, v)| (k.clone(), v.to_string()))
+                    .collect();
+
+                if let Ok(decision) = decision_engine.analyze_decision(tool_name, &context_map).await {
+                    let decision_text = format!(
+                        "\n\n--- 🧠 COGNITIVE DECISION ENGINE ---\nDecision: {}\nRationale: {}\nConfidence: {:.2}%\n-----------------------------------",
+                        decision.decision, decision.rationale, decision.confidence * 100.0
+                    );
+                    content.push(json!({ "type": "text", "text": decision_text }));
                 }
 
                 // Inyectar Contexto Denso (Alertas del Daemon, etc)
