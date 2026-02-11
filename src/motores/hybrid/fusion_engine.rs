@@ -1,6 +1,6 @@
 //! Fusion engine for coordinating multiple search engines
 
-use crate::motores::core::{RoutingAI, traits::SearchEngine, types::*};
+use crate::motores::core::{traits::SearchEngine, types::*, RoutingAI};
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
@@ -25,12 +25,15 @@ impl FusionEngine {
         engines.insert(name, engine);
     }
 
-    pub async fn search_multi(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    pub async fn search_multi(
+        &self,
+        query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         let engine_selections = self.router.route_query(query);
         let engines = self.engines.read().await;
-        
+
         let mut all_results = Vec::new();
-        
+
         for selection in engine_selections {
             if let EngineSelection::Primary(name) = selection {
                 if let Some(engine) = engines.get(name) {
@@ -41,7 +44,7 @@ impl FusionEngine {
                 }
             }
         }
-        
+
         Ok(all_results)
     }
 }

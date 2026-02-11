@@ -1,0 +1,491 @@
+name: Recurring Repository Scan
+
+# Escaneo recurrente del repositorio
+# Análisis continuo de código, dependencias y seguridad
+
+on:
+  schedule:
+    # Ejecutar diariamente a las 3 AM UTC
+    - cron: '0 3 * * *'
+    # Ejecutar semanalmente los domingos a las 0:00 UTC (análisis profundo)
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: 'Tipo de escaneo'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - quick
+          - standard
+          - deep
+          - forensic
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  # Determinar tipo de escaneo
+  scan_config:
+    name: Configuración de Escaneo
+    runs-on: ubuntu-latest
+    outputs:
+      scan_depth: ${{ steps.config.outputs.depth }}
+      scan_areas: ${{ steps.config.outputs.areas }}
+    
+    steps:
+      - name: Determinar configuración
+        id: config
+        run: |
+          # Determinar tipo de escaneo
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            if [ "${{ github.event.schedule }}" == "0 0 * * 0" ]; then
+              DEPTH="deep"
+              echo "🔬 Escaneo profundo semanal"
+            else
+              DEPTH="standard"
+              echo "📊 Escaneo estándar diario"
+            fi
+          else
+            DEPTH="${{ github.event.inputs.scan_type || 'standard' }}"
+            echo "🎯 Escaneo manual: $DEPTH"
+          fi
+          
+          # Áreas a escanear según profundidad
+          case "$DEPTH" in
+            quick)
+              AREAS="code,security"
+              ;;
+            standard)
+              AREAS="code,security,dependencies,quality"
+              ;;
+            deep)
+              AREAS="code,security,dependencies,quality,performance,architecture"
+              ;;
+            forensic)
+              AREAS="code,security,dependencies,quality,performance,architecture,history,patterns"
+              ;;
+          esac
+          
+          echo "depth=$DEPTH" >> $GITHUB_OUTPUT
+          echo "areas=$AREAS" >> $GITHUB_OUTPUT
+          echo "Áreas a escanear: $AREAS"
+
+  # Escaneo de código
+  code_scan:
+    name: Escaneo de Código
+    runs-on: ubuntu-latest
+    needs: scan_config
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Análisis con Clippy
+        run: |
+          echo "🔍 Ejecutando Clippy..."
+          cargo clippy --all-targets --all-features -- -D warnings 2>&1 | tee clippy_results.txt || true
+          
+          WARNINGS=$(grep "warning:" clippy_results.txt | wc -l)
+          ERRORS=$(grep "error:" clippy_results.txt | wc -l)
+          
+          echo "📊 Resultados Clippy:"
+          echo "  - Warnings: $WARNINGS"
+          echo "  - Errors: $ERRORS"
+          
+          # Guardar métricas
+          echo "clippy_warnings=$WARNINGS" >> $GITHUB_ENV
+          echo "clippy_errors=$ERRORS" >> $GITHUB_ENV
+
+      - name: Verificar formato
+        run: |
+          echo "📐 Verificando formato..."
+          cargo fmt --check 2>&1 | tee fmt_results.txt || true
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Formato correcto"
+          else
+            echo "⚠️  Problemas de formato detectados"
+          fi
+
+      - name: Análisis de complejidad
+        if: contains(needs.scan_config.outputs.scan_areas, 'quality')
+        run: |
+          echo "📊 Analizando complejidad del código..."
+          
+          # Contar líneas por archivo
+          echo "Top 10 archivos más largos:"
+          find src -name "*.rs" -exec wc -l {} \; | sort -rn | head -10
+          
+          # Buscar funciones largas (>100 líneas)
+          echo ""
+          echo "Funciones potencialmente largas:"
+          find src -name "*.rs" -exec grep -n "^fn " {} \; | head -20
+
+      - name: Detectar code smells
+        if: contains(needs.scan_config.outputs.scan_areas, 'quality')
+        run: |
+          echo "👃 Detectando code smells..."
+          
+          # TODO/FIXME
+          TODOS=$(grep -rn "TODO\|FIXME\|HACK\|XXX" src/ 2>/dev/null | wc -l)
+          echo "  - TODOs/FIXMEs: $TODOS"
+          
+          # Unwraps
+          UNWRAPS=$(grep -rn "\.unwrap()" src/ 2>/dev/null | wc -l)
+          echo "  - Unwraps: $UNWRAPS"
+          
+          # Panics
+          PANICS=$(grep -rn "panic!\|unimplemented!\|unreachable!" src/ 2>/dev/null | wc -l)
+          echo "  - Panics potenciales: $PANICS"
+          
+          # Código comentado
+          COMMENTED=$(grep -rn "^[ ]*//" src/ 2>/dev/null | wc -l)
+          echo "  - Líneas comentadas: $COMMENTED"
+          
+          echo "code_todos=$TODOS" >> $GITHUB_ENV
+          echo "code_unwraps=$UNWRAPS" >> $GITHUB_ENV
+
+      - name: Guardar resultados
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: code-scan-results
+          path: |
+            clippy_results.txt
+            fmt_results.txt
+          retention-days: 30
+
+  # Escaneo de seguridad
+  security_scan:
+    name: Escaneo de Seguridad
+    runs-on: ubuntu-latest
+    needs: scan_config
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Audit de dependencias
+        run: |
+          echo "🔐 Auditando dependencias..."
+          cargo install cargo-audit || true
+          cargo audit --json 2>&1 | tee audit_results.json || true
+          
+          # Análisis de resultados
+          if [ -f audit_results.json ]; then
+            VULNS=$(grep -o "\"type\":\"warning\"" audit_results.json 2>/dev/null | wc -l || echo "0")
+            echo "vulnerabilities=$VULNS" >> $GITHUB_ENV
+            echo "⚠️  Vulnerabilidades encontradas: $VULNS"
+          else
+            echo "vulnerabilities=0" >> $GITHUB_ENV
+          fi
+
+      - name: Buscar secretos
+        run: |
+          echo "🔍 Buscando secretos accidentales..."
+          
+          # Patrones comunes de secretos
+          PATTERNS=(
+            "password"
+            "secret"
+            "api_key"
+            "token"
+            "private_key"
+          )
+          
+          FOUND=0
+          for pattern in "${PATTERNS[@]}"; do
+            COUNT=$(grep -ri "$pattern" src/ --include="*.rs" | grep -v "// " | wc -l 2>/dev/null || echo "0")
+            if [ $COUNT -gt 0 ]; then
+              echo "  - $pattern: $COUNT coincidencias"
+              FOUND=$((FOUND + COUNT))
+            fi
+          done
+          
+          echo "secret_patterns=$FOUND" >> $GITHUB_ENV
+
+      - name: Análisis de código unsafe
+        if: contains(needs.scan_config.outputs.scan_areas, 'security')
+        run: |
+          echo "☢️  Analizando código unsafe..."
+          
+          UNSAFE_BLOCKS=$(grep -rn "unsafe" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Bloques unsafe: $UNSAFE_BLOCKS"
+          
+          if [ $UNSAFE_BLOCKS -gt 0 ]; then
+            echo "Ubicaciones de código unsafe:"
+            grep -rn "unsafe" src/ 2>/dev/null | head -20
+          fi
+          
+          echo "unsafe_blocks=$UNSAFE_BLOCKS" >> $GITHUB_ENV
+
+      - name: Guardar resultados
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: security-scan-results
+          path: audit_results.json
+          retention-days: 30
+
+  # Escaneo de dependencias
+  dependencies_scan:
+    name: Escaneo de Dependencias
+    runs-on: ubuntu-latest
+    needs: scan_config
+    if: contains(needs.scan_config.outputs.scan_areas, 'dependencies')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Analizar Cargo.toml
+        run: |
+          echo "📦 Analizando dependencias..."
+          
+          # Contar dependencias
+          DEPS=$(grep -c "^[a-z]" Cargo.toml 2>/dev/null || echo "0")
+          echo "  - Total dependencias: $DEPS"
+          
+          # Dependencias con versiones específicas
+          PINNED=$(grep "=" Cargo.toml | grep -v "workspace" | wc -l 2>/dev/null || echo "0")
+          echo "  - Versiones pinned: $PINNED"
+          
+          echo "total_deps=$DEPS" >> $GITHUB_ENV
+
+      - name: Verificar actualizaciones
+        run: |
+          echo "🔄 Verificando actualizaciones disponibles..."
+          cargo install cargo-outdated || true
+          cargo outdated 2>&1 | tee outdated_results.txt || true
+
+      - name: Analizar tamaño de dependencias
+        run: |
+          echo "📏 Analizando tamaño de dependencias..."
+          cargo install cargo-tree || true
+          cargo tree --depth 1 2>&1 | head -50
+
+      - name: Guardar resultados
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: dependencies-scan-results
+          path: outdated_results.txt
+          retention-days: 30
+
+  # Escaneo de performance
+  performance_scan:
+    name: Escaneo de Performance
+    runs-on: ubuntu-latest
+    needs: scan_config
+    if: contains(needs.scan_config.outputs.scan_areas, 'performance')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Análisis de allocations
+        run: |
+          echo "🧮 Analizando allocations..."
+          
+          # Buscar clones excesivos
+          CLONES=$(grep -rn "\.clone()" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Llamadas a clone(): $CLONES"
+          
+          # Buscar Box/Arc/Rc
+          HEAP_ALLOCS=$(grep -rn "Box::\|Arc::\|Rc::" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Heap allocations: $HEAP_ALLOCS"
+          
+          echo "clone_calls=$CLONES" >> $GITHUB_ENV
+
+      - name: Análisis de paralelismo
+        run: |
+          echo "⚡ Analizando oportunidades de paralelismo..."
+          
+          # Buscar loops que podrían ser paralelos
+          LOOPS=$(grep -rn "for.*in.*{" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Loops totales: $LOOPS"
+          
+          # Verificar uso de Rayon
+          RAYON_USAGE=$(grep -rn "par_iter\|par_chunks" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Rayon parallel: $RAYON_USAGE"
+
+      - name: Build size analysis
+        run: |
+          echo "📦 Analizando tamaño del build..."
+          
+          cargo build --release
+          
+          if [ -f "target/release/memory_p" ]; then
+            SIZE=$(du -sh target/release/memory_p | cut -f1)
+            SIZE_BYTES=$(du -b target/release/memory_p | cut -f1)
+            echo "  - Tamaño binario: $SIZE"
+            echo "binary_size=$SIZE_BYTES" >> $GITHUB_ENV
+          fi
+
+  # Escaneo de arquitectura
+  architecture_scan:
+    name: Escaneo de Arquitectura
+    runs-on: ubuntu-latest
+    needs: scan_config
+    if: contains(needs.scan_config.outputs.scan_areas, 'architecture')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Analizar estructura de módulos
+        run: |
+          echo "🏗️  Analizando arquitectura..."
+          
+          # Contar módulos
+          MODULES=$(find src -name "*.rs" | wc -l)
+          echo "  - Archivos Rust: $MODULES"
+          
+          # Directorio más profundo
+          MAX_DEPTH=$(find src -type f -name "*.rs" | awk -F/ '{print NF-1}' | sort -n | tail -1)
+          echo "  - Profundidad máxima: $MAX_DEPTH niveles"
+          
+          # Tamaño promedio de archivos
+          AVG_SIZE=$(find src -name "*.rs" -exec wc -l {} \; | awk '{sum+=$1} END {print sum/NR}')
+          echo "  - Tamaño promedio: $AVG_SIZE líneas"
+
+      - name: Detectar acoplamiento
+        run: |
+          echo "🔗 Analizando acoplamiento..."
+          
+          # Contar imports por archivo
+          echo "Archivos con más imports:"
+          find src -name "*.rs" -exec sh -c 'echo "$(grep -c "^use " $1) $1"' _ {} \; | sort -rn | head -10
+
+      - name: Analizar tests
+        run: |
+          echo "🧪 Analizando cobertura de tests..."
+          
+          # Contar tests
+          TESTS=$(grep -rn "#\[test\]\|#\[tokio::test\]" src/ 2>/dev/null | wc -l || echo "0")
+          echo "  - Tests encontrados: $TESTS"
+          
+          # Relación código/tests
+          CODE_LINES=$(find src -name "*.rs" ! -name "*test*.rs" -exec wc -l {} \; | awk '{sum+=$1} END {print sum}')
+          TEST_LINES=$(find src -name "*test*.rs" -exec wc -l {} \; 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo "0")
+          
+          if [ "$CODE_LINES" -gt 0 ]; then
+            RATIO=$(echo "scale=2; $TEST_LINES / $CODE_LINES * 100" | bc)
+            echo "  - Ratio tests/código: ${RATIO}%"
+          fi
+
+  # Reporte consolidado
+  consolidated_report:
+    name: Reporte Consolidado
+    runs-on: ubuntu-latest
+    needs: [scan_config, code_scan, security_scan, dependencies_scan, performance_scan, architecture_scan]
+    if: always()
+    
+    steps:
+      - name: Generar reporte consolidado
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const scanDepth = '${{ needs.scan_config.outputs.scan_depth }}';
+            const scanAreas = '${{ needs.scan_config.outputs.scan_areas }}';
+            
+            const reportBody = `
+            ## 🔍 Reporte de Escaneo Recurrente
+            
+            **Ejecutado:** ${new Date().toISOString()}
+            **Tipo:** ${scanDepth}
+            **Áreas escaneadas:** ${scanAreas}
+            
+            ### 📊 Métricas de Código
+            ${process.env.clippy_warnings ? `- Clippy warnings: ${process.env.clippy_warnings}` : ''}
+            ${process.env.clippy_errors ? `- Clippy errors: ${process.env.clippy_errors}` : ''}
+            ${process.env.code_todos ? `- TODOs/FIXMEs: ${process.env.code_todos}` : ''}
+            ${process.env.code_unwraps ? `- Unwraps: ${process.env.code_unwraps}` : ''}
+            
+            ### 🔐 Seguridad
+            ${process.env.vulnerabilities ? `- Vulnerabilidades: ${process.env.vulnerabilities}` : ''}
+            ${process.env.unsafe_blocks ? `- Bloques unsafe: ${process.env.unsafe_blocks}` : ''}
+            ${process.env.secret_patterns ? `- Patrones de secretos: ${process.env.secret_patterns}` : ''}
+            
+            ### 📦 Dependencias
+            ${process.env.total_deps ? `- Total dependencias: ${process.env.total_deps}` : ''}
+            
+            ### ⚡ Performance
+            ${process.env.clone_calls ? `- Llamadas clone(): ${process.env.clone_calls}` : ''}
+            ${process.env.binary_size ? `- Tamaño binario: ${(process.env.binary_size / 1024 / 1024).toFixed(2)} MB` : ''}
+            
+            ### 🎯 Recomendaciones
+            ${parseInt(process.env.clippy_warnings || 0) > 10 ? '- ⚠️ Reducir warnings de Clippy\n' : ''}
+            ${parseInt(process.env.code_unwraps || 0) > 50 ? '- ⚠️ Reducir uso de unwrap()\n' : ''}
+            ${parseInt(process.env.vulnerabilities || 0) > 0 ? '- ⚠️ Actualizar dependencias vulnerables\n' : ''}
+            ${parseInt(process.env.unsafe_blocks || 0) > 50 ? '- ⚠️ Revisar código unsafe\n' : ''}
+            
+            ---
+            *Escaneo automático - Siguiente ejecución programada*
+            `;
+            
+            console.log(reportBody);
+            
+            // Crear o actualizar issue de tracking
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'recurring-scan',
+              state: 'open',
+              per_page: 1
+            });
+            
+            if (issues.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issues.data[0].number,
+                body: reportBody
+              });
+              console.log('✅ Issue actualizado con reporte');
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '[Recurring Scan] Reporte de Escaneo Automático',
+                body: reportBody,
+                labels: ['recurring-scan', 'automated', 'monitoring']
+              });
+              console.log('✅ Nuevo issue creado con reporte');
+            }
+
+      - name: Resumen en Actions
+        run: |
+          echo "📊 === REPORTE DE ESCANEO RECURRENTE ==="
+          echo ""
+          echo "Tipo: ${{ needs.scan_config.outputs.scan_depth }}"
+          echo "Áreas: ${{ needs.scan_config.outputs.scan_areas }}"
+          echo ""
+          echo "Resultados de jobs:"
+          echo "  - Code: ${{ needs.code_scan.result }}"
+          echo "  - Security: ${{ needs.security_scan.result }}"
+          echo "  - Dependencies: ${{ needs.dependencies_scan.result }}"
+          echo "  - Performance: ${{ needs.performance_scan.result }}"
+          echo "  - Architecture: ${{ needs.architecture_scan.result }}"
+          echo ""
+          echo "============================================"

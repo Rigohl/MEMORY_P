@@ -1,3 +1,4 @@
+use crate::backpack::Backpack;
 use crate::analyzer::CodeAnalyzer;
 use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
@@ -60,9 +61,13 @@ pub async fn kpi_dashboard_handler(
     Extension(kpi_tracker): Extension<Arc<KpiTracker>>,
 ) -> Json<Value> {
     let dashboard = kpi_tracker.get_dashboard();
-    
+    let timestamp_secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
     Json(json!({
-        "timestamp": dashboard.timestamp.elapsed().as_secs(),
+        "timestamp": timestamp_secs,
         "overall_sigma_level": dashboard.overall_sigma_level,
         "target_sigma": 4.0,
         "categories": dashboard.categories.iter().map(|cat| {
@@ -82,7 +87,6 @@ pub async fn kpi_dashboard_handler(
                 "severity": format!("{:?}", alert.severity),
                 "category": format!("{:?}", alert.category),
                 "message": alert.message,
-                "age_seconds": alert.timestamp.elapsed().as_secs()
             })
         }).collect::<Vec<_>>(),
         "methodology": "Six Sigma DMAIC",
@@ -96,8 +100,7 @@ pub async fn kpi_record_handler(
     Json(payload): Json<Value>,
 ) -> Json<Value> {
     use crate::kpi_tracker::{KpiCategory, SixSigmaMetric};
-    use std::time::Instant;
-    
+
     // Parse request
     let name = payload["name"].as_str().unwrap_or("unknown").to_string();
     let value = payload["value"].as_f64().unwrap_or(0.0);
@@ -105,7 +108,7 @@ pub async fn kpi_record_handler(
     let usl = payload["upper_spec_limit"].as_f64().unwrap_or(target * 1.2);
     let lsl = payload["lower_spec_limit"].as_f64().unwrap_or(target * 0.8);
     let unit = payload["unit"].as_str().unwrap_or("").to_string();
-    
+
     let category = match payload["category"].as_str().unwrap_or("performance") {
         "quality" => KpiCategory::Quality,
         "performance" => KpiCategory::Performance,
@@ -115,7 +118,7 @@ pub async fn kpi_record_handler(
         "cost" => KpiCategory::Cost,
         _ => KpiCategory::Performance,
     };
-    
+
     let metric = SixSigmaMetric {
         name: name.clone(),
         category,
@@ -123,12 +126,12 @@ pub async fn kpi_record_handler(
         target,
         upper_spec_limit: usl,
         lower_spec_limit: lsl,
-        timestamp: Instant::now(),
+        timestamp: std::time::Instant::now(),
         unit,
     };
-    
+
     kpi_tracker.record_metric(metric.clone());
-    
+
     Json(json!({
         "status": "recorded",
         "metric": name,
@@ -138,7 +141,12 @@ pub async fn kpi_record_handler(
     }))
 }
 
-pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonRpcResponse> {
+pub async fn mcp_json_rpc_handler(
+    Extension(shared_memory): Extension<Arc<crate::shared_memory::SharedMemorySystem>>,
+    Extension(prediction_engine): Extension<Arc<crate::prediction_engine::PredictionEngine>>,
+    Extension(decision_engine): Extension<Arc<crate::decision_logic::DecisionEngine>>,
+    Json(req): Json<JsonRpcRequest>,
+) -> Json<JsonRpcResponse> {
     let id = req.id.clone().unwrap_or(Value::Null);
 
     if req.jsonrpc != "2.0" {
@@ -153,7 +161,14 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
 
     let method = req.method.as_str();
 
-    let result = match method {
+    // 1. Obtener contexto compartido (AgentId por defecto para simplicidad)
+    let agent_id = crate::shared_memory::AgentId::new("default-agent".to_string());
+    let mut shared_context = match shared_memory.get_or_create_context(agent_id.clone()).await {
+        Ok(ctx) => ctx,
+        Err(_) => crate::shared_memory::SharedContext::new(agent_id.clone()),
+    };
+
+    let mut result = match method {
         "initialize" => Some(json!({
             "protocolVersion": "2026.1.0",
             "capabilities": {
@@ -303,6 +318,83 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
                             "logic": { "type": "string", "description": "Código Bend custom" }
                         },
                         "required": ["phase"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 6: map_search (Vector Search Avanzado) ===
+                Tool {
+                    name: "map_search".to_string(),
+                    description: "🔍 Búsqueda vectorial avanzada con embeddings, filtros por metadata y múltiples métricas de distancia (cosine, euclidean, dot product).".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "query": { "type": "string", "description": "Texto de búsqueda (se convierte a embedding)" },
+                            "limit": { "type": "integer", "minimum": 1, "maximum": 1000, "default": 10, "description": "Número máximo de resultados" },
+                            "filters": {
+                                "type": "object",
+                                "description": "Filtros por metadata",
+                                "properties": {
+                                    "must": { "type": "object", "description": "Condiciones que deben cumplirse" },
+                                    "must_not": { "type": "object", "description": "Condiciones de exclusión" },
+                                    "timestamp_range": { "type": "array", "items": { "type": "integer" }, "description": "[start, end] timestamp range" }
+                                }
+                            },
+                            "model": { "type": "string", "enum": ["MiniLM-L6", "MiniLM-L12", "BGE-Small", "BGE-Base", "E5-Small"], "default": "MiniLM-L6" },
+                            "metric": { "type": "string", "enum": ["cosine", "euclidean", "dotproduct", "manhattan"], "default": "cosine" }
+                        },
+                        "required": ["query"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 7: index_documents (Indexación con Embeddings) ===
+                Tool {
+                    name: "index_documents".to_string(),
+                    description: "📚 Indexa documentos con embeddings automáticos. Soporta batch processing y cache en Redis.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "documents": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": { "type": "string", "description": "ID único del documento" },
+                                        "text": { "type": "string", "description": "Texto del documento" },
+                                        "metadata": { "type": "object", "description": "Metadata asociada" }
+                                    },
+                                    "required": ["id", "text"]
+                                },
+                                "minItems": 1
+                            },
+                            "model": { "type": "string", "default": "MiniLM-L6" },
+                            "batch_size": { "type": "integer", "minimum": 1, "maximum": 256, "default": 32 }
+                        },
+                        "required": ["documents"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 8: similar_docs (Búsqueda de Documentos Similares) ===
+                Tool {
+                    name: "similar_docs".to_string(),
+                    description: "🔗 Encuentra documentos similares a uno dado usando búsqueda vectorial HNSW.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {
+                            "document_id": { "type": "string", "description": "ID del documento de referencia" },
+                            "limit": { "type": "integer", "minimum": 1, "maximum": 100, "default": 10 },
+                            "filters": { "type": "object", "description": "Filtros por metadata" }
+                        },
+                        "required": ["document_id"]
+                    }),
+                    annotations: None,
+                },
+                // === TOOL 9: vector_stats (Estadísticas del Motor Vectorial) ===
+                Tool {
+                    name: "vector_stats".to_string(),
+                    description: "📊 Obtiene estadísticas del motor de búsqueda vectorial: documentos indexados, queries, cache hits, etc.".to_string(),
+                    input_schema: json!({
+                        "type": "object",
+                        "properties": {}
                     }),
                     annotations: None,
                 },
@@ -502,60 +594,201 @@ pub async fn mcp_json_rpc_handler(Json(req): Json<JsonRpcRequest>) -> Json<JsonR
 
                     // Phase-based mega simulation with actual execution
                     let config = crate::mega_simulator::SimConfig {
-                            phase: phase as u8,
-                            iterations,
-                            modules: arguments
-                                .get("modules")
-                                .and_then(|v| v.as_array())
-                                .map(|arr| {
-                                    arr.iter()
-                                        .filter_map(|v| v.as_str().map(String::from))
-                                        .collect()
+                        phase: phase as u8,
+                        iterations,
+                        modules: arguments
+                            .get("modules")
+                            .and_then(|v| v.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .filter_map(|v| v.as_str().map(String::from))
+                                    .collect()
+                            })
+                            .unwrap_or_default(),
+                        use_gpu,
+                        context7_enabled: true,
+                    };
+
+                    match crate::mega_simulator::run_mega_simulation(config) {
+                        Ok(result) => {
+                            // Save results to file
+                            let result_path = format!("phase{}_results.json", phase);
+                            let _ = crate::mega_simulator::save_results(
+                                &result,
+                                std::path::Path::new(&result_path),
+                            );
+
+                            let improvements_summary: Vec<String> = result
+                                .improvements
+                                .iter()
+                                .map(|i| {
+                                    format!("{}: {:.1}% improvement", i.target, i.improvement_pct)
                                 })
-                                .unwrap_or_default(),
-                            use_gpu,
-                            context7_enabled: true,
-                        };
+                                .collect();
 
-                        match crate::mega_simulator::run_mega_simulation(config) {
-                            Ok(result) => {
-                                // Save results to file
-                                let result_path = format!("phase{}_results.json", phase);
-                                let _ = crate::mega_simulator::save_results(
-                                    &result,
-                                    std::path::Path::new(&result_path),
-                                );
-
-                                let improvements_summary: Vec<String> = result
-                                    .improvements
-                                    .iter()
-                                    .map(|i| {
-                                        format!(
-                                            "{}: {:.1}% improvement",
-                                            i.target, i.improvement_pct
-                                        )
-                                    })
-                                    .collect();
-
-                                Some(json!({ "content": [{ "type": "text", "text": format!(
-                                    "🌀 Phase {} Complete!\n⏱️ {}ms | 📊 {}/{} sims\n\n📈 Improvements:\n{}",
-                                    result.phase,
-                                    result.duration_ms,
-                                    result.completed,
-                                    result.total_sims,
-                                    improvements_summary.join("\n")
-                                )}]}))
-                            }
-                            Err(e) => Some(
-                                json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
-                            ),
+                            Some(json!({ "content": [{ "type": "text", "text": format!(
+                                "🌀 Phase {} Complete!\n⏱️ {}ms | 📊 {}/{} sims\n\n📈 Improvements:\n{}",
+                                result.phase,
+                                result.duration_ms,
+                                result.completed,
+                                result.total_sims,
+                                improvements_summary.join("\n")
+                            )}]}))
                         }
+                        Err(e) => Some(
+                            json!({ "content": [{ "type": "text", "text": format!("Sim Error: {}", e) }] }),
+                        ),
+                    }
                 }
+                // === HANDLER 6: map_search (Vector Search) - DISABLED ===
+                // Comentado: Requiere motores module que aún no está disponible
+                "map_search" => Some(json!({
+                    "content": [{ "type": "text", "text": "Vector search not yet implemented" }]
+                })),
+                // === HANDLER 7: index_documents - DISABLED ===
+                "index_documents" => Some(json!({
+                    "content": [{ "type": "text", "text": "Document indexing not yet implemented" }]
+                })),
+                // === HANDLER 8: similar_docs - DISABLED ===
+                "similar_docs" => Some(json!({
+                    "content": [{ "type": "text", "text": "Similar docs search not yet implemented" }]
+                })),
+                // === HANDLER 9: vector_stats - DISABLED ===
+                "vector_stats" => Some(json!({
+                    "content": [{ "type": "text", "text": "Vector stats not yet implemented" }]
+                })),
+
+                "brain_status" => {
+                    let stats = shared_memory.get_stats().await;
+                    let integration = shared_memory.get_integration_stats().await;
+
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!(
+                                "🧠 BRAIN STATUS:\n\nFFI Status:\n- Multi-lenguaje: Julia, JAX, Mojo, Pony, Zig\n- Estatus: ✅ Neural Overdrive Active\n\nGrafo de Memoria (Nodos/Interconexiones):\n- Nodos: {}\n- Conexiones: {}\n\nMemoria Agilidad:\n- Updates: {}\n- Latencia: {:.2}ms",
+                                shared_memory.get_graph().stats()["node_count"],
+                                shared_memory.get_graph().stats()["edge_count"],
+                                stats.total_updates,
+                                stats.avg_latency_ms
+                            )
+                        }]
+                    }))
+                },
+                "ffi_benchmark" => {
+                    let iters = arguments.get("iterations").and_then(|v| v.as_u64()).unwrap_or(1000);
+                    let start = std::time::Instant::now();
+
+                    // Simular llamadas rápidas vía bridge
+                    for _ in 0..iters {
+                        let _ = crate::ffi::bridge::dispatch_fast(crate::ffi::bridge::Language::Zig, "warmup", &mut vec![0.0; 10]);
+                    }
+
+                    let elapsed = start.elapsed();
+                    let avg = elapsed.as_nanos() as f64 / iters as f64;
+
+                    Some(json!({
+                        "content": [{
+                            "type": "text",
+                            "text": format!("⚡ FFI BENCHMARK:\n- Iteraciones: {}\n- Tiempo total: {:?}\n- Promedio: {:.2}ns\n- Estatus: ✅ Neural Overdrive Active", iters, elapsed, avg)
+                        }]
+                    }))
+                },
                 _ => Some(json!({ "content": [{ "type": "text", "text": "Tool no encontrada" }] })),
             }
         }
         _ => None,
     };
+
+    // 2. Enriquecer con Predicciones y Contexto Denso
+    if method == "tools/call" || method == "callTool" {
+        if let Some(ref mut res_val) = result {
+            if let Some(content) = res_val.get_mut("content").and_then(|c| c.as_array_mut()) {
+                // Generar predicción proactiva
+                let tool_name = req
+                    .params
+                    .as_ref()
+                    .and_then(|p| p.get("name"))
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown");
+
+                let action_context = crate::prediction_engine::ActionContext {
+                    action_type: tool_name.to_string(),
+                    parameters: req
+                        .params
+                        .as_ref()
+                        .and_then(|p| p.get("arguments"))
+                        .cloned()
+                        .unwrap_or(json!({})),
+                    history: vec![], // TODO: Llenar con historial real de la memoria compartida
+                    system_metrics: crate::prediction_engine::SystemMetrics::default(),
+                };
+
+                // 🎒 ENSAMBLAR BACKPACK (CONTEXTO INMEDIATO)
+                if let Ok(backpack) = shared_memory.get_context_manager().assemble_backpack(&agent_id).await {
+                    let backpack_json = serde_json::to_string_pretty(&backpack).unwrap_or_default();
+                    let backpack_text = format!(
+                        "\n\n--- 🎒 MEMORY_P BACKPACK (IMMEDIATE CONTEXT) ---\n{}\n---------------------------------------------",
+                        backpack_json
+                    );
+                    content.push(json!({ "type": "text", "text": backpack_text }));
+                }
+
+                if let Ok(prediction) = prediction_engine
+                    .predict(
+                        crate::prediction_engine::PredictionType::NextAgentMoves,
+                        &action_context,
+                    )
+                    .await
+                {
+                    let proactive_text = format!(
+                        "\n\n--- 🔮 MEMORY_P PROACTIVE BRAIN ---\n{}\n----------------------------------",
+                        prediction.recommendation
+                    );
+                    content.push(json!({ "type": "text", "text": proactive_text }));
+                }
+
+
+                // 🧠 ANALIZAR DECISIÓN COGNITIVA
+                let context_map: std::collections::HashMap<String, String> = shared_context.shared_data.iter()
+                    .map(|(k, v)| (k.clone(), v.to_string()))
+                    .collect();
+
+                if let Ok(decision) = decision_engine.analyze_decision(tool_name, &context_map).await {
+                    let decision_text = format!(
+                        "\n\n--- 🧠 COGNITIVE DECISION ENGINE ---\nDecision: {}\nRationale: {}\nConfidence: {:.2}%\n-----------------------------------",
+                        decision.decision, decision.rationale, decision.confidence * 100.0
+                    );
+                    content.push(json!({ "type": "text", "text": decision_text }));
+                }
+
+                // Inyectar Contexto Denso (Alertas del Daemon, etc)
+                let mut context_info = Vec::new();
+                for (key, value) in shared_context.shared_data.iter() {
+                    if key.starts_with("alarm:") {
+                        if let Some(msg) = value.get("message") {
+                            context_info.push(format!("⚠️ ALERTA: {}", msg));
+                        }
+                    }
+                }
+
+                if !context_info.is_empty() {
+                    let context_text = format!(
+                        "\n\n--- 🧠 SHARED CONTEXT & ALERTS ---\n{}\n----------------------------------",
+                        context_info.join("\n")
+                    );
+                    content.push(json!({ "type": "text", "text": context_text }));
+                }
+            }
+        }
+    }
+
+    // 3. Actualizar memoria compartida con la acción actual
+    shared_context.shared_data.insert(
+        format!("last_action_{}", id),
+        json!({ "method": method, "params": req.params, "timestamp": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() })
+    );
+    let _ = shared_memory.update_context(agent_id, shared_context).await;
 
     Json(JsonRpcResponse {
         jsonrpc: "2.0".to_string(),

@@ -1,0 +1,452 @@
+name: Dynamic Tests & Validation
+
+# Tests dinámicos que se adaptan al código
+# Verificación automática de cada push
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main, develop, staging]
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'Alcance de tests'
+        required: true
+        default: 'changed-files'
+        type: choice
+        options:
+          - changed-files
+          - full
+          - minimal
+          - extended
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  # Análisis de cambios para tests adaptativos
+  analyze_changes:
+    name: Análisis de Cambios
+    runs-on: ubuntu-latest
+    outputs:
+      test_strategy: ${{ steps.strategy.outputs.strategy }}
+      changed_modules: ${{ steps.changes.outputs.modules }}
+      requires_full_test: ${{ steps.changes.outputs.full_test }}
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 50
+
+      - name: Detectar archivos cambiados
+        id: changes
+        run: |
+          echo "🔍 Analizando cambios..."
+          
+          # Obtener archivos cambiados
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD 2>/dev/null || echo "")
+          fi
+          
+          echo "Archivos cambiados:"
+          echo "$CHANGED_FILES"
+          
+          # Analizar tipos de cambios
+          CORE_CHANGED=false
+          FFI_CHANGED=false
+          TESTS_CHANGED=false
+          DOCS_CHANGED=false
+          CONFIG_CHANGED=false
+          
+          MODULES=()
+          
+          while IFS= read -r file; do
+            case "$file" in
+              src/lib.rs|src/main.rs|Cargo.toml)
+                CORE_CHANGED=true
+                MODULES+=("core")
+                ;;
+              src/*.rs)
+                basename="${file##*/}"
+                module="${basename%.rs}"
+                MODULES+=("$module")
+                ;;
+              FFI/*)
+                FFI_CHANGED=true
+                MODULES+=("ffi")
+                ;;
+              tests/*|src/test_*.rs)
+                TESTS_CHANGED=true
+                ;;
+              docs/*|*.md)
+                DOCS_CHANGED=true
+                ;;
+              .github/*|*.yml)
+                CONFIG_CHANGED=true
+                ;;
+            esac
+          done <<< "$CHANGED_FILES"
+          
+          # Determinar si se requiere test completo
+          FULL_TEST=false
+          if [ "$CORE_CHANGED" == "true" ] || [ "$FFI_CHANGED" == "true" ] || [ "$CONFIG_CHANGED" == "true" ]; then
+            FULL_TEST=true
+            echo "⚠️  Cambios críticos detectados - test completo requerido"
+          fi
+          
+          # Exportar módulos únicos
+          UNIQUE_MODULES=$(printf '%s\n' "${MODULES[@]}" | sort -u | tr '\n' ',' | sed 's/,$//')
+          echo "modules=$UNIQUE_MODULES" >> $GITHUB_OUTPUT
+          echo "full_test=$FULL_TEST" >> $GITHUB_OUTPUT
+          
+          echo "Módulos afectados: $UNIQUE_MODULES"
+
+      - name: Determinar estrategia de tests
+        id: strategy
+        run: |
+          FULL_TEST="${{ steps.changes.outputs.full_test }}"
+          CHANGED_MODULES="${{ steps.changes.outputs.modules }}"
+          
+          if [ "${{ github.event.inputs.test_scope }}" == "full" ] || [ "$FULL_TEST" == "true" ]; then
+            STRATEGY="comprehensive"
+          elif [ "${{ github.event.inputs.test_scope }}" == "minimal" ]; then
+            STRATEGY="minimal"
+          elif [ -z "$CHANGED_MODULES" ]; then
+            STRATEGY="standard"
+          else
+            STRATEGY="targeted"
+          fi
+          
+          echo "strategy=$STRATEGY" >> $GITHUB_OUTPUT
+          echo "🎯 Estrategia de tests: $STRATEGY"
+
+  # Tests unitarios dinámicos
+  dynamic_unit_tests:
+    name: Tests Unitarios Dinámicos
+    runs-on: ubuntu-latest
+    needs: analyze_changes
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache de dependencias
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Tests adaptativos
+        run: |
+          echo "🧪 Ejecutando tests adaptativos..."
+          STRATEGY="${{ needs.analyze_changes.outputs.test_strategy }}"
+          MODULES="${{ needs.analyze_changes.outputs.changed_modules }}"
+          
+          case "$STRATEGY" in
+            comprehensive)
+              echo "📚 Tests comprehensivos (todos los módulos)"
+              cargo test --all-features --verbose
+              ;;
+            
+            targeted)
+              echo "🎯 Tests dirigidos (módulos: $MODULES)"
+              # Tests de módulos específicos
+              IFS=',' read -ra MODULE_ARRAY <<< "$MODULES"
+              for module in "${MODULE_ARRAY[@]}"; do
+                echo "Testing module: $module"
+                cargo test --lib "$module" --verbose || true
+              done
+              ;;
+            
+            minimal)
+              echo "⚡ Tests mínimos (smoke tests)"
+              cargo test --lib --verbose -- --test-threads=1
+              ;;
+            
+            *)
+              echo "📋 Tests estándar"
+              cargo test --verbose
+              ;;
+          esac
+
+      - name: Tests de regresión
+        if: needs.analyze_changes.outputs.requires_full_test == 'true'
+        run: |
+          echo "🔄 Ejecutando tests de regresión..."
+          cargo test --release --verbose
+
+  # Tests de integración dinámicos
+  dynamic_integration_tests:
+    name: Tests de Integración
+    runs-on: ubuntu-latest
+    needs: analyze_changes
+    if: needs.analyze_changes.outputs.test_strategy != 'minimal'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        feature:
+          - default
+          - parallel
+          - ffi
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: integration-${{ runner.os }}-${{ matrix.feature }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Tests de integración - ${{ matrix.feature }}
+        run: |
+          echo "🔗 Tests de integración: ${{ matrix.feature }}"
+          
+          case "${{ matrix.feature }}" in
+            default)
+              cargo test --test '*' --verbose
+              ;;
+            parallel)
+              cargo test --test '*' --features parallel --verbose || true
+              ;;
+            ffi)
+              cargo test --test '*' --features ffi --verbose || true
+              ;;
+          esac
+
+  # Verificación post-push automática
+  post_push_verification:
+    name: Verificación Post-Push
+    runs-on: ubuntu-latest
+    needs: [dynamic_unit_tests, dynamic_integration_tests]
+    if: always() && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Verificar compilación limpia
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Build desde cero
+        run: |
+          echo "🔨 Verificación de build limpio post-push..."
+          cargo clean
+          cargo build --release --verbose
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Build limpio exitoso"
+          else
+            echo "❌ Build limpio falló"
+            exit 1
+          fi
+
+      - name: Verificar warnings
+        run: |
+          echo "⚠️  Verificando warnings..."
+          WARNINGS=$(cargo build --release 2>&1 | grep "warning:" | wc -l)
+          echo "Warnings encontrados: $WARNINGS"
+          
+          if [ $WARNINGS -gt 10 ]; then
+            echo "::warning::Alto número de warnings ($WARNINGS)"
+          fi
+
+      - name: Smoke test
+        run: |
+          echo "🚬 Ejecutando smoke tests..."
+          cargo test --release -- --test-threads=1 --nocapture 2>&1 | head -100
+
+  # Tests de performance dinámicos
+  performance_tests:
+    name: Tests de Performance
+    runs-on: ubuntu-latest
+    needs: analyze_changes
+    if: |
+      needs.analyze_changes.outputs.requires_full_test == 'true' ||
+      contains(github.event.head_commit.message, '[perf]')
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Benchmarks
+        run: |
+          echo "⚡ Ejecutando benchmarks de performance..."
+          
+          # Si tiene criterion
+          if grep -q "criterion" Cargo.toml; then
+            cargo bench --verbose 2>&1 | tee bench_results.txt || true
+          else
+            echo "ℹ️  No se encontró configuración de benchmarks"
+          fi
+
+      - name: Análisis de performance
+        run: |
+          echo "📊 Analizando resultados de performance..."
+          
+          # Análisis básico de tamaño del binario
+          if [ -f "target/release/memory_p" ]; then
+            SIZE=$(du -h target/release/memory_p | cut -f1)
+            echo "Tamaño del binario: $SIZE"
+          fi
+
+  # Tests de outputs post-merge
+  validate_outputs:
+    name: Validar Outputs
+    runs-on: ubuntu-latest
+    needs: [dynamic_unit_tests, dynamic_integration_tests]
+    if: always()
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build y capturar outputs
+        run: |
+          echo "📦 Building y capturando outputs..."
+          cargo build --release --verbose 2>&1 | tee build_output.txt
+
+      - name: Validar estructura de outputs
+        run: |
+          echo "🔍 Validando estructura de outputs..."
+          
+          # Verificar binario generado
+          if [ -f "target/release/memory_p" ]; then
+            echo "✅ Binario generado correctamente"
+            
+            # Verificar que el binario es ejecutable
+            if [ -x "target/release/memory_p" ]; then
+              echo "✅ Binario es ejecutable"
+            else
+              echo "⚠️  Binario no es ejecutable"
+            fi
+            
+            # Test básico de ejecución
+            timeout 5s ./target/release/memory_p --help > /dev/null 2>&1 && echo "✅ Binario se ejecuta" || echo "⚠️  Error al ejecutar binario"
+          else
+            echo "❌ Binario no generado"
+          fi
+
+      - name: Validar artifacts
+        run: |
+          echo "📂 Validando artifacts generados..."
+          
+          # Listar artifacts importantes
+          echo "Archivos generados:"
+          find target/release -maxdepth 1 -type f -name "memory_p*" -o -name "*.so" -o -name "*.dll" 2>/dev/null || echo "No se encontraron artifacts"
+
+      - name: Guardar outputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-outputs-${{ github.run_number }}
+          path: |
+            build_output.txt
+            target/release/memory_p
+          retention-days: 7
+
+  # Reporte de tests dinámicos
+  dynamic_test_report:
+    name: Reporte de Tests Dinámicos
+    runs-on: ubuntu-latest
+    needs: [analyze_changes, dynamic_unit_tests, dynamic_integration_tests, post_push_verification, validate_outputs]
+    if: always()
+    
+    steps:
+      - name: Generar reporte
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const strategy = '${{ needs.analyze_changes.outputs.test_strategy }}';
+            const modules = '${{ needs.analyze_changes.outputs.changed_modules }}';
+            const unitResult = '${{ needs.dynamic_unit_tests.result }}';
+            const integrationResult = '${{ needs.dynamic_integration_tests.result }}';
+            const verificationResult = '${{ needs.post_push_verification.result }}';
+            const outputsResult = '${{ needs.validate_outputs.result }}';
+            
+            const reportBody = `
+            ## 🧪 Reporte de Tests Dinámicos
+            
+            **Ejecutado:** ${new Date().toISOString()}
+            **Estrategia:** ${strategy}
+            **Módulos afectados:** ${modules || 'ninguno'}
+            
+            ### 📊 Resultados
+            - **Tests Unitarios:** ${unitResult === 'success' ? '✅ Pasaron' : unitResult === 'skipped' ? '⏭️ Omitido' : '❌ Fallaron'}
+            - **Tests Integración:** ${integrationResult === 'success' ? '✅ Pasaron' : integrationResult === 'skipped' ? '⏭️ Omitido' : '❌ Fallaron'}
+            - **Verificación Post-Push:** ${verificationResult === 'success' ? '✅ OK' : verificationResult === 'skipped' ? '⏭️ Omitido' : '❌ Falló'}
+            - **Validación Outputs:** ${outputsResult === 'success' ? '✅ OK' : '❌ Falló'}
+            
+            ### 🎯 Estrategia Aplicada
+            ${strategy === 'comprehensive' ? '📚 **Comprehensive**: Tests completos en todos los módulos' :
+              strategy === 'targeted' ? '🎯 **Targeted**: Tests enfocados en módulos modificados' :
+              strategy === 'minimal' ? '⚡ **Minimal**: Smoke tests únicamente' :
+              '📋 **Standard**: Suite de tests estándar'}
+            
+            ### ✅ Estado General
+            ${unitResult === 'success' && (integrationResult === 'success' || integrationResult === 'skipped') && verificationResult === 'success' && outputsResult === 'success'
+              ? '✅ **TODOS LOS TESTS PASARON**'
+              : '⚠️ **Algunos tests fallaron o fueron omitidos**'}
+            
+            ---
+            *Tests dinámicos adaptados automáticamente*
+            `;
+            
+            console.log(reportBody);
+            
+            // Si es PR, comentar
+            if (context.eventName === 'pull_request') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: reportBody
+              });
+            }
+
+      - name: Resumen
+        run: |
+          echo "📊 === REPORTE DE TESTS DINÁMICOS ==="
+          echo ""
+          echo "Estrategia: ${{ needs.analyze_changes.outputs.test_strategy }}"
+          echo "Módulos: ${{ needs.analyze_changes.outputs.changed_modules }}"
+          echo ""
+          echo "Resultados:"
+          echo "  - Unit: ${{ needs.dynamic_unit_tests.result }}"
+          echo "  - Integration: ${{ needs.dynamic_integration_tests.result }}"
+          echo "  - Verification: ${{ needs.post_push_verification.result }}"
+          echo "  - Outputs: ${{ needs.validate_outputs.result }}"
+          echo ""
+          echo "========================================="

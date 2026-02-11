@@ -227,3 +227,22 @@ fn main():
     print("")
     print("Compile with:")
     print("  mojo build kernels.mojo -o libmojo_kernels.so --release")
+
+@export("mojo_train_step")
+fn train_step(
+    params: DTypePointer[DType.float64],
+    grads: DTypePointer[DType.float64],
+    lr: Float64,
+    n_params: Int
+):
+    """
+    Optimización SGD acelerada con SIMD para entrenamiento en el edge.
+    """
+    @parameter
+    fn update_param[width: Int](i: Int):
+        let p = params.simd_load[width](i)
+        let g = grads.simd_load[width](i)
+        let updated = p - lr * g
+        updated.store(params + i)
+
+    vectorize[simd_width, update_param](n_params)

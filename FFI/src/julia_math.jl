@@ -33,6 +33,41 @@ export optimize_weights
 export chaos_analysis
 export solve_differential
 export symbolic_simplify
+export predict_next_agent_moves
+
+"""
+    predict_next_agent_moves(current_embedding::Vector{Float64}, lookahead::Int=2) -> Vector{Vector{Float64}}
+
+Predice los próximos movimientos del agente usando análisis de caos sobre el embedding actual.
+"""
+function predict_next_agent_moves(current_embedding::Vector{Float64}, lookahead::Int=2)
+    println("[Julia] Prediciendo próximos ", lookahead, " movimientos")
+    return chaos_analysis_vec(current_embedding, lookahead)
+end
+
+function chaos_analysis_vec(current_state::Vector{Float64}, lookahead::Int=2)
+    predictions = Vector{Vector{Float64}}()
+    α = 0.1
+    β = 0.95
+    state = copy(current_state)
+
+    for i in 1:lookahead
+        next_state = similar(state)
+        for j in 1:length(state)
+            r = 3.9
+            prev_idx = mod(j-2, length(state)) + 1
+            next_idx = mod(j, length(state)) + 1
+            x = state[j]
+            coupling = 0.1 * (state[prev_idx] + state[next_idx])
+            next_state[j] = r * x * (1 - x) + α * coupling
+            next_state[j] = clamp(next_state[j], 0.0, 1.0)
+        end
+        next_state = next_state .* β
+        push!(predictions, next_state)
+        state = next_state
+    end
+    return predictions
+end
 
 """
     optimize_weights(weights::Vector{Float64}) -> Vector{Float64}
@@ -347,3 +382,81 @@ Base.@ccallable function julia_shutdown()::Cint
 end
 
 end # module MemoryPMath
+
+# ============================================================================
+# Entropy, Probability and Statistics Decision Engine
+# ============================================================================
+
+using Statistics
+using LinearAlgebra
+
+"""
+    calculate_entropy(data::Vector{Float64}) -> Float64
+
+Calcula la entropía de Shannon de una serie temporal para medir incertidumbre.
+"""
+function calculate_entropy(data::Vector{Float64})
+    if isempty(data) return 0.0 end
+
+    # Normalizar para obtener "probabilidades"
+    d_min, d_max = extremum(data)
+    if d_min == d_max return 0.0 end
+
+    bins = 10
+    counts = zeros(Int, bins)
+    for x in data
+        idx = Int(floor((x - d_min) / (d_max - d_min) * (bins - 1))) + 1
+        counts[idx] += 1
+    end
+
+    probs = counts ./ sum(counts)
+    ent = -sum(p * log2(p + 1e-10) for p in probs if p > 0)
+    return ent
+end
+
+"""
+    decide_search_strategy(entropy::Float64, chaos::Float64, stability::Float64) -> String
+
+Motor de decisión en tiempo real basado en métricas matemáticas.
+"""
+function decide_search_strategy(entropy::Float64, chaos::Float64, stability::Float64)
+    # Si la entropía es alta, necesitamos búsqueda híbrida para mayor cobertura
+    if entropy > 2.5
+        return "HYBRID_FUSION"
+    # Si el sistema es caótico (Lyapunov alto), priorizamos búsqueda vectorial semántica
+    elseif chaos > 0.4
+        return "VECTOR_QDRANT"
+    # Si la estabilidad es alta, búsqueda de texto exacta es suficiente
+    elseif stability > 0.8
+        return "TEXT_TANTIVY"
+    else
+        return "HYBRID_BALANCED"
+    end
+end
+
+# FFI Exports for Decision Engine
+
+Base.@ccallable function julia_get_decision_ffi(
+    entropy_val::Float64,
+    chaos_val::Float64,
+    stability_val::Float64,
+    result_buf::Ptr{UInt8},
+    buf_len::Cint
+)::Cint
+    try
+        strategy = decide_search_strategy(entropy_val, chaos_val, stability_val)
+
+        # Copiar string a buffer C
+        bytes = codeunits(strategy)
+        len = min(length(bytes), Int(buf_len) - 1)
+
+        for i in 1:len
+            unsafe_store!(result_buf, bytes[i], i)
+        end
+        unsafe_store!(result_buf, 0x00, len + 1) # Null terminator
+
+        return Cint(len)
+    catch e
+        return Cint(-1)
+    end
+end

@@ -12,8 +12,10 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct FaissEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     vector_size: usize,
+    #[allow(dead_code)]
     use_gpu: bool,
     initialized: bool,
 }
@@ -38,10 +40,18 @@ impl FaissEngine {
 
 #[async_trait]
 impl SearchEngine for FaissEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+
+        // REAL IMPLEMENTATION PENDING: Requires FAISS C++ library + GPU support
+        // See docs/ENGINE_IMPLEMENTATION_STATUS.md for details
+        let gpu_status = if self.use_gpu { "GPU requested but not linked" } else { "CPU mode" };
+        tracing::warn!(
+            "FAISS search called but C++ library not linked ({})",
+            gpu_status
+        );
         Ok(vec![])
     }
 
@@ -123,7 +133,7 @@ impl VectorSearchEngine for FaissEngine {
     async fn vector_search(
         &self,
         vector: &[f32],
-        limit: usize,
+        _limit: usize,
     ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
@@ -136,7 +146,10 @@ impl VectorSearchEngine for FaissEngine {
             )
             .into());
         }
-        let _ = limit; // Unused in stub
+
+        // REAL IMPLEMENTATION PENDING: FAISS IVF+PQ index search
+        // Would use GPU via CUDA if self.use_gpu == true
+        tracing::warn!("FAISS vector_search stub - billions-scale capability inactive");
         Ok(vec![])
     }
 

@@ -275,3 +275,38 @@ actor Main
     for result in results.values() do
       env.out.print("  - " + result)
     end
+
+actor StateManager
+  """
+  Actor que gestiona el histórico de estados permitiendo avanzar y retroceder.
+  Implementa el concepto de 'Time-Travel' en el contexto del agente.
+  """
+  let _history: Array[String val]
+  var _current_idx: USize
+
+  new create() =>
+    _history = Array[String val]
+    _current_idx = 0
+
+  be push_state(state_json: String val) =>
+    """Añade un nuevo estado al frente."""
+    _history.push(state_json)
+    _current_idx = _history.size() - 1
+
+  be undo(promise: Promise[String val]) =>
+    """Retrocede un estado."""
+    if _current_idx > 0 then
+      _current_idx = _current_idx - 1
+    end
+    try
+      promise(_history(_current_idx)?)
+    end
+
+  be redo(promise: Promise[String val]) =>
+    """Avanza un estado."""
+    if _current_idx < (_history.size() - 1) then
+      _current_idx = _current_idx + 1
+    end
+    try
+      promise(_history(_current_idx)?)
+    end

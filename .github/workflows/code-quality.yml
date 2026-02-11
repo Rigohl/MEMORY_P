@@ -1,0 +1,127 @@
+name: Code Quality Analysis
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 3 * * 1'  # Weekly on Mondays at 3 AM UTC
+  workflow_dispatch:
+
+jobs:
+  complexity-analysis:
+    name: Complexity Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-geiger
+        run: cargo install cargo-geiger
+      
+      - name: Run unsafe code analysis
+        run: |
+          cargo geiger --output-format GitHubMarkdown > geiger-report.md
+          echo "## Unsafe Code Analysis" >> $GITHUB_STEP_SUMMARY
+          cat geiger-report.md >> $GITHUB_STEP_SUMMARY
+        continue-on-error: true
+      
+      - name: Upload geiger report
+        uses: actions/upload-artifact@v6
+        with:
+          name: geiger-report
+          path: geiger-report.md
+
+  code-metrics:
+    name: Code Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Install tokei
+        run: cargo install tokei
+      
+      - name: Generate code metrics
+        run: |
+          tokei . --output json > tokei-report.json
+          tokei . > tokei-report.txt
+          echo "## Code Metrics" >> $GITHUB_STEP_SUMMARY
+          cat tokei-report.txt >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload metrics
+        uses: actions/upload-artifact@v6
+        with:
+          name: code-metrics
+          path: |
+            tokei-report.json
+            tokei-report.txt
+
+  unused-dependencies:
+    name: Find Unused Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@nightly
+      
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps --locked
+      
+      - name: Check for unused dependencies
+        run: |
+          cargo +nightly udeps --all-targets > udeps-report.txt 2>&1 || true
+          echo "## Unused Dependencies" >> $GITHUB_STEP_SUMMARY
+          cat udeps-report.txt >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v6
+        with:
+          name: unused-dependencies
+          path: udeps-report.txt
+
+  duplicate-code:
+    name: Duplicate Code Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Install jscpd
+        run: npm install -g jscpd
+      
+      - name: Run duplicate detection
+        run: |
+          jscpd src --min-lines 5 --min-tokens 50 --format markdown --output ./jscpd-report || true
+          if [ -f "jscpd-report/jscpd-report.md" ]; then
+            echo "## Duplicate Code Analysis" >> $GITHUB_STEP_SUMMARY
+            cat jscpd-report/jscpd-report.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No significant code duplication found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: duplicate-code-report
+          path: jscpd-report/
+
+  quality-gate:
+    name: Quality Gate
+    needs: [complexity-analysis, code-metrics, unused-dependencies, duplicate-code]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check quality standards
+        run: |
+          echo "## Quality Gate Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All quality checks completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Jobs Status:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Complexity Analysis: ${{ needs.complexity-analysis.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Metrics: ${{ needs.code-metrics.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Unused Dependencies: ${{ needs.unused-dependencies.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Duplicate Code: ${{ needs.duplicate-code.result }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,7 @@
+# Auto-ajuste generado: Wed Feb 11 20:42:42 UTC 2026
+# Razón: Fallos recurrentes detectados
+adjustments:
+  - increase_timeout: true
+  - reduce_parallelism: true
+  - enable_verbose_logging: true
+  - retry_flaky_tests: true

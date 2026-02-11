@@ -1,0 +1,189 @@
+name: Auto-Merge & Auto-Push
+
+on:
+  pull_request:
+    types: [labeled, unlabeled, synchronize, opened, edited, ready_for_review, reopened]
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to merge'
+        required: true
+        type: number
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  auto-merge:
+    name: Auto-Merge Approved PRs
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'pull_request' || 
+      github.event_name == 'pull_request_review' || 
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Check PR status
+        id: check-pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request?.number || context.payload.inputs?.pr_number;
+            if (!prNumber) {
+              console.log('No PR number found');
+              return;
+            }
+            
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            // Check if PR has auto-merge label
+            const hasAutoMergeLabel = pr.labels.some(label => label.name === 'auto-merge');
+            
+            // Check if PR is approved
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const approvals = reviews.filter(review => review.state === 'APPROVED');
+            const hasApprovals = approvals.length > 0;
+            
+            // Check if all checks passed
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: pr.head.sha
+            });
+            
+            const allChecksPassed = checks.check_runs.every(
+              check => check.status === 'completed' && check.conclusion === 'success'
+            );
+            
+            console.log(`PR #${prNumber}: auto-merge=${hasAutoMergeLabel}, approved=${hasApprovals}, checks=${allChecksPassed}`);
+            
+            core.setOutput('should_merge', hasAutoMergeLabel && hasApprovals && allChecksPassed);
+            core.setOutput('pr_number', prNumber);
+            core.setOutput('pr_title', pr.title);
+            core.setOutput('base_branch', pr.base.ref);
+      
+      - name: Enable auto-merge
+        if: steps.check-pr.outputs.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.check-pr.outputs.pr_number }};
+            
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                merge_method: 'squash',
+                commit_title: '${{ steps.check-pr.outputs.pr_title }}',
+                commit_message: 'Auto-merged by GitHub Actions after validation'
+              });
+              
+              console.log(`✅ Successfully merged PR #${prNumber}`);
+              
+              core.summary
+                .addHeading('Auto-Merge Successful')
+                .addRaw(`PR #${prNumber} was automatically merged to ${{ steps.check-pr.outputs.base_branch }}`)
+                .write();
+            } catch (error) {
+              console.log(`❌ Failed to merge PR #${prNumber}: ${error.message}`);
+              core.setFailed(error.message);
+            }
+      
+      - name: Post merge comment
+        if: steps.check-pr.outputs.should_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = ${{ steps.check-pr.outputs.pr_number }};
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: '🤖 **Auto-Merge Completed**\n\nThis PR was automatically merged after:\n- ✅ All required checks passed\n- ✅ PR was approved by reviewers\n- ✅ `auto-merge` label was present'
+            });
+
+  auto-push-stable:
+    name: Auto-Push to Stable Branches
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/'))
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Check branch protection
+        id: check-protection
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            
+            try {
+              const { data: protection } = await github.rest.repos.getBranchProtection({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                branch: 'main'
+              });
+              
+              console.log('Main branch is protected');
+              core.setOutput('can_push', 'false');
+            } catch (error) {
+              if (error.status === 404) {
+                console.log('Main branch is not protected');
+                core.setOutput('can_push', 'true');
+              }
+            }
+      
+      - name: Create PR to main
+        if: steps.check-protection.outputs.can_push == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.ref.replace('refs/heads/', '');
+            
+            try {
+              const { data: pr } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Auto-merge: ${branch} → main`,
+                head: branch,
+                base: 'main',
+                body: '🤖 Automated PR created after successful validation on `' + branch + '` branch.\n\n**Auto-generated by GitHub Actions**'
+              });
+              
+              // Add auto-merge label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['auto-merge', 'automated']
+              });
+              
+              console.log(`Created PR #${pr.number}`);
+            } catch (error) {
+              console.log(`Error creating PR: ${error.message}`);
+            }

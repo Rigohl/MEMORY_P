@@ -231,7 +231,7 @@ Creadas 6 nuevas skills en `.github/skills/`:
 
 ---
 
-**Autor**: GitHub Copilot Agent  
-**Fecha**: 23 Enero 2026  
-**Versión**: 2.0.0-alpha  
+**Autor**: GitHub Copilot Agent
+**Fecha**: 23 Enero 2026
+**Versión**: 2.0.0-alpha
 **Status**: ✅ Core Architecture Complete

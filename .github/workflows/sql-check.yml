@@ -1,0 +1,51 @@
+name: SQL Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**/*.rs'
+      - '**/*.sql'
+      - '**/Cargo.toml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**/*.rs'
+      - '**/*.sql'
+      - '**/Cargo.toml'
+
+jobs:
+  sql-check:
+    name: Validate SQL Queries
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Build JAR CLI
+        run: cargo build --bin jar --release
+      
+      - name: Detect SQL queries
+        run: |
+          ./target/release/jar detect-sql --path . --validate-syntax --detect-issues
+      
+      - name: Upload SQL report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: sql-analysis-report
+          path: |
+            sql-report.txt
+          retention-days: 30

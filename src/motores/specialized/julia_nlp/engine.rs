@@ -7,40 +7,68 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct JuliaNlpEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }
 
 impl JuliaNlpEngine {
     pub fn new(config: EngineConfig) -> Self {
-        Self { config, initialized: false }
+        Self {
+            config,
+            initialized: false,
+        }
     }
 
     fn current_timestamp() -> i64 {
-        SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as i64
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64
     }
 }
 
 #[async_trait]
 impl SearchEngine for JuliaNlpEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized { return Err("Engine not initialized".into()); }
+    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
+
+        // FFI READY: Just needs connection to julia_math.jl
+        // See docs/ENGINE_IMPLEMENTATION_STATUS.md
+        // 
+        // Implementation steps:
+        // 1. Call crate::ffi::julia::chaos_analysis() for text complexity
+        // 2. Use Julia fuzzy matching (TextAnalysis.jl)
+        // 3. Mathematical similarity metrics
+        tracing::warn!("Julia NLP search stub - FFI binding ready, just needs integration");
         Ok(vec![])
     }
 
     async fn index(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
-        if !self.initialized { return Err("Engine not initialized".into()); }
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
         Ok(())
     }
 
-    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> { Ok(()) }
-    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> { Ok(()) }
+    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
 
     async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
         Ok(EngineHealth {
             engine: "julia_nlp".to_string(),
             healthy: self.initialized,
-            status: if self.initialized { "Running".to_string() } else { "Not initialized".to_string() },
+            status: if self.initialized {
+                "Running".to_string()
+            } else {
+                "Not initialized".to_string()
+            },
             last_check: Self::current_timestamp(),
             details: HashMap::new(),
         })
@@ -60,7 +88,9 @@ impl SearchEngine for JuliaNlpEngine {
         })
     }
 
-    fn engine_name(&self) -> &'static str { "julia_nlp" }
+    fn engine_name(&self) -> &'static str {
+        "julia_nlp"
+    }
 
     fn capabilities(&self) -> EngineCapabilities {
         EngineCapabilities {
@@ -78,6 +108,9 @@ impl SearchEngine for JuliaNlpEngine {
     }
 
     async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+        // FFI READY: julia_math.jl has full C ABI via @ccallable
+        // Just needs to call crate::ffi::julia::init()
+        tracing::info!("⚡ Julia NLP engine initialized (FFI READY - 2-3 hours to implement)");
         self.initialized = true;
         Ok(())
     }

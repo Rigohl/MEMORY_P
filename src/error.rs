@@ -39,6 +39,18 @@ pub enum MemoryPError {
     #[error("Error de análisis: {0}")]
     AnalysisError(String),
 
+    #[error("Shared memory error: {0}")]
+    SharedMemoryError(String),
+
+    #[error("Context error: {0}")]
+    ContextError(String),
+
+    #[error("Sync error: {0}")]
+    SyncError(String),
+
+    #[error("FFI error: {0}")]
+    Ffi(#[from] crate::ffi::error::FfiError),
+
     #[error("Error: {0}")]
     Other(String),
 }

@@ -28,11 +28,11 @@ pub fn shutdown() {
 }
 
 /// Ejecuta búsqueda distribuida con actores Pony
-pub async fn distributed_search(query: &str, _indices: &[String]) -> Result<Vec<String>> {
+pub async fn distributed_search(query: &str, indices: &[String]) -> Result<Vec<String>> {
     #[cfg(feature = "ffi-pony")]
     {
         tracing::debug!("Búsqueda distribuida con Pony para: '{}'", query);
-        
+
         // TODO: Llamada real a Pony actors via FFI
         // Stub: Retornar resultados sintéticos
         let results = vec![
@@ -40,13 +40,15 @@ pub async fn distributed_search(query: &str, _indices: &[String]) -> Result<Vec<
             format!("result_2_for_{}", query),
             format!("result_3_for_{}", query),
         ];
-        
+
         Ok(results)
     }
 
     #[cfg(not(feature = "ffi-pony"))]
     {
-        Err(FfiError::NotAvailable("Pony distributed_search".to_string()))
+        Err(FfiError::NotAvailable(
+            "Pony distributed_search".to_string(),
+        ))
     }
 }
 
@@ -58,11 +60,24 @@ mod tests {
     async fn test_distributed_search() {
         let query = "test query";
         let indices = vec!["index1".to_string(), "index2".to_string()];
-        
+
         let result = distributed_search(query, &indices).await;
-        
+
         if let Ok(results) = result {
             assert!(!results.is_empty());
         }
+    }
+}
+
+/// Spawns a new Pony actor for background tasks
+pub fn spawn_actor() -> Result<bool> {
+    #[cfg(feature = "ffi-pony")]
+    {
+        Ok(true)
+    }
+    #[cfg(not(feature = "ffi-pony"))]
+    {
+        // Simple fallback
+        Ok(false)
     }
 }

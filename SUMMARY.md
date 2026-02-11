@@ -159,6 +159,6 @@ Para preguntas sobre FFI o arquitectura:
 
 ---
 
-**Status**: ✅ Core FFI Architecture Complete  
-**Version**: 2.0.0-alpha  
+**Status**: ✅ Core FFI Architecture Complete
+**Version**: 2.0.0-alpha
 **Date**: Enero 2026

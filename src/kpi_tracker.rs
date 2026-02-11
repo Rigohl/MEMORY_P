@@ -2,6 +2,7 @@
 //! Six Sigma & Automation Metrics
 
 use crate::error::Result;
+use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -35,8 +36,7 @@ pub struct SixSigmaMetric {
     pub target: f64,
     pub upper_spec_limit: f64, // USL
     pub lower_spec_limit: f64, // LSL
-    #[serde(skip, default = "Instant::now")]
-    pub timestamp: Instant,
+    pub timestamp: DateTime<Utc>, // Changed from Instant
     pub unit: String,
 }
 
@@ -95,8 +95,7 @@ pub struct MetricAggregation {
 /// KPI Dashboard
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KpiDashboard {
-    #[serde(skip, default = "Instant::now")]
-    pub timestamp: Instant,
+    pub timestamp: DateTime<Utc>, // Changed from Instant
     pub overall_sigma_level: f64,
     pub categories: Vec<CategoryMetrics>,
     pub alerts: Vec<KpiAlert>,
@@ -116,8 +115,7 @@ pub struct KpiAlert {
     pub severity: AlertSeverity,
     pub category: KpiCategory,
     pub message: String,
-    #[serde(skip, default = "Instant::now")]
-    pub timestamp: Instant,
+    pub timestamp: DateTime<Utc>, // Changed from Instant
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -240,7 +238,7 @@ impl KpiTracker {
                     "{} fuera de especificación: {} (LSL: {}, USL: {})",
                     metric.name, metric.value, metric.lower_spec_limit, metric.upper_spec_limit
                 ),
-                timestamp: Instant::now(),
+                timestamp: Utc::now(),
             };
             
             self.alerts.insert(metric.name.clone(), alert);
@@ -316,7 +314,7 @@ impl KpiTracker {
                                     "{}: Cpk crítico ({:.2}) - Proceso fuera de control",
                                     name, cpk
                                 ),
-                                timestamp: Instant::now(),
+                                timestamp: Utc::now(),
                             };
                             alerts.insert(name.clone(), alert);
                         } else if cpk < config.cpk_warning_threshold {
@@ -327,7 +325,7 @@ impl KpiTracker {
                                     "{}: Cpk bajo ({:.2}) - Mejora necesaria",
                                     name, cpk
                                 ),
-                                timestamp: Instant::now(),
+                                timestamp: Utc::now(),
                             };
                             alerts.insert(name.clone(), alert);
                         }
@@ -358,7 +356,8 @@ impl KpiTracker {
                 // Limpiar métricas antiguas
                 for mut entry in metrics.iter_mut() {
                     let metric_list = entry.value_mut();
-                    let cutoff = Instant::now() - retention_period;
+                    let cutoff = Utc::now() - chrono::Duration::from_std(retention_period)
+                        .unwrap_or_else(|_| chrono::Duration::days(7));  // Fallback to 7 days
                     
                     metric_list.retain(|m| m.timestamp > cutoff);
                 }
@@ -474,7 +473,7 @@ impl KpiTracker {
             .collect();
 
         KpiDashboard {
-            timestamp: Instant::now(),
+            timestamp: Utc::now(),
             overall_sigma_level,
             categories: category_metrics,
             alerts,
@@ -503,7 +502,7 @@ mod tests {
             target: 50.0,
             upper_spec_limit: 100.0,
             lower_spec_limit: 0.0,
-            timestamp: Instant::now(),
+            timestamp: Utc::now(),
             unit: "ms".to_string(),
         };
 
@@ -526,7 +525,7 @@ mod tests {
             target: 100.0,
             upper_spec_limit: 110.0,
             lower_spec_limit: 90.0,
-            timestamp: Instant::now(),
+            timestamp: Utc::now(),
             unit: "%".to_string(),
         };
         

@@ -1,0 +1,55 @@
+version: 2
+
+updates:
+  # Cargo dependencies
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "Rigohl"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    ignore:
+      # Ignore major version updates for critical dependencies
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      rust-core:
+        patterns:
+          - "tokio*"
+          - "axum*"
+          - "serde*"
+      development:
+        patterns:
+          - "criterion"
+          - "mockall"
+          - "cargo-*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "chore(ci)"
+
+# Auto-merge configuration (requires GitHub settings)
+# To enable auto-merge:
+# 1. Go to repository Settings > General > Pull Requests
+# 2. Enable "Allow auto-merge"
+# 3. Add "auto-merge" label to Dependabot PRs
