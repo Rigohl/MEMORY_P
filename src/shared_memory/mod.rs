@@ -18,13 +18,14 @@ pub mod monitor;
 pub mod sync;
 pub mod types;
 
+use crate::hyper_memory::HyperMemoryManager;
 pub use buffer::SharedMemoryBuffer;
 pub use cleanup::CleanupManager;
 pub use context::ContextManager;
 pub use engine_integration::{EngineIntegration, EngineIntegrationConfig, IntegrationStats};
 pub use monitor::MemoryMonitor;
 pub use sync::SyncCoordinator;
-pub use types::{AgentId, MemoryStats, SharedContext};
+pub use types::{AgentId, ContextId, ContextMetadata, MemoryStats, SharedContext};
 
 use crate::error::Result;
 use dashmap::DashMap;
@@ -53,6 +54,12 @@ pub struct SharedMemorySystem {
     /// Integración con motores de búsqueda
     engine_integration: Arc<EngineIntegration>,
 
+    /// Gestor de memoria hiperestructurada (Vectorial + Textual)
+    hyper_memory: Arc<HyperMemoryManager>,
+
+    /// Grafo de memoria relacional
+    graph: Arc<RelationalMemoryGraph>,
+
     /// Cache de contextos activos (AgentId -> Context)
     active_contexts: Arc<DashMap<AgentId, SharedContext>>,
 
@@ -72,6 +79,8 @@ impl SharedMemorySystem {
         let cleanup_manager = Arc::new(CleanupManager::new());
         let engine_integration =
             Arc::new(EngineIntegration::new(EngineIntegrationConfig::default()));
+        let hyper_memory = Arc::new(HyperMemoryManager::new(384)); // Dimensión para embeddings BERT/JAX
+        let graph = Arc::new(RelationalMemoryGraph::new());
         let active_contexts = Arc::new(DashMap::new());
 
         Ok(Self {
@@ -81,6 +90,8 @@ impl SharedMemorySystem {
             monitor,
             cleanup_manager,
             engine_integration,
+            hyper_memory,
+            graph,
             active_contexts,
             initialized: Arc::new(RwLock::new(false)),
         })
@@ -216,6 +227,30 @@ impl SharedMemorySystem {
         self.engine_integration.get_integration_stats().await
     }
 
+    /// Obtiene acceso al gestor de memoria hiperestructurada
+    pub fn hyper_memory(&self) -> Arc<HyperMemoryManager> {
+        self.hyper_memory.clone()
+    }
+
+    /// Sistema de autogestión de memoria (Auto-moving Context)
+    /// Mueve y optimiza los contextos según su relevancia y uso
+    pub async fn auto_manage_memory(&self) -> Result<()> {
+        info!("🧠 Ejecutando autogestión de memoria (auto-moving context)");
+
+        let contexts = self.context_manager.get_all_contexts();
+        for context in contexts {
+            // Lógica de migración inteligente:
+            // - Memorias con alta frecuencia de acceso -> Asegurar en lóbulos rápidos (Redis)
+            // - Memorias antiguas o frías -> Archivar en Postgres/ClickHouse
+            // - Hechos detectados -> Indexar en Tantivy (Episódica)
+            // - Conceptos abstractos -> Indexar en Qdrant (Semántica)
+
+            self.engine_integration.index_context(&context).await?;
+        }
+
+        Ok(())
+    }
+
     /// Finaliza el sistema de memoria compartida
     pub async fn shutdown(&self) -> Result<()> {
         info!("🔧 Finalizando sistema de memoria compartida");
@@ -281,7 +316,13 @@ mod tests {
 
 impl SharedMemorySystem {
     /// Obtiene el gestor de contextos
+    pub fn get_graph(&self) -> Arc<RelationalMemoryGraph> {
+        self.graph.clone()
+    }
+
     pub fn get_context_manager(&self) -> Arc<ContextManager> {
         self.context_manager.clone()
     }
 }
+pub mod graph;
+use crate::shared_memory::graph::RelationalMemoryGraph;

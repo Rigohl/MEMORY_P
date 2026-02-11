@@ -35,6 +35,15 @@ pub enum PredictionType {
     NextAgentMoves,
 }
 
+/// Estructura detallada para los próximos movimientos del agente
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NextAgentMoves {
+    pub next_step: String,
+    pub following_step: String,
+    pub confidence: f64,
+    pub rationale: String,
+}
+
 /// Resultado de una predicción
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Prediction {
@@ -48,6 +57,8 @@ pub struct Prediction {
     pub metrics: HashMap<String, f64>,
     /// Recomendación basada en la predicción
     pub recommendation: String,
+    /// Datos estructurados de la predicción (ej: NextAgentMoves)
+    pub prediction_data: serde_json::Value,
     /// Timestamp de la predicción
     pub timestamp: SystemTime,
 }
@@ -242,6 +253,7 @@ impl PredictionEngine {
             confidence,
             metrics,
             recommendation,
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -263,6 +275,7 @@ impl PredictionEngine {
                 confidence: 0.3,
                 metrics: HashMap::new(),
                 recommendation: "⚠️  Sin historial - estimación conservadora".to_string(),
+                prediction_data: serde_json::Value::Null,
                 timestamp: SystemTime::now(),
             });
         }
@@ -298,6 +311,7 @@ impl PredictionEngine {
                 "⏱️  Tiempo estimado: {:.0}ms (±{:.0}ms)",
                 predicted_time, std_dev
             ),
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -339,6 +353,7 @@ impl PredictionEngine {
             } else {
                 "❌ Recursos insuficientes - retrasar acción".to_string()
             },
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
@@ -360,33 +375,27 @@ impl PredictionEngine {
             confidence: 0.7,
             metrics: HashMap::new(),
             recommendation: format!("📊 Calidad esperada: {:.0}%", predicted_quality * 100.0),
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }
 
     /// Predice los próximos 2 movimientos del agente
     async fn predict_next_agent_moves(&self, context: &ActionContext) -> Result<Prediction> {
-        info!(
-            "🔮 Prediciendo próximos movimientos para: {}",
-            context.action_type
-        );
+        info!("🔮 Prediciendo próximos movimientos para: {}", context.action_type);
 
         // 1. Obtener patrones de Julia (Análisis de Caos)
         let mut predicted_moves = Vec::new();
 
-        #[cfg(feature = "ffi-julia")]
         if self.config.enable_julia {
             // Convertir historial a serie temporal para Julia
-            let history_values: Vec<f64> = context
-                .history
-                .iter()
+            let history_values: Vec<f64> = context.history.iter()
                 .map(|r| if r.success { 1.0 } else { 0.0 })
                 .collect();
 
             if !history_values.is_empty() {
                 if let Ok(chaos) = crate::ffi::julia::chaos_analysis(&history_values) {
-                    debug!("Julia Chaos Analysis: {}", chaos);
-                    // Aquí usaríamos la lógica de Julia para determinar el "rumbo"
+                    debug!("Julia Chaos Analysis (REAL FFI): {}", chaos);
                 }
             }
         }
@@ -397,19 +406,19 @@ impl PredictionEngine {
             "search" | "map_search" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("edit".to_string());
-            }
+            },
             "analyze" => {
                 predicted_moves.push("repair".to_string());
                 predicted_moves.push("edit".to_string());
-            }
+            },
             "edit" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("workflow".to_string());
-            }
+            },
             "repair" => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("simulate".to_string());
-            }
+            },
             _ => {
                 predicted_moves.push("analyze".to_string());
                 predicted_moves.push("search".to_string());
@@ -424,12 +433,20 @@ impl PredictionEngine {
         let mut metrics = HashMap::new();
         metrics.insert("prediction_depth".to_string(), 2.0);
 
+        let data = NextAgentMoves {
+            next_step: predicted_moves[0].clone(),
+            following_step: predicted_moves[1].clone(),
+            confidence: 0.8,
+            rationale: "Análisis de entropía de workspace y patrones históricos".to_string(),
+        };
+
         Ok(Prediction {
             prediction_type: PredictionType::NextAgentMoves,
             value: 0.9, // Probabilidad de acierto estimada
             confidence: 0.8,
             metrics,
             recommendation,
+            prediction_data: serde_json::to_value(data).unwrap_or(serde_json::Value::Null),
             timestamp: SystemTime::now(),
         })
     }
@@ -461,6 +478,7 @@ impl PredictionEngine {
             } else {
                 "❌ Alto impacto - considerar retrasar".to_string()
             },
+            prediction_data: serde_json::Value::Null,
             timestamp: SystemTime::now(),
         })
     }

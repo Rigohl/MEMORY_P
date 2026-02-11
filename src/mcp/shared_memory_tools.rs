@@ -3,9 +3,9 @@
 use crate::error::Result;
 use crate::shared_memory::{AgentId, MemoryStats, SharedMemorySystem};
 use serde::{Deserialize, Serialize};
+use tracing::info;
 use serde_json::Value;
 use std::sync::Arc;
-use tracing::info;
 
 /// Parámetros para obtener/crear contexto de agente
 #[derive(Debug, Deserialize)]
@@ -298,17 +298,10 @@ mod tests {
 impl SharedMemoryToolHandler {
     /// Registra una predicción de movimiento
     pub async fn register_prediction(&self, params: Value) -> Result<Value> {
-        let agent_id = AgentId::new(
-            params["agent_id"]
-                .as_str()
-                .unwrap_or("primary_agent")
-                .to_string(),
-        );
+        let agent_id = AgentId::new(params["agent_id"].as_str().unwrap_or("primary_agent").to_string());
         let mut context = self.system.get_or_create_context(agent_id.clone()).await?;
 
-        context
-            .shared_data
-            .insert("last_prediction".to_string(), params);
+        context.shared_data.insert("last_prediction".to_string(), params);
         self.system.update_context(agent_id, context).await?;
 
         Ok(serde_json::json!({"success": true}))
@@ -316,12 +309,7 @@ impl SharedMemoryToolHandler {
 
     /// Obtiene los próximos movimientos predichos
     pub async fn get_next_moves(&self, params: Value) -> Result<Value> {
-        let agent_id = AgentId::new(
-            params["agent_id"]
-                .as_str()
-                .unwrap_or("primary_agent")
-                .to_string(),
-        );
+        let agent_id = AgentId::new(params["agent_id"].as_str().unwrap_or("primary_agent").to_string());
         let _context = self.system.get_or_create_context(agent_id.clone()).await?;
 
         // Simular llamada a JAX
@@ -341,14 +329,9 @@ impl SharedMemoryToolHandler {
 impl SharedMemoryToolHandler {
     /// Capacidad: Edición de múltiples archivos con guía predictiva
     pub async fn multi_file_edit_predictive(&self, params: Value) -> Result<Value> {
-        let files = params["files"]
-            .as_array()
-            .ok_or_else(|| crate::error::MemoryPError::Other("Missing files array".into()))?;
+        let files = params["files"].as_array().ok_or_else(|| crate::error::MemoryPError::Other("Missing files array".into()))?;
 
-        info!(
-            "📝 Edición predictiva iniciada para {} archivos",
-            files.len()
-        );
+        info!("📝 Edición predictiva iniciada para {} archivos", files.len());
 
         // Simular uso de JAX para predecir el impacto del cambio
         Ok(serde_json::json!({

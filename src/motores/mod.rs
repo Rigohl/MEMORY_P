@@ -12,5 +12,7 @@ pub mod specialized;
 pub mod text_search;
 pub mod vector_search;
 
-pub use core::{health_monitor::HealthMonitor, routing_ai::RoutingAI, traits::*, types::*};
+pub use core::{
+    traits::*, types::*, health_monitor::HealthMonitor, routing_ai::RoutingAI,
+};
 pub mod persistence;

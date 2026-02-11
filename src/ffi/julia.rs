@@ -178,7 +178,7 @@ mod tests {
 }
 
 /// Obtiene una decisión de estrategia de búsqueda basada en matemáticas de caos y entropía
-pub fn get_search_decision(entropy: f64, _chaos: f64, _stability: f64) -> Result<String> {
+pub fn get_search_decision(entropy: f64, chaos: f64, stability: f64) -> Result<String> {
     #[cfg(feature = "ffi-julia")]
     {
         let mut buf = [0u8; 64];

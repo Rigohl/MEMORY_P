@@ -48,6 +48,9 @@ pub enum MemoryPError {
     #[error("Sync error: {0}")]
     SyncError(String),
 
+    #[error("FFI error: {0}")]
+    Ffi(#[from] crate::ffi::error::FfiError),
+
     #[error("Error: {0}")]
     Other(String),
 }
