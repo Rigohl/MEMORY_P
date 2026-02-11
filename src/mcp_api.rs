@@ -666,7 +666,9 @@ pub async fn mcp_json_rpc_handler(
                         "content": [{
                             "type": "text",
                             "text": format!(
-                                "🧠 BRAIN STATUS:\n\nFFI Status:\n- Multi-lenguaje: Julia, JAX, Mojo, Pony, Zig\n- Estatus: ✅ Neural Overdrive Active\n\nMemoria Agilidad:\n- Updates: {}\n- Latencia: {:.2}ms",
+                                "🧠 BRAIN STATUS:\n\nFFI Status:\n- Multi-lenguaje: Julia, JAX, Mojo, Pony, Zig\n- Estatus: ✅ Neural Overdrive Active\n\nGrafo de Memoria (Nodos/Interconexiones):\n- Nodos: {}\n- Conexiones: {}\n\nMemoria Agilidad:\n- Updates: {}\n- Latencia: {:.2}ms",
+                                shared_memory.get_graph().stats()["node_count"],
+                                shared_memory.get_graph().stats()["edge_count"],
                                 stats.total_updates,
                                 stats.avg_latency_ms
                             )

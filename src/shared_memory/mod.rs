@@ -57,6 +57,9 @@ pub struct SharedMemorySystem {
     /// Gestor de memoria hiperestructurada (Vectorial + Textual)
     hyper_memory: Arc<HyperMemoryManager>,
 
+    /// Grafo de memoria relacional
+    graph: Arc<RelationalMemoryGraph>,
+
     /// Cache de contextos activos (AgentId -> Context)
     active_contexts: Arc<DashMap<AgentId, SharedContext>>,
 
@@ -77,6 +80,7 @@ impl SharedMemorySystem {
         let engine_integration =
             Arc::new(EngineIntegration::new(EngineIntegrationConfig::default()));
         let hyper_memory = Arc::new(HyperMemoryManager::new(384)); // Dimensión para embeddings BERT/JAX
+        let graph = Arc::new(RelationalMemoryGraph::new());
         let active_contexts = Arc::new(DashMap::new());
 
         Ok(Self {
@@ -87,6 +91,7 @@ impl SharedMemorySystem {
             cleanup_manager,
             engine_integration,
             hyper_memory,
+            graph,
             active_contexts,
             initialized: Arc::new(RwLock::new(false)),
         })
@@ -311,7 +316,13 @@ mod tests {
 
 impl SharedMemorySystem {
     /// Obtiene el gestor de contextos
+    pub fn get_graph(&self) -> Arc<RelationalMemoryGraph> {
+        self.graph.clone()
+    }
+
     pub fn get_context_manager(&self) -> Arc<ContextManager> {
         self.context_manager.clone()
     }
 }
+pub mod graph;
+use crate::shared_memory::graph::RelationalMemoryGraph;

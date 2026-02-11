@@ -161,6 +161,13 @@ impl AutonomousDaemon {
             }
         });
 
+        let daemon_graph = self.clone();
+        tokio::spawn(async move {
+            if let Err(e) = daemon_graph.graph_optimization_loop().await {
+                error!("❌ Error en graph optimization loop: {}", e);
+            }
+        });
+
         let daemon_optimize = self.clone();
         tokio::spawn(async move {
             if let Err(e) = daemon_optimize.optimization_loop().await {
@@ -665,6 +672,25 @@ impl AutonomousDaemon {
 
                 self.shared_memory.update_context(ctx.agent_id.clone(), ctx).await?;
             }
+        }
+    }
+}
+
+impl AutonomousDaemon {
+    /// Loop de optimización del grafo de memoria (Auto-gestión de interconexiones)
+    async fn graph_optimization_loop(&self) -> Result<()> {
+        let mut interval = tokio::time::interval(Duration::from_secs(120)); // Cada 2 minutos
+
+        loop {
+            interval.tick().await;
+
+            debug!("🔗 Optimizando interconexiones del grafo de memoria...");
+            self.shared_memory.get_graph().optimize_graph().await;
+
+            // Auto-conectar contextos basados en similitud o uso frecuente
+            let stats = self.shared_memory.get_graph().stats();
+            info!("📊 Grafo de memoria: {} nodos, {} conexiones",
+                stats["node_count"], stats["edge_count"]);
         }
     }
 }
