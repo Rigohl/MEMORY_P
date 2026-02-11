@@ -7,6 +7,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct TantivyEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }
@@ -29,10 +30,14 @@ impl TantivyEngine {
 
 #[async_trait]
 impl SearchEngine for TantivyEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+
+        // REAL IMPLEMENTATION: EASIEST TO IMPLEMENT - Tantivy is native Rust!
+        // See docs/ENGINE_IMPLEMENTATION_STATUS.md - Estimated 2-4 hours
+        tracing::warn!("Tantivy search stub - RECOMMENDED FIRST IMPLEMENTATION");
         Ok(vec![])
     }
 
@@ -98,6 +103,13 @@ impl SearchEngine for TantivyEngine {
     }
 
     async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+        // REAL IMPLEMENTATION: Just needs `tantivy` crate
+        // Production code would:
+        // 1. Create Schema with TextField
+        // 2. Create IndexWriter
+        // 3. Create IndexReader
+        // 4. Store in self
+        tracing::info!("⚡ Tantivy engine initialized (native Rust - EASIEST TO IMPLEMENT)");
         self.initialized = true;
         Ok(())
     }

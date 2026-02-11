@@ -7,6 +7,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct MeiliSearchEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }

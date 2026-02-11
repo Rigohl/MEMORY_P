@@ -7,7 +7,7 @@ use dashmap::DashMap;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 use crate::error::{MemoryPError as Error, Result};
 
@@ -130,6 +130,7 @@ pub struct HyperMemoryManager {
     /// Estadísticas
     stats: Arc<RwLock<MemoryStats>>,
     /// Dimensión de embeddings
+    #[allow(dead_code)]
     embedding_dimension: usize,
 }
 

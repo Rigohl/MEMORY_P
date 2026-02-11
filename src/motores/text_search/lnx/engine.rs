@@ -10,6 +10,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct LnxEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }

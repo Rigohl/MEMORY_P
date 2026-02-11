@@ -43,6 +43,7 @@ pub struct Context {
 /// Detector de contextos
 pub struct ContextDetector {
     /// Caché de contextos detectados
+    #[allow(dead_code)]
     context_cache: HashMap<String, Vec<Context>>,
 }
 

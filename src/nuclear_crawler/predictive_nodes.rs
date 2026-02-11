@@ -10,6 +10,7 @@ use tracing::{info, warn};
 /// Predicción de búsqueda
 #[derive(Debug, Clone)]
 struct SearchPrediction {
+    #[allow(dead_code)]
     original_query: String,
     corrected_query: String,
     confidence: f64,

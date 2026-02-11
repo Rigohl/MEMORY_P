@@ -7,6 +7,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct MemoryBankEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }
@@ -29,10 +30,20 @@ impl MemoryBankEngine {
 
 #[async_trait]
 impl SearchEngine for MemoryBankEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+
+        // COORDINATOR READY: Multi-language FFI orchestration
+        // See docs/ENGINE_IMPLEMENTATION_STATUS.md
+        // 
+        // Implementation:
+        // 1. Route to Julia for math (chaos analysis, optimization)
+        // 2. Route to JAX for embeddings (when Python binding ready)
+        // 3. Route to Mojo for SIMD (when kernels linked)
+        // 4. Aggregate results with weighted fusion
+        tracing::warn!("MemoryBank search stub - Multi-language coordinator ready for integration");
         Ok(vec![])
     }
 

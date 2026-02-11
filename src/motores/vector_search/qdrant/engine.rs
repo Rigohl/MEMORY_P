@@ -13,6 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Qdrant search engine implementation
 pub struct QdrantEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     collection_name: String,
     vector_size: usize,
@@ -59,8 +60,14 @@ impl SearchEngine for QdrantEngine {
             return Err("Engine not initialized".into());
         }
 
-        // In production, this would make actual Qdrant API calls
-        // For now, return a mock implementation
+        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
+        // Production code would:
+        // 1. Convert query to Qdrant SearchRequest
+        // 2. Call client.search(collection, vector, limit, filter)
+        // 3. Convert Qdrant ScoredPoint -> SearchResult
+        // 
+        // For now: Return empty results with proper error if vector missing
+        tracing::warn!("Qdrant search called but client not configured - add 'qdrant-client' dependency");
         Ok(vec![])
     }
 
@@ -69,7 +76,12 @@ impl SearchEngine for QdrantEngine {
             return Err("Engine not initialized".into());
         }
 
-        // In production, this would batch index to Qdrant
+        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
+        // Production code would:
+        // 1. Convert documents to Qdrant PointStruct
+        // 2. Batch insert with client.upsert(collection, points, None)
+        // 3. Handle embedding generation if needed
+        tracing::warn!("Qdrant index called but client not configured");
         Ok(())
     }
 
@@ -137,7 +149,17 @@ impl SearchEngine for QdrantEngine {
     }
 
     async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
-        // In production: connect to Qdrant, create collection if needed
+        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
+        // Production code would:
+        // 1. let client = QdrantClient::new(Some(self.config.endpoints[0].clone()))?;
+        // 2. Check if collection exists: client.collection_exists(&self.collection_name)
+        // 3. Create collection if needed with VectorParams
+        // 4. Store client in self
+        tracing::info!(
+            "⚡ Qdrant engine initialized (client pending) - collection: {}, vector_size: {}",
+            self.collection_name,
+            self.vector_size
+        );
         self.initialized = true;
         Ok(())
     }

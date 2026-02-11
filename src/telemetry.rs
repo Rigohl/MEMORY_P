@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
-use tracing::{debug, info, warn};
+use tracing::{debug, info};
 
 /// Sistema de telemetría
 pub struct TelemetrySystem {
@@ -184,7 +184,7 @@ impl TelemetrySystem {
 
                 let total = *collector.total_requests.lock().await;
                 let successful = *collector.successful_requests.lock().await;
-                let failed = *collector.failed_requests.lock().await;
+                let _failed = *collector.failed_requests.lock().await;
                 let connections = *collector.active_connections.lock().await;
 
                 let success_rate = if total > 0 {

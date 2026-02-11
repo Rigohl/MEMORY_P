@@ -162,10 +162,14 @@ impl EmbeddingGenerator {
                 text
             );
 
-            // TODO: Llamada real a JAX/HuggingFace via Python C API
-            // Por ahora: stub con vector normalizado pseudo-aleatorio
+            // TODO: Real JAX/HuggingFace call via Python C API
+            // Using deterministic stub for now
+            tracing::debug!(
+                "Generando embedding determinístico (JAX binding pending) para modelo {} ",
+                self.config.model.model_name()
+            );
             let dim = self.config.model.dimension();
-            let embedding = self.generate_stub_embedding(text, dim);
+            let embedding = self.generate_stub_embedding(_text, dim);
 
             Ok(embedding)
         }
@@ -176,7 +180,9 @@ impl EmbeddingGenerator {
         }
     }
 
-    /// Genera un embedding stub determinístico para testing
+    /// Genera un embedding determinístico para testing y fallback
+    /// This is used when JAX Python binding is not available
+    #[allow(dead_code)]
     fn generate_stub_embedding(&self, text: &str, dim: usize) -> Vec<f32> {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};

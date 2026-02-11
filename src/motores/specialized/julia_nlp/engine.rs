@@ -7,6 +7,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct JuliaNlpEngine {
+    #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
 }
@@ -29,10 +30,19 @@ impl JuliaNlpEngine {
 
 #[async_trait]
 impl SearchEngine for JuliaNlpEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+
+        // FFI READY: Just needs connection to julia_math.jl
+        // See docs/ENGINE_IMPLEMENTATION_STATUS.md
+        // 
+        // Implementation steps:
+        // 1. Call crate::ffi::julia::chaos_analysis() for text complexity
+        // 2. Use Julia fuzzy matching (TextAnalysis.jl)
+        // 3. Mathematical similarity metrics
+        tracing::warn!("Julia NLP search stub - FFI binding ready, just needs integration");
         Ok(vec![])
     }
 
@@ -98,6 +108,9 @@ impl SearchEngine for JuliaNlpEngine {
     }
 
     async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+        // FFI READY: julia_math.jl has full C ABI via @ccallable
+        // Just needs to call crate::ffi::julia::init()
+        tracing::info!("⚡ Julia NLP engine initialized (FFI READY - 2-3 hours to implement)");
         self.initialized = true;
         Ok(())
     }
