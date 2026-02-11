@@ -37,7 +37,7 @@ impl SearchEngine for JuliaNlpEngine {
 
         // FFI READY: Just needs connection to julia_math.jl
         // See docs/ENGINE_IMPLEMENTATION_STATUS.md
-        // 
+        //
         // Implementation steps:
         // 1. Call crate::ffi::julia::chaos_analysis() for text complexity
         // 2. Use Julia fuzzy matching (TextAnalysis.jl)

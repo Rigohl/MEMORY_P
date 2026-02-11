@@ -47,7 +47,11 @@ impl SearchEngine for FaissEngine {
 
         // REAL IMPLEMENTATION PENDING: Requires FAISS C++ library + GPU support
         // See docs/ENGINE_IMPLEMENTATION_STATUS.md for details
-        let gpu_status = if self.use_gpu { "GPU requested but not linked" } else { "CPU mode" };
+        let gpu_status = if self.use_gpu {
+            "GPU requested but not linked"
+        } else {
+            "CPU mode"
+        };
         tracing::warn!(
             "FAISS search called but C++ library not linked ({})",
             gpu_status

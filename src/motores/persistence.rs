@@ -10,7 +10,11 @@ pub trait PersistenceLayer: Send + Sync {
 pub struct PostgresPersistence;
 #[async_trait]
 impl PersistenceLayer for PostgresPersistence {
-    async fn save_data(&self, _key: &str, _value: &serde_json::Value) -> Result<(), Box<dyn Error>> {
+    async fn save_data(
+        &self,
+        _key: &str,
+        _value: &serde_json::Value,
+    ) -> Result<(), Box<dyn Error>> {
         tracing::info!("🐘 Persisting to PostgreSQL (+pgvector): {}", _key);
         // TODO: SQL: INSERT INTO memory (key, data) VALUES (...) ON CONFLICT ...
         Ok(())
@@ -24,7 +28,11 @@ impl PersistenceLayer for PostgresPersistence {
 pub struct ClickHousePersistence;
 #[async_trait]
 impl PersistenceLayer for ClickHousePersistence {
-    async fn save_data(&self, _key: &str, _value: &serde_json::Value) -> Result<(), Box<dyn Error>> {
+    async fn save_data(
+        &self,
+        _key: &str,
+        _value: &serde_json::Value,
+    ) -> Result<(), Box<dyn Error>> {
         tracing::info!("💎 Persisting to ClickHouse (OLAP): {}", _key);
         // TODO: HTTP POST to ClickHouse with INSERT INTO analytics ...
         Ok(())
@@ -38,7 +46,11 @@ impl PersistenceLayer for ClickHousePersistence {
 pub struct RedisPersistence;
 #[async_trait]
 impl PersistenceLayer for RedisPersistence {
-    async fn save_data(&self, _key: &str, _value: &serde_json::Value) -> Result<(), Box<dyn Error>> {
+    async fn save_data(
+        &self,
+        _key: &str,
+        _value: &serde_json::Value,
+    ) -> Result<(), Box<dyn Error>> {
         tracing::info!("🚀 Caching to Redis: {}", _key);
         // TODO: redis::cmd("SET").arg(key).arg(value).query_async(&mut conn)
         Ok(())
