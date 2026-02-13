@@ -1,0 +1,14 @@
+{
+    "jsonrpc": "2.0",
+    "id": 602,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_analyze",
+        "arguments": {
+            "target_dir": "C:/Users/DELL/Desktop/hf_spaces/COPILOTO/PERSONALIZACION",
+            "file_extension": "md",
+            "max_tasks": 8,
+            "dry_run": false
+        }
+    }
+}

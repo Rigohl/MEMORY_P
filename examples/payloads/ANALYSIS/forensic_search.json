@@ -1,0 +1,36 @@
+{
+    "jsonrpc": "2.0",
+    "id": 200,
+    "method": "callTool",
+    "params": {
+        "name": "batch_tasks",
+        "arguments": {
+            "tasks": [
+                {
+                    "task_type": "search",
+                    "paths": [
+                        "C:\\Users\\DELL\\Desktop\\hf_spaces\\nuclear_crawler_hybrid\\src"
+                    ],
+                    "pattern": "mod ffi",
+                    "extension": "rs"
+                },
+                {
+                    "task_type": "search",
+                    "paths": [
+                        "C:\\Users\\DELL\\Desktop\\hf_spaces\\nuclear_crawler_hybrid\\src"
+                    ],
+                    "pattern": "crate::ffi",
+                    "extension": "rs"
+                },
+                {
+                    "task_type": "search",
+                    "paths": [
+                        "C:\\Users\\DELL\\Desktop\\hf_spaces\\nuclear_crawler_hybrid\\src"
+                    ],
+                    "pattern": "mod data_management",
+                    "extension": "rs"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{
+    "jsonrpc": "2.0",
+    "id": 2002,
+    "method": "callTool",
+    "params": {
+        "name": "ultra_workflow",
+        "arguments": {
+            "steps": [
+                {
+                    "action": "Scan",
+                    "params": {
+                        "path": "src",
+                        "extension": "rs"
+                    }
+                },
+                {
+                    "action": "Filter",
+                    "params": {
+                        "pattern": "println!",
+                        "invert": false
+                    }
+                },
+                {
+                    "action": "Edit",
+                    "params": {
+                        "operations": [
+                            {
+                                "type": "RegexReplace",
+                                "pattern": "println!\\((.*)\\);",
+                                "replacement": "tracing::info!($1);"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "max_tasks": 32,
+            "dry_run": true
+        }
+    }
+}

@@ -35,11 +35,11 @@ fi
 # 2. Build Julia FFI (Real with PackageCompiler)
 if command_exists julia; then
     echo -e "${GREEN}🧮 Building Julia FFI with PackageCompiler...${NC}"
-    
+
     # Install required packages
     julia -e '
     using Pkg
-    
+
     # Add packages if not present
     packages = ["Optim", "LinearAlgebra", "Statistics"]
     for pkg in packages
@@ -51,7 +51,7 @@ if command_exists julia; then
             Pkg.add(pkg)
         end
     end
-    
+
     # Try to add PackageCompiler
     try
         using PackageCompiler
@@ -61,7 +61,7 @@ if command_exists julia; then
         Pkg.add("PackageCompiler")
     end
     '
-    
+
     # Create precompile script
     cat > /tmp/julia_precompile.jl << 'EOJULIA'
 include("src/julia_math.jl")
@@ -71,11 +71,11 @@ using .MemoryPMath
 MemoryPMath.optimize_weights([0.33, 0.33, 0.34])
 MemoryPMath.chaos_analysis(rand(100))
 EOJULIA
-    
+
     # Build shared library
     julia -e '
     using PackageCompiler
-    
+
     create_library(
         "src/julia_math.jl",
         "lib/libjulia_ffi";
@@ -85,7 +85,7 @@ EOJULIA
         filter_stdlibs=true
     )
     '
-    
+
     echo -e "${GREEN}✅ Julia FFI compiled: lib/libjulia_ffi.*${NC}"
 else
     echo -e "${YELLOW}⚠️  Julia not found, skipping${NC}"
@@ -94,15 +94,15 @@ fi
 # 3. Setup JAX with CUDA (Python)
 if command_exists python3; then
     echo -e "${GREEN}🤖 Setting up JAX with CUDA...${NC}"
-    
+
     # Check if we're in conda environment
     if [ -n "$CONDA_DEFAULT_ENV" ]; then
         echo "Using conda environment: $CONDA_DEFAULT_ENV"
     fi
-    
+
     # Install/upgrade JAX with CUDA
     pip install --upgrade "jax[cuda12]==0.4.28" "jaxlib[cuda12]==0.4.28" sentence-transformers
-    
+
     # Test JAX GPU
     python3 << 'EOPYTHON'
 import sys
@@ -110,23 +110,23 @@ try:
     import jax
     print(f"✓ JAX version: {jax.__version__}")
     print(f"✓ Devices: {jax.devices()}")
-    
+
     # Test GPU availability
     if any(d.platform == 'gpu' for d in jax.devices()):
         print("✓ GPU available!")
     else:
         print("⚠️  No GPU found, using CPU")
-    
+
     # Test sentence transformers
     from sentence_transformers import SentenceTransformer
     print("✓ sentence-transformers ready")
-    
+
     sys.exit(0)
 except Exception as e:
     print(f"✗ Error: {e}")
     sys.exit(1)
 EOPYTHON
-    
+
     if [ $? -eq 0 ]; then
         # Copy JAX inference to lib for easy access
         cp src/jax_inference.py lib/
@@ -156,7 +156,7 @@ if command_exists ponyc; then
         -o build \
         --pic \
         --library
-    
+
     if [ -f build/libsearch_actor.so ]; then
         mv build/libsearch_actor.so lib/libpony_actors.so
         echo -e "${GREEN}✅ Pony actors compiled${NC}"
