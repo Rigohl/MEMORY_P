@@ -37,7 +37,7 @@ impl SearchEngine for MemoryBankEngine {
 
         // COORDINATOR READY: Multi-language FFI orchestration
         // See docs/ENGINE_IMPLEMENTATION_STATUS.md
-        // 
+        //
         // Implementation:
         // 1. Route to Julia for math (chaos analysis, optimization)
         // 2. Route to JAX for embeddings (when Python binding ready)

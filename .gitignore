@@ -21,7 +21,21 @@
 !src/
 !src/**
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+# FFI multi-lenguaje (brain/ y NEWAY/)
+!brain/
+!brain/**
+!NEWAY/
+!NEWAY/**
+
+# FFI legacy (deprecated)
+=======
 # FFI multi-lenguaje
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+# FFI multi-lenguaje
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 !FFI/
 !FFI/README.md
 !FFI/Makefile
@@ -34,6 +48,8 @@
 !FFI/lib/README.md
 !FFI/lib/.gitkeep
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 # Julia Brain
 !JULIA_BRAIN/
 !JULIA_BRAIN/**
@@ -50,6 +66,16 @@
 # Examples
 !examples/
 !examples/**
+=======
+# Documentación básica
+!docs/
+!docs/**
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+# Documentación básica
+!docs/
+!docs/**
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 # GitHub Copilot Agents & Skills
 !.github/
@@ -59,11 +85,17 @@
 !BRANCH_CLEANUP_GUIDE.md
 !MERGE_SUMMARY.md
 !INTEGRATION_COMPLETE.md
+<<<<<<< HEAD
+<<<<<<< HEAD
 !DEVOPS_IMPLEMENTATION_SUMMARY.md
 
 # Workflow documentation
 !WORKFLOW_QUICKREF.md
 !WORKFLOW_IMPLEMENTATION_SUMMARY.md
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 # Configuraciones
 !.windsurf/
@@ -81,6 +113,8 @@
 
 # Docker
 !docker-compose.yml
+<<<<<<< HEAD
+<<<<<<< HEAD
 !Dockerfile
 !config/
 !config/**
@@ -92,6 +126,10 @@
 # Config files
 !config/
 !config/**
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
 # Ignorar binarios y builds en FFI
 FFI/lib/*.so

@@ -87,7 +87,7 @@ strip = true
 opt-level = 1
 
 [features]
-default = []
+default = ["ffi-all"]
 # FFI Features (opcionales - el core funciona sin ellas)
 ffi-zig = []
 ffi-julia = []

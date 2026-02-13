@@ -6,11 +6,11 @@ pub mod mojo;
 pub mod pony;
 pub mod zig;
 
-pub fn init() -> crate::error::Result<()> {
+pub async fn init() -> crate::error::Result<()> {
     julia::init()?;
     jax::init()?;
     mojo::init()?;
-    pony::init()?;
+    pony::init().await?;
     Ok(())
 }
 

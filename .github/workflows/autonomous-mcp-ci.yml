@@ -54,19 +54,43 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache cargo registry
+<<<<<<< HEAD
+<<<<<<< HEAD
         uses: actions/cache@v5
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo index
+<<<<<<< HEAD
+<<<<<<< HEAD
         uses: actions/cache@v5
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Cache cargo build
+<<<<<<< HEAD
+<<<<<<< HEAD
         uses: actions/cache@v5
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+        uses: actions/cache@v4
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}

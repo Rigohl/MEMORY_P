@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
@@ -247,7 +247,7 @@ impl KpiTracker {
 
     /// Inicia mediciones automáticas
     async fn start_auto_measurement(&self) {
-        let metrics = self.metrics.clone();
+        let _metrics = self.metrics.clone();
         let running = self.running.clone();
         let interval = self.config.measurement_interval;
 

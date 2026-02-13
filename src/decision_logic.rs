@@ -27,7 +27,7 @@ impl DecisionEngine {
     }
 
     /// Analiza una situación y provee una decisión fundamentada usando Polars y Julia
-    pub async fn analyze_decision(&self, situation: &str, context_data: &HashMap<String, String>) -> Result<DecisionRationale> {
+    pub async fn analyze_decision(&self, situation: &str, _context_data: &HashMap<String, String>) -> Result<DecisionRationale> {
         tracing::info!("🧠 Analizando decisión cognitiva con Motores Multi-Lenguaje para: {}", situation);
 
         // 1. Análisis de Datos Local con Polars

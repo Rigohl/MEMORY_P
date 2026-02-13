@@ -307,7 +307,9 @@ impl PredictiveEngine {
     /// Obtiene estadísticas del motor predictivo
     pub async fn get_statistics(&self) -> Result<HashMap<String, f64>> {
         let history = self.history.read().await;
+        let cache = self.prediction_cache.read().await;
         let mut stats = HashMap::new();
+        stats.insert("cached_predictions".to_string(), cache.len() as f64);
 
         stats.insert(
             "total_executions".to_string(),

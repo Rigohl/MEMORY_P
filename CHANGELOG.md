@@ -1,5 +1,7 @@
 # Changelog - MEMORY_P v2.0
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 ## [2.0.1] - 2026-01-XX (Unreleased)
 
 ### 🚀 Major Feature: Advanced Vector Search System
@@ -83,6 +85,10 @@
 - Búsqueda filtrada: ~83,333 queries/s
 - Cache hit: <1μs (~1M ops/s)
 
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 ## [2.0.0-alpha] - 2026-01-23
 
 ### 🎉 Major Release: Multi-Language FFI Architecture

@@ -8,12 +8,24 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+<<<<<<< HEAD
+<<<<<<< HEAD
       args:
         JULIA_VERSION: "1.10.0"  # Set to enable Julia support
     container_name: memory-p-app
     ports:
       - "4040:4040"
       - "9091:9091"  # Metrics endpoint
+=======
+    container_name: memory-p-app
+    ports:
+      - "4040:4040"
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+    container_name: memory-p-app
+    ports:
+      - "4040:4040"
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     environment:
       - RUST_LOG=info
       - MEMORY_P_CONFIG=/app/config/docker.toml
@@ -27,13 +39,23 @@ services:
       - MEILISEARCH_URL=http://meilisearch:7700
       - MEILISEARCH_KEY=masterKey123
       # Specialized Engines
+<<<<<<< HEAD
+<<<<<<< HEAD
       - JULIA_ENABLED=true  # Enable Julia mathematical brain
       - JULIA_THREADS=4
+=======
+      - JULIA_ENABLED=false  # Set to true if Julia installed
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+      - JULIA_ENABLED=false  # Set to true if Julia installed
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
       - MEMORYBANK_ENABLED=true
     volumes:
       - ./indices:/app/indices
       - ./config:/app/config
       - ./PAYLOAD_BANK:/app/PAYLOAD_BANK
+<<<<<<< HEAD
+<<<<<<< HEAD
       - ./JULIA_BRAIN:/app/JULIA_BRAIN:ro  # Julia scripts (read-only)
     depends_on:
       postgres:
@@ -61,6 +83,24 @@ services:
       timeout: 5s
       start_period: 40s
       retries: 3
+=======
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - meilisearch
+      - lnx-node1
+      - lnx-node2
+      - lnx-node3
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+<<<<<<< HEAD
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
 
   # ==========================================
   # Vector Search Engines (3)
@@ -75,13 +115,21 @@ services:
       - "6334:6334"  # gRPC
     environment:
       - QDRANT__SERVICE__GRPC_PORT=6334
+<<<<<<< HEAD
+<<<<<<< HEAD
       - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=64
       - QDRANT__STORAGE__OPTIMIZERS__INDEXING_THRESHOLD=20000
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     volumes:
       - qdrant_storage:/qdrant/storage
     networks:
       - memory-p-network
     restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
     deploy:
       resources:
         limits:
@@ -90,6 +138,10 @@ services:
         reservations:
           cpus: '1.0'
           memory: 2G
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
       interval: 30s
@@ -250,15 +302,23 @@ services:
       - POSTGRES_USER=memory_p
       - POSTGRES_PASSWORD=memory_p_password
       - POSTGRES_DB=memory_p
+<<<<<<< HEAD
+<<<<<<< HEAD
       - POSTGRES_SHARED_BUFFERS=256MB
       - POSTGRES_MAX_CONNECTIONS=200
       - POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     networks:
       - memory-p-network
     restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
     deploy:
       resources:
         limits:
@@ -267,6 +327,10 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U memory_p"]
       interval: 30s
@@ -279,12 +343,22 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+<<<<<<< HEAD
+<<<<<<< HEAD
     command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru --tcp-backlog 511
+=======
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     volumes:
       - redis_data:/data
     networks:
       - memory-p-network
     restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
     deploy:
       resources:
         limits:
@@ -293,6 +367,10 @@ services:
         reservations:
           cpus: '0.25'
           memory: 512M
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
