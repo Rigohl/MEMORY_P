@@ -19,7 +19,7 @@ impl PersistenceLayer for PostgresPersistence {
         // TODO: SQL: INSERT INTO memory (key, data) VALUES (...) ON CONFLICT ...
         Ok(())
     }
-    async fn load_data(&self, key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
+    async fn load_data(&self, _key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
         Ok(None)
     }
 }
@@ -36,7 +36,7 @@ impl PersistenceLayer for ClickHousePersistence {
         // TODO: HTTP POST to ClickHouse with INSERT INTO analytics ...
         Ok(())
     }
-    async fn load_data(&self, key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
+    async fn load_data(&self, _key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
         Ok(None)
     }
 }
@@ -53,7 +53,7 @@ impl PersistenceLayer for RedisPersistence {
         // TODO: redis::cmd("SET").arg(key).arg(value).query_async(&mut conn)
         Ok(())
     }
-    async fn load_data(&self, key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
+    async fn load_data(&self, _key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
         Ok(None)
     }
 }

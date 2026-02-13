@@ -80,7 +80,7 @@ async fn http_server_mode(telemetry: Arc<TelemetrySystem>) -> error::Result<()> 
     Ok(())
 }
 
-async fn mcp_stdio_mode(telemetry: Arc<TelemetrySystem>) -> error::Result<()> {
+async fn mcp_stdio_mode(_telemetry: Arc<TelemetrySystem>) -> error::Result<()> {
     use crate::mcp::models::JsonRpcRequest;
     use crate::mcp_api::mcp_json_rpc_handler;
     use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
