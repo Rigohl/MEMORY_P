@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use crate::error::Result;
 use crate::shared_memory::types::ContextId;
 use dashmap::DashMap;
 use std::sync::Arc;

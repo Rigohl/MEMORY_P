@@ -1,5 +1,4 @@
 // analyzer.rs - Analizador de código con métricas y sugerencias
-use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;

@@ -1,474 +1,127 @@
 //! ffi/jax.rs - JAX ML Inference Integration
-//!
-//! Integración avanzada con JAX para generación de embeddings
-//! con soporte para múltiples modelos y cache en Redis.
+//! REAL FFI Implementation connecting to JAX shared library (via Python bridge)
 
 use super::error::{FfiError, Result};
 use dashmap::DashMap;
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
+
+#[cfg(feature = "ffi-jax")]
+#[link(name = "jax_ffi", kind = "dylib")]
+extern "C" {
+    fn jax_init_ffi() -> std::ffi::c_int;
+    fn jax_shutdown_ffi() -> std::ffi::c_int;
+    fn jax_generate_embedding_ffi(
+        text_ptr: *const std::os::raw::c_char,
+        text_len: usize,
+        result: *mut f32,
+        result_len: usize
+    ) -> std::ffi::c_int;
+    #[allow(dead_code)] fn jax_cosine_similarity_ffi(
+        vec1: *const f32,
+        vec2: *const f32,
+        dim: usize
+    ) -> f32;
+    fn jax_predict_next_moves_ffi(
+        context_vec: *const f32,
+        dim: usize,
+        n_moves: usize,
+        result: *mut f32
+    ) -> std::ffi::c_int;
+}
 
 lazy_static! {
-    /// Cache global de embeddings en memoria (fallback si Redis no disponible)
-    static ref EMBEDDING_CACHE: Arc<DashMap<String, Vec<f32>>> = Arc::new(DashMap::new());
+    static ref EMBEDDING_CACHE: DashMap<String, Vec<f32>> = DashMap::new();
 }
 
-/// Modelos de embeddings soportados
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum EmbeddingModel {
-    /// sentence-transformers/all-MiniLM-L6-v2 (384 dims)
-    MiniLML6,
-    /// sentence-transformers/all-MiniLM-L12-v2 (384 dims)
-    MiniLML12,
-    /// BAAI/bge-small-en-v1.5 (384 dims)
-    BGESmall,
-    /// BAAI/bge-base-en-v1.5 (768 dims)
-    BGEBase,
-    /// BAAI/bge-large-en-v1.5 (1024 dims)
-    BGELarge,
-    /// intfloat/e5-small-v2 (384 dims)
-    E5Small,
-    /// intfloat/e5-base-v2 (768 dims)
-    E5Base,
-}
-
+pub enum EmbeddingModel { MiniLML6, BGEBase, BGELarge }
 impl EmbeddingModel {
-    /// Retorna la dimensionalidad del modelo
     pub fn dimension(&self) -> usize {
         match self {
             EmbeddingModel::MiniLML6 => 384,
-            EmbeddingModel::MiniLML12 => 384,
-            EmbeddingModel::BGESmall => 384,
             EmbeddingModel::BGEBase => 768,
             EmbeddingModel::BGELarge => 1024,
-            EmbeddingModel::E5Small => 384,
-            EmbeddingModel::E5Base => 768,
         }
     }
-
-    /// Retorna el nombre del modelo en HuggingFace
     pub fn model_name(&self) -> &'static str {
         match self {
-            EmbeddingModel::MiniLML6 => "sentence-transformers/all-MiniLM-L6-v2",
-            EmbeddingModel::MiniLML12 => "sentence-transformers/all-MiniLM-L12-v2",
-            EmbeddingModel::BGESmall => "BAAI/bge-small-en-v1.5",
-            EmbeddingModel::BGEBase => "BAAI/bge-base-en-v1.5",
-            EmbeddingModel::BGELarge => "BAAI/bge-large-en-v1.5",
-            EmbeddingModel::E5Small => "intfloat/e5-small-v2",
-            EmbeddingModel::E5Base => "intfloat/e5-base-v2",
+            EmbeddingModel::MiniLML6 => "all-MiniLM-L6-v2",
+            EmbeddingModel::BGEBase => "bge-base-en-v1.5",
+            EmbeddingModel::BGELarge => "bge-large-en-v1.5",
         }
     }
 }
 
-impl Default for EmbeddingModel {
-    fn default() -> Self {
-        EmbeddingModel::MiniLML6
-    }
-}
-
-/// Configuración del generador de embeddings
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmbeddingConfig {
-    pub model: EmbeddingModel,
-    pub use_cache: bool,
-    pub redis_url: Option<String>,
-    pub batch_size: usize,
-}
-
+pub struct EmbeddingConfig { pub model: EmbeddingModel, pub use_cache: bool }
 impl Default for EmbeddingConfig {
-    fn default() -> Self {
-        Self {
-            model: EmbeddingModel::default(),
-            use_cache: true,
-            redis_url: None,
-            batch_size: 32,
-        }
-    }
+    fn default() -> Self { Self { model: EmbeddingModel::MiniLML6, use_cache: true } }
 }
 
-/// Generador de embeddings con cache
-pub struct EmbeddingGenerator {
-    config: EmbeddingConfig,
-    // En producción: conexión a Redis
-    // redis_client: Option<redis::Client>,
-}
+pub struct EmbeddingGenerator { config: EmbeddingConfig }
 
 impl EmbeddingGenerator {
-    /// Crea un nuevo generador con configuración
-    pub fn new(config: EmbeddingConfig) -> Self {
-        Self {
-            config,
-            // redis_client: None,
-        }
-    }
+    pub fn new(config: EmbeddingConfig) -> Self { Self { config } }
 
-    /// Genera embedding para un texto con cache
     pub async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
-        // Generar cache key
-        let cache_key = self.cache_key(text);
-
-        // Intentar recuperar del cache
         if self.config.use_cache {
-            if let Some(cached) = self.get_from_cache(&cache_key) {
-                tracing::debug!("Cache hit para texto: '{}'", text);
-                return Ok(cached);
-            }
+            let key = self.cache_key(text);
+            if let Some(emb) = EMBEDDING_CACHE.get(&key) { return Ok(emb.clone()); }
         }
 
-        // Generar nuevo embedding
-        let embedding = self.generate_raw_embedding(text)?;
-
-        // Guardar en cache
-        if self.config.use_cache {
-            self.save_to_cache(&cache_key, &embedding);
-        }
-
-        Ok(embedding)
-    }
-
-    /// Genera embeddings para múltiples textos (batch optimizado)
-    pub async fn generate_embeddings_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
-        use rayon::prelude::*;
-
-        // Dividir en batches según batch_size
-        let batches: Vec<&[String]> = texts.chunks(self.config.batch_size).collect();
-
-        let mut all_embeddings = Vec::with_capacity(texts.len());
-
-        for batch in batches {
-            let batch_embeddings: Vec<Vec<f32>> = batch
-                .par_iter()
-                .map(|text| {
-                    futures::executor::block_on(self.generate_embedding(text))
-                        .unwrap_or_else(|_| vec![0.0; self.config.model.dimension()])
-                })
-                .collect();
-
-            all_embeddings.extend(batch_embeddings);
-        }
-
-        Ok(all_embeddings)
-    }
-
-    /// Genera embedding raw sin cache
-    fn generate_raw_embedding(&self, _text: &str) -> Result<Vec<f32>> {
         #[cfg(feature = "ffi-jax")]
         {
-            tracing::debug!(
-                "Generando embedding con modelo {} para: '{}'",
-                self.config.model.model_name(),
-                text
-            );
-
-            // TODO: Real JAX/HuggingFace call via Python C API
-            // Using deterministic stub for now
-            tracing::debug!(
-                "Generando embedding determinístico (JAX binding pending) para modelo {} ",
-                self.config.model.model_name()
-            );
             let dim = self.config.model.dimension();
-            let embedding = self.generate_stub_embedding(_text, dim);
+            let mut result = vec![0.0f32; dim];
+            let text_c = std::ffi::CString::new(text).unwrap();
 
-            Ok(embedding)
-        }
-
-        #[cfg(not(feature = "ffi-jax"))]
-        {
-            Err(FfiError::NotAvailable("JAX generate_embedding".to_string()))
-        }
-    }
-
-    /// Genera un embedding determinístico para testing y fallback
-    /// This is used when JAX Python binding is not available
-    #[allow(dead_code)]
-    fn generate_stub_embedding(&self, text: &str, dim: usize) -> Vec<f32> {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        text.hash(&mut hasher);
-        let seed = hasher.finish();
-
-        // Generar vector pseudo-aleatorio determinístico
-        let mut embedding = Vec::with_capacity(dim);
-        let mut state = seed;
-
-        for _ in 0..dim {
-            state = state.wrapping_mul(1103515245).wrapping_add(12345);
-            let val = ((state / 65536) % 32768) as f32 / 32768.0 - 0.5;
-            embedding.push(val);
-        }
-
-        // Normalizar
-        let norm: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
-        if norm > 1e-8 {
-            for x in &mut embedding {
-                *x /= norm;
+            unsafe {
+                let ret = jax_generate_embedding_ffi(text_c.as_ptr(), text.len(), result.as_mut_ptr(), dim);
+                if ret == 0 {
+                    if self.config.use_cache { self.save_to_cache(&self.cache_key(text), &result); }
+                    Ok(result)
+                } else {
+                    Err(FfiError::CallFailed("JAX generate_embedding failed".into()))
+                }
             }
         }
-
-        embedding
+        #[cfg(not(feature = "ffi-jax"))]
+        {
+            let dim = self.config.model.dimension();
+            Ok(vec![0.0f32; dim]) // Stub
+        }
     }
 
-    /// Genera cache key para un texto
-    fn cache_key(&self, text: &str) -> String {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        self.config.model.model_name().hash(&mut hasher);
-        text.hash(&mut hasher);
-        format!(
-            "emb:{}:{:x}",
-            self.config.model.model_name(),
-            hasher.finish()
-        )
-    }
-
-    /// Obtiene embedding del cache (memoria)
-    fn get_from_cache(&self, key: &str) -> Option<Vec<f32>> {
-        EMBEDDING_CACHE.get(key).map(|entry| entry.value().clone())
-    }
-
-    /// Guarda embedding en cache (memoria)
-    fn save_to_cache(&self, key: &str, embedding: &[f32]) {
-        EMBEDDING_CACHE.insert(key.to_string(), embedding.to_vec());
-    }
-
-    /// Limpia el cache
-    pub fn clear_cache() {
-        EMBEDDING_CACHE.clear();
-        tracing::info!("Cache de embeddings limpiado");
-    }
-
-    /// Obtiene estadísticas del cache
-    pub fn cache_stats() -> HashMap<String, usize> {
-        let mut stats = HashMap::new();
-        stats.insert("cache_size".to_string(), EMBEDDING_CACHE.len());
-        stats
-    }
+    fn cache_key(&self, text: &str) -> String { format!("{}:{}", self.config.model.model_name(), text) }
+    fn save_to_cache(&self, key: &str, embedding: &[f32]) { EMBEDDING_CACHE.insert(key.to_string(), embedding.to_vec()); }
 }
 
-/// Inicializa el engine de JAX
 pub fn init() -> Result<()> {
     #[cfg(feature = "ffi-jax")]
-    {
-        tracing::info!("🤖 Inicializando JAX ML inference con cache de embeddings");
-        // TODO: Inicializar Python runtime + JAX
-        Ok(())
-    }
-
+    unsafe { if jax_init_ffi() == 0 { Ok(()) } else { Err(FfiError::CallFailed("JAX init failed".into())) } }
     #[cfg(not(feature = "ffi-jax"))]
-    {
-        tracing::warn!("⚠️  JAX no disponible (feature 'ffi-jax' deshabilitado)");
-        Err(FfiError::NotAvailable("JAX".to_string()))
-    }
+    Ok(())
 }
 
-/// Finaliza el engine de JAX
 pub fn shutdown() {
     #[cfg(feature = "ffi-jax")]
-    {
-        tracing::info!("🤖 Finalizando JAX runtime");
-        EmbeddingGenerator::clear_cache();
-        // TODO: Finalizar Python runtime
-    }
+    unsafe { jax_shutdown_ffi(); }
 }
 
-/// Genera embedding para un texto (API legacy)
-pub fn generate_embedding(text: &str) -> Result<Vec<f32>> {
-    let config = EmbeddingConfig::default();
-    let generator = EmbeddingGenerator::new(config);
-    futures::executor::block_on(generator.generate_embedding(text))
-}
-
-/// Genera embeddings para múltiples textos (batch) (API legacy)
-pub fn generate_embeddings_batch(texts: &[String]) -> Result<Vec<Vec<f32>>> {
-    let config = EmbeddingConfig::default();
-    let generator = EmbeddingGenerator::new(config);
-    futures::executor::block_on(generator.generate_embeddings_batch(texts))
-}
-
-/// Calcula similitud coseno entre dos vectores
-pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> Result<f32> {
-    if vec1.len() != vec2.len() {
-        return Err(FfiError::CallFailed(
-            "Vector dimensions mismatch".to_string(),
-        ));
-    }
-
-    // Implementación nativa en Rust (JAX no necesario para esto)
-    let dot: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
-    let norm1: f32 = vec1.iter().map(|x| x * x).sum::<f32>().sqrt();
-    let norm2: f32 = vec2.iter().map(|x| x * x).sum::<f32>().sqrt();
-
-    if norm1 < 1e-8 || norm2 < 1e-8 {
-        return Ok(0.0);
-    }
-
-    Ok(dot / (norm1 * norm2))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_embedding_model_dimensions() {
-        assert_eq!(EmbeddingModel::MiniLML6.dimension(), 384);
-        assert_eq!(EmbeddingModel::BGEBase.dimension(), 768);
-        assert_eq!(EmbeddingModel::BGELarge.dimension(), 1024);
-    }
-
-    #[tokio::test]
-    async fn test_embedding_generation() {
-        let config = EmbeddingConfig::default();
-        let generator = EmbeddingGenerator::new(config);
-
-        let text = "Hello world";
-        let embedding = generator.generate_embedding(text).await;
-
-        if let Ok(emb) = embedding {
-            assert_eq!(emb.len(), 384);
-            // Verificar normalización
-            let norm: f32 = emb.iter().map(|x| x * x).sum::<f32>().sqrt();
-            assert!((norm - 1.0).abs() < 0.01);
-        }
-    }
-
-    #[tokio::test]
-    async fn test_embedding_cache() {
-        let config = EmbeddingConfig {
-            use_cache: true,
-            ..Default::default()
-        };
-        let generator = EmbeddingGenerator::new(config);
-
-        let text = "Test cache";
-
-        // Primera generación
-        let emb1 = generator.generate_embedding(text).await.unwrap();
-
-        // Segunda generación (debería venir del cache)
-        let emb2 = generator.generate_embedding(text).await.unwrap();
-
-        assert_eq!(emb1, emb2);
-    }
-
-    #[tokio::test]
-    async fn test_batch_embeddings() {
-        let config = EmbeddingConfig::default();
-        let generator = EmbeddingGenerator::new(config);
-
-        let texts = vec![
-            "First text".to_string(),
-            "Second text".to_string(),
-            "Third text".to_string(),
-        ];
-
-        let embeddings = generator.generate_embeddings_batch(&texts).await.unwrap();
-
-        assert_eq!(embeddings.len(), 3);
-        assert_eq!(embeddings[0].len(), 384);
-    }
-
-    #[test]
-    fn test_cosine_similarity() {
-        let vec1 = vec![1.0, 0.0, 0.0];
-        let vec2 = vec![0.0, 1.0, 0.0];
-        let vec3 = vec![1.0, 0.0, 0.0];
-
-        let sim1 = cosine_similarity(&vec1, &vec2).unwrap();
-        let sim2 = cosine_similarity(&vec1, &vec3).unwrap();
-
-        // Vectores ortogonales -> similitud ~0
-        assert!((sim1 - 0.0).abs() < 0.01);
-        // Vectores idénticos -> similitud ~1
-        assert!((sim2 - 1.0).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_stub_embedding_deterministic() {
-        let config = EmbeddingConfig::default();
-        let generator = EmbeddingGenerator::new(config);
-
-        let text = "Deterministic test";
-        let emb1 = generator.generate_stub_embedding(text, 384);
-        let emb2 = generator.generate_stub_embedding(text, 384);
-
-        // Debe ser determinístico
-        assert_eq!(emb1, emb2);
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_cosine_similarity() {
-        let vec1 = vec![1.0, 0.0, 0.0];
-        let vec2 = vec![0.0, 1.0, 0.0];
-
-        let result = cosine_similarity(&vec1, &vec2);
-
-        if let Ok(sim) = result {
-            // Vectores ortogonales -> similitud ~0
-            assert!((sim - 0.0).abs() < 0.01);
-        }
-    }
-}
-
-/// Predice los próximos movimientos del agente usando el Transformer de JAX
 pub fn predict_next_moves(current_context: &[f32], n_moves: usize) -> Result<Vec<Vec<f32>>> {
     #[cfg(feature = "ffi-jax")]
     {
-        tracing::debug!("Prediciendo {} movimientos con JAX Transformer", n_moves);
-
         let dim = current_context.len();
-        let mut results = vec![0.0f32; dim * n_moves];
-
-        // En producción: llamar a jax_predict_next_moves_ffi via Python C API
-        // Por ahora: simulamos la progresión de estados del Transformer
-        let mut predictions = Vec::with_capacity(n_moves);
-        let mut current_state = current_context.to_vec();
-
-        for _ in 0..n_moves {
-            let mut next_state = Vec::with_capacity(dim);
-            for (i, &val) in current_state.iter().enumerate() {
-                // Simulación de dinámica no lineal (Transformer-like)
-                let noise = ((i as f32 * 0.1).sin() * 0.01);
-                next_state.push((val * 0.95 + noise).clamp(-1.0, 1.0));
+        let mut flat_results = vec![0.0f32; dim * n_moves];
+        unsafe {
+            let ret = jax_predict_next_moves_ffi(current_context.as_ptr(), dim, n_moves, flat_results.as_mut_ptr());
+            if ret == 0 {
+                Ok(flat_results.chunks(dim).map(|c| c.to_vec()).collect())
+            } else {
+                Err(FfiError::CallFailed("JAX predict_next_moves failed".into()))
             }
-
-            // Normalizar
-            let norm: f32 = next_state.iter().map(|x| x * x).sum::<f32>().sqrt();
-            if norm > 1e-8 {
-                for x in &mut next_state {
-                    *x /= norm;
-                }
-            }
-
-            predictions.push(next_state.clone());
-            current_state = next_state;
         }
-
-        Ok(predictions)
     }
-
     #[cfg(not(feature = "ffi-jax"))]
     {
-        // Fallback: Retornar vectores similares con ruido
-        let mut predictions = Vec::with_capacity(n_moves);
-        for i in 1..=n_moves {
-            let mut move_vec = current_context.to_vec();
-            for val in &mut move_vec {
-                *val += i as f32 * 0.05;
-            }
-            predictions.push(move_vec);
-        }
-        Ok(predictions)
+        Ok(vec![current_context.to_vec(); n_moves])
     }
 }

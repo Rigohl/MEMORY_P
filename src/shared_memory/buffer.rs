@@ -57,7 +57,7 @@ impl SharedMemoryBuffer {
             if let Some(buffer) = crate::ffi::bridge::create_shared_buffer(self.capacity_bytes) {
                 unsafe {
                     // Store the buffer pointer (requires unsafe transmute due to const/mut)
-                    let self_mut = &self as *const Self as *mut Self;
+                    let self_mut = self as *const Self as *mut Self;
                     (*self_mut).zig_buffer = Some(buffer);
                 }
                 self.zig_available.store(true, Ordering::Release);
@@ -91,7 +91,7 @@ impl SharedMemoryBuffer {
         {
             if self.zig_available.load(Ordering::Acquire) {
                 if let Some(buffer) = unsafe {
-                    let self_mut = &self as *const Self as *mut Self;
+                    let self_mut = self as *const Self as *mut Self;
                     (*self_mut).zig_buffer
                 } {
                     match crate::ffi::bridge::write_to_buffer(buffer, data) {
@@ -140,12 +140,12 @@ impl SharedMemoryBuffer {
         {
             if self.zig_available.load(Ordering::Acquire) {
                 if let Some(buffer) = unsafe {
-                    let self_mut = &self as *const Self as *mut Self;
+                    let self_mut = self as *const Self as *mut Self;
                     (*self_mut).zig_buffer
                 } {
                     match crate::ffi::bridge::read_from_buffer(buffer, offset, len) {
                         Ok(data) => {
-                            debug!("Leídos {} bytes del buffer Zig", data.len());
+                            debug!("Leídos {} bytes del buffer Zig", data.len() as u64);
                             return Ok(data);
                         }
                         Err(e) => {
@@ -170,7 +170,7 @@ impl SharedMemoryBuffer {
         {
             if self.zig_available.load(Ordering::Acquire) {
                 if let Some(buffer) = unsafe {
-                    let self_mut = &self as *const Self as *mut Self;
+                    let self_mut = self as *const Self as *mut Self;
                     (*self_mut).zig_buffer
                 } {
                     let info = crate::ffi::bridge::get_buffer_info(buffer);
@@ -197,8 +197,8 @@ impl SharedMemoryBuffer {
         #[cfg(feature = "ffi-zig")]
         {
             if self.zig_available.load(Ordering::Acquire) {
-                if let Some(buffer) = unsafe {
-                    let self_mut = &self as *const Self as *mut Self;
+                if let Some(_buffer) = unsafe {
+                    let self_mut = self as *const Self as *mut Self;
                     (*self_mut).zig_buffer
                 } {
                     // Note: We'd need to expose buffer_clear in bridge.rs

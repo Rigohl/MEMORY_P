@@ -145,7 +145,7 @@ mod tests {
         let config = ManagerConfig::default();
         let manager = AutoManager::new(config);
         let shared_memory = Arc::new(crate::shared_memory::SharedMemorySystem::new().await.unwrap());
-        assert!(manager.auto_start(shared_memory).await.is_ok());
+        assert!(manager.auto_start(shared_memory, None).await.is_ok());
         manager.stop().await;
     }
 }

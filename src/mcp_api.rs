@@ -1,4 +1,3 @@
-use crate::backpack::Backpack;
 use crate::analyzer::CodeAnalyzer;
 use crate::auto_manager::AutoManager; // Auto-gestión MCP 2026
 use crate::error::MemoryPError;
@@ -126,7 +125,7 @@ pub async fn kpi_record_handler(
         target,
         upper_spec_limit: usl,
         lower_spec_limit: lsl,
-        timestamp: std::time::Instant::now(),
+        timestamp: chrono::Utc::now(),
         unit,
     };
 
@@ -660,7 +659,7 @@ pub async fn mcp_json_rpc_handler(
 
                 "brain_status" => {
                     let stats = shared_memory.get_stats().await;
-                    let integration = shared_memory.get_integration_stats().await;
+                    let _integration = shared_memory.get_integration_stats().await;
 
                     Some(json!({
                         "content": [{
