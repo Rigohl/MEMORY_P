@@ -49,7 +49,7 @@ tokenizers = "0.15"
 
 # CLI & Parsing
 clap = { version = "4.5", features = ["derive", "cargo"] }
-colored = "2.1"
+colored = "3.1"
 sqlparser = "0.50"
 
 # Workspace & Memory
