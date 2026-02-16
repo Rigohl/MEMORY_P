@@ -61,7 +61,7 @@ smartstring = { version = "1.0", features = ["serde"] }
 sled = "0.34"
 polars = { version = "0.41", features = ["lazy", "parquet", "json"] }
 aes-gcm = "0.10"
-rand = "0.8"
+rand = "0.10"
 
 # Database (optional for legacy support)
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
