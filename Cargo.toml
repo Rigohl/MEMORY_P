@@ -50,7 +50,7 @@ tokenizers = "0.15"
 # CLI & Parsing
 clap = { version = "4.5", features = ["derive", "cargo"] }
 colored = "2.1"
-sqlparser = "0.50"
+sqlparser = "0.61"
 
 # Workspace & Memory
 lazy_static = "1.4"
