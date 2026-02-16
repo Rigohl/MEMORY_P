@@ -20,7 +20,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Parallelism & Concurrency
 rayon = "1.11"
-scc = "2.4"
+scc = "3.6"
 dashmap = "6.1"
 num_cpus = "1.17"
 parking_lot = "0.12"
