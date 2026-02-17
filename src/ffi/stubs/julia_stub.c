@@ -20,3 +20,27 @@ int julia_get_decision_ffi(double entropy, double chaos, double stability, char*
     buffer[i] = '\0';
     return 0;
 }
+
+// ============================================================================
+// String Theory & Quantum Extensions Stub
+// ============================================================================
+
+int julia_string_theory_analysis_ffi(const double* data, int len, double* result_buf) {
+    if (len <= 0) return -1;
+    // Simulate complex metrics
+    result_buf[0] = 0.5 * 440.0; // Fundamental Frequency (A4 like)
+    result_buf[1] = 0.85;        // Harmonic Complexity
+    result_buf[2] = 0.99;        // String Tension (High Tension)
+    return 0;
+}
+
+double julia_quantum_decision_ffi(double prob_a, double prob_b, double interference) {
+    // Quantum probability simulation with interference term
+    double psi_a = 0.7071; // sqrt(0.5)
+    double psi_b = 0.7071;
+    // |psi_a + psi_b|^2 with interference
+    double res = (prob_a + prob_b) + (2.0 * psi_a * psi_b * interference);
+    if (res > 1.0) return 1.0;
+    if (res < 0.0) return 0.0;
+    return res;
+}

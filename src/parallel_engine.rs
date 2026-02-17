@@ -288,7 +288,7 @@ pub fn ultra_repair(
     })
 }
 
-#[allow(dead_code)]
+
 pub fn ultra_search(
     paths: &[PathBuf],
     pattern: &str,
@@ -305,7 +305,7 @@ pub fn ultra_search(
     })
 }
 
-#[allow(dead_code)]
+
 pub fn ultra_replace(
     paths: &[PathBuf],
     pattern: &str,

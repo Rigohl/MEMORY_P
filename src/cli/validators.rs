@@ -253,10 +253,10 @@ fn check_dead_code_patterns(path: &Path) -> Result<Vec<String>> {
         }
 
         if let Ok(content) = fs::read_to_string(&entry_path) {
-            // Look for #[allow(dead_code)] or #[cfg(test)]
-            if content.contains("#[allow(dead_code)]") {
+            // Look for  or #[cfg(test)]
+            if content.contains("") {
                 suspects.push(format!(
-                    "{}: contains #[allow(dead_code)]",
+                    "{}: contains ",
                     entry_path.display()
                 ));
             }

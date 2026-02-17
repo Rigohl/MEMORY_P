@@ -34,7 +34,7 @@ pub struct Tool {
     pub annotations: Option<Value>,
 }
 
-#[allow(dead_code)]
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource {
     pub uri: String,
@@ -145,7 +145,7 @@ pub struct CreateProjectResponse {
     pub created_files: Vec<String>,
 }
 
-#[allow(dead_code)]
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UltraSimulationRequest {
     pub name: String,

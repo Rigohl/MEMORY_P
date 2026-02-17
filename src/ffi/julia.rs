@@ -72,3 +72,68 @@ pub fn get_search_decision(entropy: f64, chaos: f64, stability: f64) -> crate::e
         }
     }
 }
+
+// ============================================================================
+// String Theory & Quantum Extensions
+// ============================================================================
+
+#[cfg(feature = "ffi-julia")]
+#[link(name = "julia_ffi")]
+extern "C" {
+    fn julia_string_theory_analysis_ffi(data: *const c_double, len: c_int, result_buf: *mut c_double) -> c_int;
+    fn julia_quantum_decision_ffi(prob_a: c_double, prob_b: c_double, interference: c_double) -> c_double;
+}
+
+pub struct StringTheoryMetrics {
+    pub fundamental_frequency: f64,
+    pub harmonic_complexity: f64,
+    pub string_tension: f64,
+}
+
+pub fn string_theory_analysis(data: &[f64]) -> Result<StringTheoryMetrics> {
+    #[cfg(feature = "ffi-julia")]
+    {
+        let mut result_buf = [0.0f64; 3];
+        unsafe {
+            let ret = julia_string_theory_analysis_ffi(
+                data.as_ptr(),
+                data.len() as c_int,
+                result_buf.as_mut_ptr()
+            );
+
+            if ret == 0 {
+                Ok(StringTheoryMetrics {
+                    fundamental_frequency: result_buf[0],
+                    harmonic_complexity: result_buf[1],
+                    string_tension: result_buf[2],
+                })
+            } else {
+                Err(FfiError::CallFailed("Julia String Theory Analysis failed".into()))
+            }
+        }
+    }
+    #[cfg(not(feature = "ffi-julia"))]
+    {
+        // Stub implementation
+        Ok(StringTheoryMetrics {
+            fundamental_frequency: 0.5,
+            harmonic_complexity: 0.8,
+            string_tension: 0.25,
+        })
+    }
+}
+
+pub fn quantum_decision(prob_a: f64, prob_b: f64, interference: f64) -> Result<f64> {
+    #[cfg(feature = "ffi-julia")]
+    {
+        unsafe {
+            let res = julia_quantum_decision_ffi(prob_a, prob_b, interference);
+            Ok(res)
+        }
+    }
+    #[cfg(not(feature = "ffi-julia"))]
+    {
+        // Classical probability sum
+        Ok((prob_a + prob_b).min(1.0))
+    }
+}

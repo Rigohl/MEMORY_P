@@ -10,7 +10,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// Configuración de simulación
-#[allow(dead_code)]
+
 #[derive(Debug, Clone)]
 pub struct SimConfig {
     pub phase: u8,

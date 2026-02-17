@@ -398,3 +398,122 @@ Base.@ccallable function julia_shutdown()::Cint
 end
 
 end # module MemoryPMath
+
+# ============================================================================
+# String Theory & Quantum Mechanics for Decision Support
+# ============================================================================
+
+"""
+    string_theory_vibration_analysis(data::Vector{Float64}) -> Dict
+
+Analiza las "vibraciones" (frecuencias espectrales) de una serie temporal,
+inspirado en la teoría de cuerdas donde las partículas son modos de vibración.
+
+Retorna:
+- `fundamental_frequency`: Frecuencia dominante (energía/masa de la partícula)
+- `harmonic_complexity`: Riqueza de armónicos (tipo de partícula)
+- `string_tension`: Medida de la "tensión" (rigidez de la serie)
+"""
+function string_theory_vibration_analysis(data::Vector{Float64})
+    n = length(data)
+    if n < 4
+        return Dict("fundamental_frequency" => 0.0, "harmonic_complexity" => 0.0, "string_tension" => 0.0)
+    end
+
+    # Simple DFT implementation (O(N^2)) to avoid FFTW dependency
+    # X_k = sum_{n=0}^{N-1} x_n * exp(-i * 2*pi * k * n / N)
+    spectrum = zeros(ComplexF64, n ÷ 2 + 1)
+    for k in 0:(n ÷ 2)
+        sum_val = 0.0 + 0.0im
+        for t in 0:(n-1)
+            angle = -2 * pi * k * t / n
+            sum_val += data[t+1] * (cos(angle) + im * sin(angle))
+        end
+        spectrum[k+1] = sum_val
+    end
+
+    magnitudes = abs.(spectrum)
+
+    # Find dominant frequency (excluding DC component at index 1)
+    max_mag, idx = findmax(magnitudes[2:end])
+    fundamental_freq = idx / n  # Normalized frequency
+
+    # Harmonic complexity: Entropy of the spectrum
+    total_energy = sum(magnitudes)
+    probs = magnitudes ./ total_energy
+    harmonic_complexity = -sum(p * log2(p + 1e-10) for p in probs if p > 0)
+
+    # String tension: Proportional to frequency^2 (f ~ sqrt(T/mu))
+    string_tension = fundamental_freq^2
+
+    return Dict(
+        "fundamental_frequency" => fundamental_freq,
+        "harmonic_complexity" => harmonic_complexity,
+        "string_tension" => string_tension
+    )
+end
+
+"""
+    quantum_superposition_decision(prob_a::Float64, prob_b::Float64, interference::Float64) -> Float64
+
+Calcula la probabilidad de una decisión conjunta usando superposición cuántica.
+P(A or B) = |psi_A + psi_B|^2 = |sqrt(Pa) + sqrt(Pb)*exp(i*theta)|^2
+theta es el ángulo de interferencia (fase).
+
+Argumentos:
+- `prob_a`: Probabilidad clásica de opción A
+- `prob_b`: Probabilidad clásica de opción B
+- `interference`: Factor de interferencia [-1.0, 1.0] (cos(theta))
+
+Retorna:
+- Probabilidad cuántica resultante (puede violar axiomas de probabilidad clásica)
+"""
+function quantum_superposition_decision(prob_a::Float64, prob_b::Float64, interference::Float64)
+    # Amplitudes de probabilidad (asumiendo reales positivas iniciales)
+    psi_a = sqrt(prob_a)
+    psi_b = sqrt(prob_b)
+
+    # Término de interferencia: 2 * |psi_a| * |psi_b| * cos(theta)
+    # interference input is effectively cos(theta)
+    interf_term = 2 * psi_a * psi_b * interference
+
+    # Probabilidad total con interferencia
+    prob_quantum = prob_a + prob_b + interf_term
+
+    # Normalizar al rango [0, 1] (aunque en QM puede sumar > 1 si no está normalizado)
+    return clamp(prob_quantum, 0.0, 1.0)
+end
+
+# FFI Exports for Quantum/String Functions
+
+Base.@ccallable function julia_string_theory_analysis_ffi(
+    data::Ptr{Float64},
+    len::Cint,
+    result_buf::Ptr{Float64} # [freq, complexity, tension]
+)::Cint
+    if data == C_NULL || result_buf == C_NULL || len <= 0
+        return Cint(-1)
+    end
+
+    try
+        n = Int(len)
+        input = unsafe_wrap(Vector{Float64}, data, n; own = false)
+        metrics = string_theory_vibration_analysis(input)
+
+        unsafe_store!(result_buf, metrics["fundamental_frequency"], 1)
+        unsafe_store!(result_buf, metrics["harmonic_complexity"], 2)
+        unsafe_store!(result_buf, metrics["string_tension"], 3)
+
+        return Cint(0)
+    catch e
+        return Cint(-1)
+    end
+end
+
+Base.@ccallable function julia_quantum_decision_ffi(
+    prob_a::Float64,
+    prob_b::Float64,
+    interference::Float64
+)::Float64
+    return quantum_superposition_decision(prob_a, prob_b, interference)
+end

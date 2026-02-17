@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::fs;
 
 /// Configuración principal de MEMORY_P
-#[allow(dead_code)]
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct AppConfig {
     pub parallelism: ParallelismConfig,
@@ -20,7 +20,7 @@ pub struct ParallelismConfig {
 }
 
 /// Configuración avanzada de I/O y rendimiento
-#[allow(dead_code)]
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct AdvancedConfig {
     /// Timeout para operaciones de archivo (ms)
@@ -34,7 +34,7 @@ pub struct AdvancedConfig {
 }
 
 /// Configuración del orquestador Julia
-#[allow(dead_code)]
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct OrchestratorConfig {
     pub auto_analyze: bool,

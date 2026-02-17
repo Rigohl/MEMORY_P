@@ -12,10 +12,10 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct FaissEngine {
-    #[allow(dead_code)]
+
     config: EngineConfig,
     vector_size: usize,
-    #[allow(dead_code)]
+
     use_gpu: bool,
     initialized: bool,
 }

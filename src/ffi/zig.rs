@@ -18,7 +18,7 @@ extern "C" {
     fn shared_memory_buffer_new(capacity: usize) -> *mut c_void;
     fn shared_memory_buffer_write(buffer: *mut c_void, data: *const u8, len: usize) -> isize;
     fn shared_memory_buffer_read(buffer: *const c_void, offset: usize, dest: *mut u8, len: usize) -> isize;
-    #[allow(dead_code)] fn shared_memory_buffer_free(buffer: *mut c_void);
+     fn shared_memory_buffer_free(buffer: *mut c_void);
     fn shared_memory_buffer_info(buffer: *const c_void) -> BufferInfo;
     fn shared_memory_buffer_ref(buffer: *mut c_void);
     fn shared_memory_buffer_unref(buffer: *mut c_void);
@@ -84,3 +84,13 @@ impl Drop for ZigBridge {
 
 unsafe impl Send for ZigBridge {}
 unsafe impl Sync for ZigBridge {}
+
+impl ZigBridge {
+    // Explicit free method if needed manually (usually Drop handles unref, but free might be forced)
+    pub fn force_free(&mut self) {
+        unsafe {
+            shared_memory_buffer_free(self.ptr);
+            self.ptr = std::ptr::null_mut();
+        }
+    }
+}

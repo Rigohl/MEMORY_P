@@ -9,7 +9,7 @@ use tracing::{info, warn};
 /// Cliente Tor para Deep Web
 pub struct DeepwebTor {
     connected: Arc<RwLock<bool>>,
-    #[allow(dead_code)]
+
     tor_proxy: String,
     circuit_id: Arc<RwLock<Option<String>>>,
 }

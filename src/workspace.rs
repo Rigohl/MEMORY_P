@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 // El bloqueo global fue removido para permitir escalado masivo 1M+ ops.
 
 /// Analiza un archivo con el escáner "Nuclear God Mode" y métricas detalladas
-#[allow(dead_code)]
+
 pub fn analyze_file(path: &Path) -> Result<String> {
     let content = fs::read_to_string(path)?;
     let mut findings = Vec::new();
@@ -117,7 +117,7 @@ where
 }
 
 /// Edita un archivo: Normalización estructural (Indentation, Tabs, EOL)
-#[allow(dead_code)]
+
 pub fn edit_file(path: &Path) -> Result<String> {
     // ⚡ MMAP READ (Zero-copy I/O)
     let file = fs::File::open(path)?;

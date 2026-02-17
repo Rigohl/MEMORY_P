@@ -16,7 +16,7 @@ extern "C" {
         result: *mut f32,
         result_len: usize
     ) -> std::ffi::c_int;
-    #[allow(dead_code)] fn jax_cosine_similarity_ffi(
+     fn jax_cosine_similarity_ffi(
         vec1: *const f32,
         vec2: *const f32,
         dim: usize
@@ -123,5 +123,30 @@ pub fn predict_next_moves(current_context: &[f32], n_moves: usize) -> Result<Vec
     #[cfg(not(feature = "ffi-jax"))]
     {
         Ok(vec![current_context.to_vec(); n_moves])
+    }
+}
+
+pub fn cosine_similarity(vec1: &[f32], vec2: &[f32]) -> Result<f32> {
+    #[cfg(feature = "ffi-jax")]
+    {
+        if vec1.len() != vec2.len() {
+            return Err(FfiError::CallFailed("Vector dimension mismatch".into()));
+        }
+        let dim = vec1.len();
+        unsafe {
+            Ok(jax_cosine_similarity_ffi(vec1.as_ptr(), vec2.as_ptr(), dim))
+        }
+    }
+    #[cfg(not(feature = "ffi-jax"))]
+    {
+        // Simple fallback
+        let dot: f32 = vec1.iter().zip(vec2.iter()).map(|(a, b)| a * b).sum();
+        let norm1: f32 = vec1.iter().map(|a| a * a).sum::<f32>().sqrt();
+        let norm2: f32 = vec2.iter().map(|a| a * a).sum::<f32>().sqrt();
+        if norm1 == 0.0 || norm2 == 0.0 {
+            Ok(0.0)
+        } else {
+            Ok(dot / (norm1 * norm2))
+        }
     }
 }

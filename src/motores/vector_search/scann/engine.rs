@@ -12,7 +12,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct ScannEngine {
-    #[allow(dead_code)]
+
     config: EngineConfig,
     vector_size: usize,
     initialized: bool,

@@ -10,7 +10,7 @@ use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct ToshiEngine {
-    #[allow(dead_code)]
+
     config: EngineConfig,
     cluster_nodes: Vec<String>,
     initialized: bool,

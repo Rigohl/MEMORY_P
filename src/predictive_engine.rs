@@ -85,7 +85,7 @@ pub struct PredictiveEngine {
     /// Histórico de ejecuciones
     history: Arc<RwLock<ExecutionHistory>>,
     /// Caché de predicciones
-    #[allow(dead_code)]
+
     prediction_cache: Arc<RwLock<HashMap<String, Vec<Optimization>>>>,
 }
 
