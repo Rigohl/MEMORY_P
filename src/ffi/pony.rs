@@ -6,7 +6,7 @@ use std::os::raw::c_char;
 use std::ffi::CString;
 
 #[cfg(feature = "ffi-pony")]
-#[link(name = "pony_actors", kind = "dylib")]
+#[link(name = "pony_actors")]
 extern "C" {
     fn pony_init();
     fn pony_shutdown();

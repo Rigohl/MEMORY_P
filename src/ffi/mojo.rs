@@ -4,7 +4,7 @@
 use super::error::{FfiError, Result};
 
 #[cfg(feature = "ffi-mojo")]
-#[link(name = "mojo_kernels", kind = "dylib")]
+#[link(name = "mojo_kernels")]
 extern "C" {
     fn mojo_dot_product(a: *const f64, b: *const f64, n: usize) -> f64;
     fn mojo_cosine_similarity(a: *const f64, b: *const f64, n: usize) -> f64;

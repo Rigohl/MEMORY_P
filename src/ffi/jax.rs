@@ -6,7 +6,7 @@ use dashmap::DashMap;
 use lazy_static::lazy_static;
 
 #[cfg(feature = "ffi-jax")]
-#[link(name = "jax_ffi", kind = "dylib")]
+#[link(name = "jax_ffi")]
 extern "C" {
     fn jax_init_ffi() -> std::ffi::c_int;
     fn jax_shutdown_ffi() -> std::ffi::c_int;
