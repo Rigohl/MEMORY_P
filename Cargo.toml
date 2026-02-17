@@ -16,7 +16,7 @@ futures = "0.3.31"
 reqwest = { version = "0.11", features = ["json"] }
 async-trait = "0.1"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.0", features = ["v4", "serde"] }
+uuid = { version = "1.0", features = ["v4", "v5", "serde"] }
 
 # Parallelism & Concurrency
 rayon = "1.11"
@@ -65,6 +65,10 @@ rand = "0.8"
 
 # Database (optional for legacy support)
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
+tantivy = "0.22"
+qdrant-client = "1.7"
+tonic = "0.14.4"
+tempfile = "3.25.0"
 
 [[bin]]
 name = "memory_p"
