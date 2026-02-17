@@ -1,48 +1,33 @@
-//! Qdrant vector search engine
-//!
-//! High-performance vector similarity search with Qdrant Edge 2025
+//! Qdrant vector search engine - Real Client Implementation
 
-use crate::motores::core::{
-    traits::{SearchEngine, VectorSearchEngine},
-    types::*,
-};
+use crate::motores::core::{traits::SearchEngine, types::*};
 use async_trait::async_trait;
+use qdrant_client::prelude::*;
+use qdrant_client::qdrant::point_id::PointIdOptions;
+use qdrant_client::qdrant::{
+    vectors_config::Config, CreateCollection, Distance, PointStruct, SearchPoints, VectorParams,
+    VectorsConfig, PointId, WithPayloadSelector, with_payload_selector,
+};
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
-/// Qdrant search engine implementation
 pub struct QdrantEngine {
-    #[allow(dead_code)]
     config: EngineConfig,
+    client: Option<QdrantClient>,
     collection_name: String,
-    vector_size: usize,
-    distance_function: String,
     initialized: bool,
 }
 
 impl QdrantEngine {
-    /// Create a new Qdrant engine instance
     pub fn new(config: EngineConfig) -> Self {
         Self {
             config,
-            collection_name: "default".to_string(),
-            vector_size: 384,
-            distance_function: "Cosine".to_string(),
+            client: None,
+            collection_name: "memory_p_vectors".to_string(),
             initialized: false,
         }
-    }
-
-    /// Set collection name
-    pub fn with_collection(mut self, name: String) -> Self {
-        self.collection_name = name;
-        self
-    }
-
-    /// Set vector dimension
-    pub fn with_vector_size(mut self, size: usize) -> Self {
-        self.vector_size = size;
-        self
     }
 
     fn current_timestamp() -> i64 {
@@ -55,72 +40,184 @@ impl QdrantEngine {
 
 #[async_trait]
 impl SearchEngine for QdrantEngine {
-    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
+    async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+        tracing::info!("⚡ Initializing Qdrant client...");
+
+        let url = self
+            .config
+            .endpoints
+            .first()
+            .cloned()
+            .unwrap_or_else(|| "http://localhost:6334".to_string());
+
+        let client = QdrantClient::from_url(&url).build()?;
+
+        if !client.collection_exists(&self.collection_name).await? {
+            client
+                .create_collection(&CreateCollection {
+                    collection_name: self.collection_name.clone(),
+                    vectors_config: Some(VectorsConfig {
+                        config: Some(Config::Params(VectorParams {
+                            size: 384,
+                            distance: Distance::Cosine.into(),
+                            ..Default::default()
+                        })),
+                    }),
+                    ..Default::default()
+                })
+                .await?;
+            tracing::info!("Created Qdrant collection: {}", self.collection_name);
         }
 
-        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
-        // Production code would:
-        // 1. Convert query to Qdrant SearchRequest
-        // 2. Call client.search(collection, vector, limit, filter)
-        // 3. Convert Qdrant ScoredPoint -> SearchResult
-        //
-        // For now: Return empty results with proper error if vector missing
-        tracing::warn!(
-            "Qdrant search called but client not configured - add 'qdrant-client' dependency"
-        );
-        Ok(vec![])
-    }
-
-    async fn index(&self, _documents: &[Document]) -> Result<(), Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
-        }
-
-        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
-        // Production code would:
-        // 1. Convert documents to Qdrant PointStruct
-        // 2. Batch insert with client.upsert(collection, points, None)
-        // 3. Handle embedding generation if needed
-        tracing::warn!("Qdrant index called but client not configured");
+        self.client = Some(client);
+        self.initialized = true;
+        tracing::info!("✅ Qdrant engine initialized");
         Ok(())
     }
 
-    async fn delete(&self, _ids: &[String]) -> Result<(), Box<dyn Error>> {
+    async fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+        let client = self.client.as_ref().unwrap();
+
+        let vector = query
+            .vector
+            .clone()
+            .ok_or("Vector required for Qdrant search")?;
+
+        let search_result = client
+            .search_points(&SearchPoints {
+                collection_name: self.collection_name.clone(),
+                vector: vector,
+                limit: query.limit as u64,
+                with_payload: Some(WithPayloadSelector {
+                    selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
+                }),
+                ..Default::default()
+            })
+            .await?;
+
+        let mut results = Vec::new();
+        for scored_point in search_result.result {
+            let id = scored_point.id.map(|i| {
+                match i.point_id_options {
+                    Some(PointIdOptions::Uuid(u)) => u,
+                    Some(PointIdOptions::Num(n)) => n.to_string(),
+                    None => "unknown".to_string(),
+                }
+            }).unwrap_or_default();
+
+            let payload = scored_point.payload;
+
+            let content = payload.get("content")
+                .and_then(|v| v.as_str())
+                .map(|v| v.to_string())
+                .unwrap_or_default();
+
+            let mut metadata = HashMap::new();
+            // Stub metadata conversion
+
+            results.push(SearchResult {
+                id,
+                score: scored_point.score,
+                content,
+                metadata,
+                engine: "qdrant".to_string(),
+                highlights: vec![],
+            });
+        }
+
+        Ok(results)
+    }
+
+    async fn index(&self, documents: &[Document]) -> Result<(), Box<dyn Error>> {
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
+        let client = self.client.as_ref().unwrap();
+
+        let points: Vec<PointStruct> = documents
+            .iter()
+            .map(|doc| -> Result<PointStruct, Box<dyn Error>> {
+                let vector = doc.vector.clone().ok_or("Vector missing in document".to_string())?;
+
+                let mut payload: Payload = Payload::new();
+                payload.insert("content", doc.content.clone());
+                for (k, v) in &doc.metadata {
+                    if let Ok(qv) = serde_json::from_value::<qdrant_client::qdrant::Value>(v.clone()) {
+                         payload.insert(k, qv);
+                    }
+                }
+
+                let point_id = if let Ok(u) = Uuid::parse_str(&doc.id) {
+                    PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+                } else {
+                    let u = Uuid::new_v5(&Uuid::NAMESPACE_OID, doc.id.as_bytes());
+                    PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+                };
+
+                Ok(PointStruct::new(point_id, vector, payload))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        client
+            .upsert_points(self.collection_name.clone(), None, points, None)
+            .await?;
 
         Ok(())
     }
 
-    async fn update(&self, _documents: &[Document]) -> Result<(), Box<dyn Error>> {
+    async fn delete(&self, ids: &[String]) -> Result<(), Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
+        let client = self.client.as_ref().unwrap();
 
+        let point_ids: Vec<PointId> = ids.iter().map(|id| {
+             if let Ok(u) = Uuid::parse_str(id) {
+                PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+            } else {
+                let u = Uuid::new_v5(&Uuid::NAMESPACE_OID, id.as_bytes());
+                PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+            }
+        }).collect();
+
+        client.delete_points(self.collection_name.clone(), None, &point_ids.into(), None).await?;
         Ok(())
+    }
+
+    async fn update(&self, documents: &[Document]) -> Result<(), Box<dyn Error>> {
+        self.index(documents).await
     }
 
     async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
+         let healthy = if let Some(client) = &self.client {
+            client.collection_exists(&self.collection_name).await.unwrap_or(false)
+        } else {
+            false
+        };
+
         Ok(EngineHealth {
             engine: "qdrant".to_string(),
-            healthy: self.initialized,
-            status: if self.initialized {
-                "Running".to_string()
-            } else {
-                "Not initialized".to_string()
-            },
+            healthy,
+            status: if healthy { "Running".to_string() } else { "Error/Not Init".to_string() },
             last_check: Self::current_timestamp(),
             details: HashMap::new(),
         })
     }
 
     async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error>> {
+        let count = if let Some(client) = &self.client {
+            let info = client.collection_info(&self.collection_name).await?;
+            info.result.map(|r| r.points_count.unwrap_or(0)).unwrap_or(0)
+        } else {
+            0
+        };
+
         Ok(EngineMetrics {
             engine: "qdrant".to_string(),
-            total_documents: 0,
+            total_documents: count,
             avg_query_latency_ms: 0.0,
             queries_per_second: 0.0,
             index_size_bytes: 0,
@@ -131,9 +228,7 @@ impl SearchEngine for QdrantEngine {
         })
     }
 
-    fn engine_name(&self) -> &'static str {
-        "qdrant"
-    }
+    fn engine_name(&self) -> &'static str { "qdrant" }
 
     fn capabilities(&self) -> EngineCapabilities {
         EngineCapabilities {
@@ -145,63 +240,14 @@ impl SearchEngine for QdrantEngine {
             supports_replication: true,
             supports_facets: true,
             supports_typo_tolerance: false,
-            max_vector_dimension: Some(2048),
+            max_vector_dimension: Some(1536),
             max_scale: Some(1_000_000_000),
         }
     }
 
-    async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
-        // REAL IMPLEMENTATION PENDING: Requires qdrant-client crate
-        // Production code would:
-        // 1. let client = QdrantClient::new(Some(self.config.endpoints[0].clone()))?;
-        // 2. Check if collection exists: client.collection_exists(&self.collection_name)
-        // 3. Create collection if needed with VectorParams
-        // 4. Store client in self
-        tracing::info!(
-            "⚡ Qdrant engine initialized (client pending) - collection: {}, vector_size: {}",
-            self.collection_name,
-            self.vector_size
-        );
-        self.initialized = true;
-        Ok(())
-    }
-
     async fn shutdown(&mut self) -> Result<(), Box<dyn Error>> {
         self.initialized = false;
+        self.client = None;
         Ok(())
-    }
-}
-
-#[async_trait]
-impl VectorSearchEngine for QdrantEngine {
-    async fn vector_search(
-        &self,
-        vector: &[f32],
-        limit: usize,
-    ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
-        }
-
-        if vector.len() != self.vector_size {
-            return Err(format!(
-                "Vector dimension mismatch: expected {}, got {}",
-                self.vector_size,
-                vector.len()
-            )
-            .into());
-        }
-
-        // In production: perform actual vector search
-        let _ = limit; // Unused in stub
-        Ok(vec![])
-    }
-
-    fn vector_dimension(&self) -> usize {
-        self.vector_size
-    }
-
-    fn distance_metric(&self) -> &str {
-        &self.distance_function
     }
 }
