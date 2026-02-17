@@ -13,6 +13,7 @@ pub struct BufferInfo {
     pub initialized: bool,
 }
 
+#[link(name = "zig_bridge")]
 extern "C" {
     fn shared_memory_buffer_new(capacity: usize) -> *mut c_void;
     fn shared_memory_buffer_write(buffer: *mut c_void, data: *const u8, len: usize) -> isize;

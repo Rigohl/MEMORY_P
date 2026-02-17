@@ -75,6 +75,7 @@ impl ContextManager {
     }
 
     /// Obtiene o crea un contexto para un agente
+    pub async fn get_or_create_context(&self, agent_id: AgentId) -> Result<SharedContext> { self.get_or_create(agent_id).await }
     pub async fn get_or_create(&self, agent_id: AgentId) -> Result<SharedContext> {
         // Buscar en índice primero
         if let Some(context_id_ref) = self.agent_index.get(&agent_id) {
