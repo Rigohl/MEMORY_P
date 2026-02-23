@@ -66,7 +66,7 @@ rand = "0.8"
 # Database (optional for legacy support)
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "json"], optional = true }
 tantivy = "0.22"
-qdrant-client = "1.7"
+qdrant-client = "1.17"
 tonic = "0.14.4"
 tempfile = "3.25.0"
 
