@@ -45,7 +45,7 @@ opentelemetry = { version = "0.21" }
 jwalk = "0.8"
 ignore = "0.4"
 regex = "1.12"
-tokenizers = "0.15"
+tokenizers = "0.22"
 
 # CLI & Parsing
 clap = { version = "4.5", features = ["derive", "cargo"] }
