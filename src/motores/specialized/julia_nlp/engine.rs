@@ -5,11 +5,14 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{Arc, Mutex};
+use dashmap::DashMap;
 
 pub struct JuliaNlpEngine {
     #[allow(dead_code)]
     config: EngineConfig,
     initialized: bool,
+    documents: Arc<DashMap<String, Document>>,
 }
 
 impl JuliaNlpEngine {
@@ -17,6 +20,7 @@ impl JuliaNlpEngine {
         Self {
             config,
             initialized: false,
+            documents: Arc::new(DashMap::new()),
         }
     }
 
@@ -30,34 +34,84 @@ impl JuliaNlpEngine {
 
 #[async_trait]
 impl SearchEngine for JuliaNlpEngine {
-    async fn search(&self, _query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
 
-        // FFI READY: Just needs connection to julia_math.jl
-        // See docs/ENGINE_IMPLEMENTATION_STATUS.md
-        //
-        // Implementation steps:
-        // 1. Call crate::ffi::julia::chaos_analysis() for text complexity
-        // 2. Use Julia fuzzy matching (TextAnalysis.jl)
-        // 3. Mathematical similarity metrics
-        tracing::warn!("Julia NLP search stub - FFI binding ready, just needs integration");
-        Ok(vec![])
+        let mut results = Vec::new();
+        let query_chars: Vec<char> = query.text.chars().collect();
+        let mut query_data = vec![];
+        for c in query_chars {
+            query_data.push(c as u32 as f64);
+        }
+
+        let query_chaos = crate::ffi::julia::chaos_analysis(&query_data).unwrap_or(0.0);
+
+        for entry in self.documents.iter() {
+            let doc = entry.value();
+
+            let doc_chars: Vec<char> = doc.content.chars().collect();
+            let mut doc_data = vec![];
+            for c in doc_chars {
+                doc_data.push(c as u32 as f64);
+            }
+
+            let doc_chaos = crate::ffi::julia::chaos_analysis(&doc_data).unwrap_or(0.0);
+
+            // Mathematical similarity metric based on chaos value (simple implementation)
+            let diff = (query_chaos - doc_chaos).abs();
+            let score = 1.0 / (1.0 + diff as f32);
+
+            // Add simple text matching to complement mathematical search
+            let text_match = if doc.content.to_lowercase().contains(&query.text.to_lowercase()) {
+                0.5
+            } else {
+                0.0
+            };
+
+            let final_score = (score * 0.5) + text_match;
+
+            if final_score > 0.1 {
+                results.push(SearchResult {
+                    id: doc.id.clone(),
+                    score: final_score,
+                    content: doc.content.clone(),
+                    metadata: doc.metadata.clone(),
+                    engine: self.engine_name().to_string(),
+                    highlights: vec![],
+                });
+            }
+        }
+
+        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.truncate(query.limit);
+
+        Ok(results)
     }
 
-    async fn index(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
+    async fn index(&self, documents: &[Document]) -> Result<(), Box<dyn Error>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
+        }
+        for doc in documents {
+            self.documents.insert(doc.id.clone(), doc.clone());
         }
         Ok(())
     }
 
-    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> {
+    async fn delete(&self, ids: &[String]) -> Result<(), Box<dyn Error>> {
+        if !self.initialized {
+            return Err("Engine not initialized".into());
+        }
+        for id in ids {
+            self.documents.remove(id);
+        }
         Ok(())
     }
-    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
-        Ok(())
+
+    async fn update(&self, documents: &[Document]) -> Result<(), Box<dyn Error>> {
+        self.index(documents).await
     }
 
     async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
@@ -77,7 +131,7 @@ impl SearchEngine for JuliaNlpEngine {
     async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error>> {
         Ok(EngineMetrics {
             engine: "julia_nlp".to_string(),
-            total_documents: 0,
+            total_documents: self.documents.len() as u64,
             avg_query_latency_ms: 0.0,
             queries_per_second: 0.0,
             index_size_bytes: 0,
@@ -97,7 +151,7 @@ impl SearchEngine for JuliaNlpEngine {
             supports_vector_search: false,
             supports_full_text: true,
             supports_fuzzy: true,
-            supports_real_time: false,
+            supports_real_time: true,
             supports_distributed: false,
             supports_replication: false,
             supports_facets: false,
@@ -108,14 +162,18 @@ impl SearchEngine for JuliaNlpEngine {
     }
 
     async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
-        // FFI READY: julia_math.jl has full C ABI via @ccallable
-        // Just needs to call crate::ffi::julia::init()
-        tracing::info!("⚡ Julia NLP engine initialized (FFI READY - 2-3 hours to implement)");
+        tracing::info!("⚡ Initializing Julia NLP engine...");
+        if let Err(e) = crate::ffi::julia::init() {
+            tracing::warn!("Failed to initialize Julia FFI: {}. Engine will use fallback logic.", e);
+        } else {
+            tracing::info!("✅ Julia FFI connected");
+        }
         self.initialized = true;
         Ok(())
     }
 
     async fn shutdown(&mut self) -> Result<(), Box<dyn Error>> {
+        crate::ffi::julia::shutdown();
         self.initialized = false;
         Ok(())
     }
