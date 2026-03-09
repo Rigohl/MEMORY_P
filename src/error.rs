@@ -37,6 +37,10 @@ pub enum MemoryPError {
 
     #[error("Shared Memory Error: {0}")]
     SharedMemoryError(String),
+
+    #[cfg(feature = "sqlx")]
+    #[error("Database Error: {0}")]
+    Database(#[from] sqlx::Error),
 }
 
 pub type Result<T> = std::result::Result<T, MemoryPError>;
