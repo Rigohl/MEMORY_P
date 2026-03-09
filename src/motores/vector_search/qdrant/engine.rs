@@ -2,11 +2,12 @@
 
 use crate::motores::core::{traits::SearchEngine, types::*};
 use async_trait::async_trait;
-use qdrant_client::prelude::*;
+use qdrant_client::{Qdrant, Payload};
 use qdrant_client::qdrant::point_id::PointIdOptions;
 use qdrant_client::qdrant::{
-    vectors_config::Config, CreateCollection, Distance, PointStruct, SearchPoints, VectorParams,
-    VectorsConfig, PointId, WithPayloadSelector, with_payload_selector,
+    Distance, PointStruct, PointId,
+    CreateCollectionBuilder, VectorParamsBuilder,
+    UpsertPointsBuilder, SearchPointsBuilder, DeletePointsBuilder
 };
 use std::collections::HashMap;
 use std::error::Error;
@@ -15,7 +16,7 @@ use uuid::Uuid;
 
 pub struct QdrantEngine {
     config: EngineConfig,
-    client: Option<QdrantClient>,
+    client: Option<Qdrant>,
     collection_name: String,
     initialized: bool,
 }
@@ -50,21 +51,14 @@ impl SearchEngine for QdrantEngine {
             .cloned()
             .unwrap_or_else(|| "http://localhost:6334".to_string());
 
-        let client = QdrantClient::from_url(&url).build()?;
+        let client = Qdrant::from_url(&url).build()?;
 
         if !client.collection_exists(&self.collection_name).await? {
             client
-                .create_collection(&CreateCollection {
-                    collection_name: self.collection_name.clone(),
-                    vectors_config: Some(VectorsConfig {
-                        config: Some(Config::Params(VectorParams {
-                            size: 384,
-                            distance: Distance::Cosine.into(),
-                            ..Default::default()
-                        })),
-                    }),
-                    ..Default::default()
-                })
+                .create_collection(
+                    CreateCollectionBuilder::new(&self.collection_name)
+                        .vectors_config(VectorParamsBuilder::new(384, Distance::Cosine))
+                )
                 .await?;
             tracing::info!("Created Qdrant collection: {}", self.collection_name);
         }
@@ -87,15 +81,10 @@ impl SearchEngine for QdrantEngine {
             .ok_or("Vector required for Qdrant search")?;
 
         let search_result = client
-            .search_points(&SearchPoints {
-                collection_name: self.collection_name.clone(),
-                vector: vector,
-                limit: query.limit as u64,
-                with_payload: Some(WithPayloadSelector {
-                    selector_options: Some(with_payload_selector::SelectorOptions::Enable(true)),
-                }),
-                ..Default::default()
-            })
+            .search_points(
+                SearchPointsBuilder::new(&self.collection_name, vector, query.limit as u64)
+                    .with_payload(true)
+            )
             .await?;
 
         let mut results = Vec::new();
@@ -115,8 +104,7 @@ impl SearchEngine for QdrantEngine {
                 .map(|v| v.to_string())
                 .unwrap_or_default();
 
-            let mut metadata = HashMap::new();
-            // Stub metadata conversion
+            let metadata = HashMap::new();
 
             results.push(SearchResult {
                 id,
@@ -137,32 +125,28 @@ impl SearchEngine for QdrantEngine {
         }
         let client = self.client.as_ref().unwrap();
 
-        let points: Vec<PointStruct> = documents
-            .iter()
-            .map(|doc| -> Result<PointStruct, Box<dyn Error>> {
-                let vector = doc.vector.clone().ok_or("Vector missing in document".to_string())?;
+        let mut points: Vec<PointStruct> = Vec::new();
+        for doc in documents {
+            let vector = doc.vector.clone().ok_or("Vector missing in document".to_string())?;
 
-                let mut payload: Payload = Payload::new();
-                payload.insert("content", doc.content.clone());
-                for (k, v) in &doc.metadata {
-                    if let Ok(qv) = serde_json::from_value::<qdrant_client::qdrant::Value>(v.clone()) {
-                         payload.insert(k, qv);
-                    }
-                }
+            let mut payload = Payload::new();
+            payload.insert("content", doc.content.clone());
+            for (k, v) in &doc.metadata {
+                payload.insert(k, v.clone());
+            }
 
-                let point_id = if let Ok(u) = Uuid::parse_str(&doc.id) {
-                    PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
-                } else {
-                    let u = Uuid::new_v5(&Uuid::NAMESPACE_OID, doc.id.as_bytes());
-                    PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
-                };
+            let point_id = if let Ok(u) = Uuid::parse_str(&doc.id) {
+                PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+            } else {
+                let u = Uuid::new_v5(&Uuid::NAMESPACE_OID, doc.id.as_bytes());
+                PointId { point_id_options: Some(PointIdOptions::Uuid(u.to_string())) }
+            };
 
-                Ok(PointStruct::new(point_id, vector, payload))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
+            points.push(PointStruct::new(point_id, vector, payload));
+        }
 
         client
-            .upsert_points(self.collection_name.clone(), None, points, None)
+            .upsert_points(UpsertPointsBuilder::new(&self.collection_name, points).wait(true))
             .await?;
 
         Ok(())
@@ -183,7 +167,9 @@ impl SearchEngine for QdrantEngine {
             }
         }).collect();
 
-        client.delete_points(self.collection_name.clone(), None, &point_ids.into(), None).await?;
+        client.delete_points(
+            DeletePointsBuilder::new(&self.collection_name).points(point_ids).wait(true)
+        ).await?;
         Ok(())
     }
 
