@@ -7,7 +7,7 @@ use std::os::raw::{c_void, c_char};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Language { Zig = 0, Julia = 1, Jax = 2, Mojo = 3, Pony = 4 }
+pub enum Language { Julia = 0, Jax = 1, Mojo = 2, Pony = 3, Zig = 4 }
 
 #[repr(C)]
 pub struct FfiVec {
