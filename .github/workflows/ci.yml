@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           profile: minimal
           toolchain: stable
@@ -59,17 +59,17 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           profile: minimal
           toolchain: stable
           override: true
 
       - name: Cache dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -82,7 +82,7 @@ jobs:
 
       - name: Upload artifacts
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: memory_p-${{ runner.os }}
           path: target/release/memory_p
@@ -118,17 +118,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           profile: minimal
           toolchain: stable
           override: true
 
       - name: Cache dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -151,10 +151,10 @@ jobs:
     needs: [build]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v4
         with:
           name: memory_p-Linux
 
@@ -210,7 +210,7 @@ jobs:
         ports:
           - 7700:7700
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/cache@v4
         with:
@@ -273,7 +273,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Analyze for code duplication
         run: |
@@ -302,7 +302,7 @@ jobs:
           grep -c "pub fn route_query" src/motores/core/routing_ai.rs | xargs echo "Routing AI functions:"
           
       - name: Upload pattern analysis
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: code-patterns-report
           path: |
@@ -316,10 +316,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           profile: minimal
           toolchain: stable
@@ -332,7 +332,7 @@ jobs:
         run: cargo tarpaulin --out Xml --output-dir ./coverage
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v3
         with:
           files: ./coverage/cobertura.xml
           flags: unittests

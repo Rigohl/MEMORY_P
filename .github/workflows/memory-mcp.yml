@@ -24,7 +24,7 @@ jobs:
     name: Rust Build & Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: rust-build
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
@@ -196,7 +196,7 @@ jobs:
           - 5432:5432
     
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
@@ -214,7 +214,7 @@ jobs:
     if: failure()
     needs: [rust-build, julia-ffi, database-check]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable

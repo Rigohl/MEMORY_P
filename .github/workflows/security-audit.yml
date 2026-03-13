@@ -14,7 +14,7 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -41,7 +41,7 @@ jobs:
     name: Cargo Deny Check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install cargo-deny
         run: cargo install cargo-deny
@@ -54,7 +54,7 @@ jobs:
     name: Secret Scanning
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
@@ -74,7 +74,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Dependency Review
         uses: actions/dependency-review-action@v4

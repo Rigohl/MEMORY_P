@@ -109,7 +109,7 @@ jobs:
     name: Code Quality Metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install tokei
         run: cargo install tokei
@@ -133,7 +133,7 @@ jobs:
           echo "- Test modules: ${cfg_test_count}" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload statistics
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: code-statistics
           path: tokei.json
@@ -142,7 +142,7 @@ jobs:
     name: Dependency Metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -166,7 +166,7 @@ jobs:
     name: Motor Engine Metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Measure motor implementations
         run: |
@@ -188,7 +188,7 @@ jobs:
     name: FFI Integration Metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Measure FFI bridges and BRAIN
         run: |
@@ -233,7 +233,7 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Validate database schema and collect metrics
         run: |
@@ -269,7 +269,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Create comprehensive dashboard
         run: |

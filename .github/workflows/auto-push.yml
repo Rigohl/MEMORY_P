@@ -33,7 +33,7 @@ jobs:
     
     steps:
       - name: Checkout código
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -89,7 +89,7 @@ jobs:
     
     steps:
       - name: Checkout código
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -97,7 +97,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Cache de dependencias
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -134,7 +134,7 @@ jobs:
     
     steps:
       - name: Checkout código
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -165,7 +165,7 @@ jobs:
     
     steps:
       - name: Checkout código
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Auto-aprobar PR
         if: github.event_name == 'pull_request'

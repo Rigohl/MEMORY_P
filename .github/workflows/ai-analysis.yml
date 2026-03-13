@@ -21,10 +21,10 @@ jobs:
     outputs:
       metrics_file: ${{ steps.collect.outputs.metrics_file }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       
@@ -91,7 +91,7 @@ jobs:
               .write();
       
       - name: Upload metrics
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: ci-metrics
           path: ci-metrics.json
@@ -101,10 +101,10 @@ jobs:
     needs: collect-ci-metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v4
         with:
           python-version: '3.11'
       
@@ -113,7 +113,7 @@ jobs:
           pip install pandas numpy scikit-learn joblib
       
       - name: Download metrics
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: ci-metrics
       
@@ -211,7 +211,7 @@ jobs:
           cat prediction-output.txt >> $GITHUB_STEP_SUMMARY
       
       - name: Upload predictions
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: failure-predictions
           path: predictions.json
@@ -253,7 +253,7 @@ jobs:
     name: Chaos Theory Analysis (Agent)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Analyze system stability
         run: |
@@ -274,10 +274,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: collect-ci-metrics
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Download metrics
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: ci-metrics
       

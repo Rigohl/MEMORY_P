@@ -14,7 +14,7 @@ jobs:
     name: Complexity Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -30,7 +30,7 @@ jobs:
         continue-on-error: true
       
       - name: Upload geiger report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: geiger-report
           path: geiger-report.md
@@ -39,7 +39,7 @@ jobs:
     name: Code Metrics
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install tokei
         run: cargo install tokei
@@ -64,7 +64,7 @@ jobs:
           grep -r "JsonRpcRequest\|JsonRpcResponse\|MCP_PROTOCOL_VERSION" src/mcp/ | wc -l | xargs echo "MCP protocol references:"
       
       - name: Upload metrics
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: code-metrics-report
           path: |
@@ -76,7 +76,7 @@ jobs:
     name: Find Unused Dependencies
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
@@ -91,7 +91,7 @@ jobs:
           cat udeps-report.txt >> $GITHUB_STEP_SUMMARY
       
       - name: Upload report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: unused-dependencies
           path: udeps-report.txt
@@ -121,7 +121,7 @@ jobs:
         ports:
           - 7700:7700
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -302,7 +302,7 @@ jobs:
           cat performance-report.md
 
       - name: Upload performance report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: motor-performance-report
           path: performance-report.md
