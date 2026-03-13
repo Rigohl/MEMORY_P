@@ -7,19 +7,65 @@ pub trait PersistenceLayer: Send + Sync {
     async fn load_data(&self, key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>>;
 }
 
-pub struct PostgresPersistence;
+pub struct PostgresPersistence {
+    #[cfg(feature = "sqlx")]
+    pool: Option<sqlx::PgPool>,
+}
+
+impl PostgresPersistence {
+    pub fn new() -> Self {
+        Self {
+            #[cfg(feature = "sqlx")]
+            pool: None,
+        }
+    }
+
+    #[cfg(feature = "sqlx")]
+    pub fn with_pool(pool: sqlx::PgPool) -> Self {
+        Self { pool: Some(pool) }
+    }
+}
+
 #[async_trait]
 impl PersistenceLayer for PostgresPersistence {
     async fn save_data(
         &self,
-        _key: &str,
-        _value: &serde_json::Value,
+        key: &str,
+        value: &serde_json::Value,
     ) -> Result<(), Box<dyn Error>> {
-        tracing::info!("🐘 Persisting to PostgreSQL (+pgvector): {}", _key);
-        // TODO: SQL: INSERT INTO memory (key, data) VALUES (...) ON CONFLICT ...
+        tracing::info!("🐘 Persisting to PostgreSQL (+pgvector): {}", key);
+
+        #[cfg(feature = "sqlx")]
+        if let Some(pool) = &self.pool {
+            sqlx::query(
+                "INSERT INTO public.memory (key, data) \
+                 VALUES ($1, $2) \
+                 ON CONFLICT (key) DO UPDATE SET \
+                 data = EXCLUDED.data, \
+                 updated_at = CURRENT_TIMESTAMP"
+            )
+            .bind(key)
+            .bind(value)
+            .execute(pool)
+            .await?;
+            return Ok(());
+        }
+
         Ok(())
     }
-    async fn load_data(&self, _key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
+    async fn load_data(&self, key: &str) -> Result<Option<serde_json::Value>, Box<dyn Error>> {
+        #[cfg(feature = "sqlx")]
+        if let Some(pool) = &self.pool {
+            let row: Option<(serde_json::Value,)> = sqlx::query_as(
+                "SELECT data FROM public.memory WHERE key = $1"
+            )
+            .bind(key)
+            .fetch_optional(pool)
+            .await?;
+
+            return Ok(row.map(|r| r.0));
+        }
+
         Ok(None)
     }
 }

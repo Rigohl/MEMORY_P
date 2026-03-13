@@ -162,3 +162,24 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA lnx_meta GRANT ALL ON TABLES TO memory_p;
 ALTER DEFAULT PRIVILEGES IN SCHEMA meilisearch_meta GRANT ALL ON TABLES TO memory_p;
 ALTER DEFAULT PRIVILEGES IN SCHEMA memorybank_meta GRANT ALL ON TABLES TO memory_p;
 ALTER DEFAULT PRIVILEGES IN SCHEMA analytics GRANT ALL ON TABLES TO memory_p;
+
+-- ==========================================
+-- Memory Persistence Layer
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS public.memory (
+    key TEXT PRIMARY KEY,
+    data JSONB NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Trigger for memory table
+DROP TRIGGER IF EXISTS update_memory_updated_at ON public.memory;
+CREATE TRIGGER update_memory_updated_at
+    BEFORE UPDATE ON public.memory
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Permissions
+GRANT ALL PRIVILEGES ON TABLE public.memory TO memory_p;
