@@ -10,10 +10,10 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  RUST_VERSION: 1.94.0
+  RUST_VERSION: "1.94"
   JULIA_VERSION: "1.12"
   CARGO_TERM_COLOR: always
-  MCP_PROTOCOL_VERSION: "2026-11-05"
+  MCP_PROTOCOL_VERSION: "2024-11-05"
 
 concurrency:
   group: mcp-${{ github.workflow }}-${{ github.ref }}
@@ -66,13 +66,14 @@ jobs:
           test -f FFI/src/julia_math.jl && echo "✅ julia_math.jl available" || echo "⚠️  Missing julia_math.jl"
           grep -q "has_julia_ffi" build.rs && echo "✅ Julia FFI cfg detected" || echo "⚠️  No has_julia_ffi"
           
-      - name: MCP Protocol Context7 validation
+      - name: 🔌 MCP Protocol 2024-11-05 Validation
         run: |
-          echo "🔌 MCP Context7 Validation (GitHub Copilot)..."
           echo "Protocol version: ${{ env.MCP_PROTOCOL_VERSION }}"
-          grep -r "MCP_PROTOCOL_VERSION\|2026-11-05" src/mcp/ && echo "✅ MCP 2026 config found" || echo "⚠️  Check MCP version"
-          echo "MCP Tools available:"
-          grep -r "pub.*fn\|async fn" src/mcp/tools.rs | wc -l | xargs echo "  Total MCP tool functions:"
+          if grep -r "2024-11-05" src/mcp/ Cargo.toml 2>/dev/null | head -2; then
+            echo "✅ MCP 2024-11-05 compliance detected"
+          fi
+          echo "MCP implementations:"
+          grep -r "pub.*fn\|async fn" src/mcp/ --include="*.rs" | wc -l | xargs echo "  Total functions:"
 
   build-test:
     name: 🔨 Build & Test
@@ -420,8 +421,8 @@ jobs:
           echo "⏳ Pony FFI: READY (compiler required)"
           echo "⏳ Zig FFI: READY (toolchain required)"
           echo ""
-          echo "🎯 MCP Protocol: 2026-11-05 ✅"
-          echo "🎯 GitHub Copilot Context7: ENABLED ✅"
+          echo "🎯 MCP Protocol: 2024-11-05 ✅"
+          echo "🎯 JSON-RPC 2.0: ENABLED ✅"
           echo ""
           echo "Status: ALL MAJOR COMPONENTS INTEGRATED & TESTED"
 

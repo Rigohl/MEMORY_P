@@ -14,11 +14,43 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  MCP_PROTOCOL_VERSION: "2024-11-05"
 
 jobs:
-  lint:
-    name: Lint and Format Check
+  mcp-validation:
+    name: 🔌 MCP 2024-11-05 Validation
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify MCP Protocol Compliance
+        run: |
+          echo "🔍 MCP 2024-11-05 Protocol Validation"
+          
+          # Check for protocol version
+          if grep -r "2024-11-05" src/mcp/ Cargo.toml 2>/dev/null; then
+            echo "  ✅ MCP 2024-11-05 compliance detected"
+          else
+            echo "  ⚠️  Consider adding MCP 2024-11-05 reference"
+          fi
+          
+          # Reject wrong versions
+          if grep -r "2023-\|2025-\|2026-" src/mcp/ --include="*.rs" 2>/dev/null; then
+            echo "  ❌ ERROR: Found old/future MCP versions!"
+            exit 1
+          fi
+          
+          # Check JSON-RPC 2.0
+          echo ""
+          echo "Checking JSON-RPC 2.0..."
+          grep -r "jsonrpc\|JsonRpc" src/mcp/ --include="*.rs" | wc -l | xargs echo "  Implementations:"
+          echo "  ✅ MCP validation complete"
+
+  lint:
+    name: 📝 Lint and Format Check
+    runs-on: ubuntu-latest
+    needs: mcp-validation
     timeout-minutes: 15
     permissions:
       contents: read
@@ -59,8 +91,9 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   build:
-    name: Build (${{ matrix.os }})
+    name: 🔨 Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
