@@ -1,0 +1,37 @@
+name: Dependency Management (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      check_outdated:
+        description: 'Check for outdated dependencies'
+        type: boolean
+        default: true
+      update_lockfile:
+        description: 'Update Cargo.lock'
+        type: boolean
+        default: false
+
+jobs:
+  check-deps:
+    name: 📦 Dependency Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-outdated
+        run: cargo install cargo-outdated
+      - name: Check Cargo.toml
+        run: |
+          cargo check --all-features
+      - name: Verify dependencies if requested
+        if: ${{ inputs.check_outdated }}
+        run: |
+          cargo outdated || true
+      - name: Audit dependencies
+        run: |
+          cargo audit || true
+      - name: Update lockfile if requested
+        if: ${{ inputs.update_lockfile }}
+        run: |
+          cargo update
