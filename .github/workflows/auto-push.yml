@@ -17,6 +17,10 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+concurrency:
+  group: push-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write

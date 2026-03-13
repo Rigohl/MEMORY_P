@@ -14,6 +14,10 @@ on:
         required: true
         type: number
 
+concurrency:
+  group: merge-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write

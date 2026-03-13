@@ -8,6 +8,10 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+concurrency:
+  group: docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -16,6 +20,7 @@ jobs:
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       packages: write
