@@ -6,13 +6,13 @@
 //! - 2 Specialized Engines (Julia NLP, MemoryBank Ultra)
 
 pub mod core;
-pub mod health;
-pub mod routing;
 pub mod factory;
+pub mod health;
 pub mod hybrid;
+pub mod persistence;
+pub mod routing;
 pub mod specialized;
 pub mod text_search;
 pub mod vector_search;
-pub mod persistence;
 
 pub use core::*;

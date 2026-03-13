@@ -4,6 +4,7 @@
 // Single /mcp endpoint supporting POST (JSON-RPC), GET (SSE), DELETE (session close).
 // Auto-gestión: self-activating chaos-math decision engine + workspace scanner.
 
+use crate::motores::persistence::PersistenceLayer;
 use axum::{
     extract::{Json, State},
     http::{header, HeaderMap, StatusCode},
@@ -19,7 +20,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::broadcast;
 use uuid::Uuid;
-use crate::motores::persistence::PersistenceLayer;
 
 // ── Protocol Constants ──────────────────────────────────────────────────
 const MCP_PROTOCOL_VERSION: &str = "2025-11-25";
@@ -718,33 +718,45 @@ pub async fn execute_tool(
                 .get("text")
                 .and_then(|v| v.as_str())
                 .ok_or("search_text requires 'text' parameter")?;
-            let limit = args.get("limit").and_then(|v| v.as_u64()).map(|n| n as usize);
+            let limit = args
+                .get("limit")
+                .and_then(|v| v.as_u64())
+                .map(|n| n as usize);
             match crate::routes::execute_text_search(text, limit).await {
                 Ok(result) => Ok(result),
-                Err(e) => Err(format!("Text search failed: {e}"))
+                Err(e) => Err(format!("Text search failed: {e}")),
             }
         }
 
         "search_vector" => {
             let vector = extract_f32_array(&args, "vector")?;
-            let limit = args.get("limit").and_then(|v| v.as_u64()).map(|n| n as usize);
+            let limit = args
+                .get("limit")
+                .and_then(|v| v.as_u64())
+                .map(|n| n as usize);
             match crate::routes::execute_vector_search(vector, limit).await {
                 Ok(result) => Ok(result),
-                Err(e) => Err(format!("Vector search failed: {e}"))
+                Err(e) => Err(format!("Vector search failed: {e}")),
             }
         }
 
         "search_hybrid" => {
-            let text = args.get("text").and_then(|v| v.as_str()).map(|s| s.to_string());
+            let text = args
+                .get("text")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
             let vector = args.get("vector").and_then(|v| v.as_array()).map(|arr| {
                 arr.iter()
                     .filter_map(|n| n.as_f64().map(|f| f as f32))
                     .collect()
             });
-            let limit = args.get("limit").and_then(|v| v.as_u64()).map(|n| n as usize);
+            let limit = args
+                .get("limit")
+                .and_then(|v| v.as_u64())
+                .map(|n| n as usize);
             match crate::routes::execute_hybrid_search(text, vector, limit).await {
                 Ok(result) => Ok(result),
-                Err(e) => Err(format!("Hybrid search failed: {e}"))
+                Err(e) => Err(format!("Hybrid search failed: {e}")),
             }
         }
 
@@ -757,7 +769,11 @@ pub async fn execute_tool(
             let history: Vec<String> = args
                 .get("history")
                 .and_then(|v| v.as_array())
-                .map(|arr| arr.iter().filter_map(|s| s.as_str().map(|x| x.to_string())).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|s| s.as_str().map(|x| x.to_string()))
+                        .collect()
+                })
                 .unwrap_or_default();
             let steps = args.get("steps").and_then(|v| v.as_u64()).unwrap_or(3) as usize;
 
@@ -766,8 +782,10 @@ pub async fn execute_tool(
             let mut trajectory = Vec::with_capacity(steps);
 
             for _ in 0..steps {
-                let (next_move, lyapunov, entropy) =
-                    engine.predict_next_move(&working_history).await.map_err(|e| format!("{e}"))?;
+                let (next_move, lyapunov, entropy) = engine
+                    .predict_next_move(&working_history)
+                    .await
+                    .map_err(|e| format!("{e}"))?;
                 engine.update_metrics(lyapunov, engine.get_correlation_dimension(), entropy);
                 working_history.push(next_move.clone());
                 trajectory.push(serde_json::json!({
@@ -888,7 +906,7 @@ pub async fn execute_tool(
         "ffi_test_all" => {
             // Test all FFI subsystems with real operations
             let test_vector = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-            
+
             let mojo_result = if state.ffi_status.mojo {
                 crate::ffi::mojo::dot_product(&test_vector, &test_vector)
                     .map_err(|e| format!("Mojo: {e}"))
@@ -896,7 +914,7 @@ pub async fn execute_tool(
             } else {
                 None
             };
-            
+
             let julia_entropy = crate::ffi::julia::shannon_entropy(&test_vector);
             let julia_chaos = if state.ffi_status.julia {
                 crate::ffi::julia::chaos_analysis(&test_vector)
@@ -905,7 +923,7 @@ pub async fn execute_tool(
             } else {
                 None
             };
-            
+
             Ok(serde_json::json!({
                 "mojo_dot_product": mojo_result,
                 "julia_entropy": julia_entropy,
@@ -929,7 +947,11 @@ fn extract_f64_array(args: &serde_json::Value, key: &str) -> Result<Vec<f64>, St
 fn extract_f32_array(args: &serde_json::Value, key: &str) -> Result<Vec<f32>, String> {
     args.get(key)
         .and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|n| n.as_f64().map(|f| f as f32)).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|n| n.as_f64().map(|f| f as f32))
+                .collect()
+        })
         .ok_or_else(|| format!("Required array field: '{key}'"))
 }
 

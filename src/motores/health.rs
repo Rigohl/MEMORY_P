@@ -1,8 +1,8 @@
 //! Motor Health Monitoring
 //! Tracks health status of all 9 search engines
 
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct HealthMonitor {

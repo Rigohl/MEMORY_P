@@ -115,12 +115,14 @@ impl FfiError {
             | FfiError::JaxModelLoad { .. } => RecoveryStrategy::UseDeterministicEmbedding,
 
             // Mojo errors → Rust SIMD
-            FfiError::MojoCompilerNotFound
-            | FfiError::MojoKernelFailed { .. } => RecoveryStrategy::UseRustSIMD,
+            FfiError::MojoCompilerNotFound | FfiError::MojoKernelFailed { .. } => {
+                RecoveryStrategy::UseRustSIMD
+            }
 
             // Pony errors → Tokio actors
-            FfiError::PonyActorFailed { .. }
-            | FfiError::PonyMessageFailed { .. } => RecoveryStrategy::UseTokioActors,
+            FfiError::PonyActorFailed { .. } | FfiError::PonyMessageFailed { .. } => {
+                RecoveryStrategy::UseTokioActors
+            }
 
             // Generic errors
             FfiError::InitFailed(_) => RecoveryStrategy::Shutdown,
@@ -146,10 +148,6 @@ impl FfiError {
     /// Log error with recovery strategy
     pub fn log_with_recovery(&self) {
         let strategy = self.recovery_strategy();
-        tracing::warn!(
-            "FFI error: {} | Recovery: {:?}",
-            self,
-            strategy
-        );
+        tracing::warn!("FFI error: {} | Recovery: {:?}", self, strategy);
     }
 }

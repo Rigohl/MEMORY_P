@@ -17,9 +17,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_writer(std::io::stderr)
         .with_max_level(tracing::Level::INFO)
         .init();
-    
+
     tracing::info!("Starting MEMORY_P v2.0");
-    
+
     // Initialize telemetry system
     let telemetry = Arc::new(TelemetrySystem::new(TelemetryConfig::default()));
     if let Err(e) = telemetry.start().await {

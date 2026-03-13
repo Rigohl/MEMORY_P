@@ -378,7 +378,10 @@ mod tests {
 
             // REAL FFI - MANDATORY. If this fails, FFI is broken and build must fail.
             assert!(result.is_ok(), "FFI REAL must succeed for size: {}", name);
-            assert!(result.unwrap(), "FFI dispatch must return true. FFI binding broken.");
+            assert!(
+                result.unwrap(),
+                "FFI dispatch must return true. FFI binding broken."
+            );
         }
 
         bridge::shutdown();

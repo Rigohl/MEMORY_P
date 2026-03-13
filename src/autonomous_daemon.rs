@@ -13,7 +13,7 @@ impl AutonomousDaemon {
     pub fn new(
         _config: DaemonConfig,
         _memory: Arc<SharedMemorySystem>,
-        _crawler: Option<Arc<String>>,  // TODO: Replace with Arc<NuclearCrawler>
+        _crawler: Option<Arc<String>>, // TODO: Replace with Arc<NuclearCrawler>
         _telemetry: Option<Arc<TelemetrySystem>>,
     ) -> Self {
         Self

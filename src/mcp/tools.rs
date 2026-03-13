@@ -26,6 +26,9 @@ pub fn call_tool(name: &str, _params: &str) -> crate::error::Result<String> {
     match name {
         "search" => Ok("Search results...".to_string()),
         "embed" => Ok("[0.1, 0.2, 0.3]".to_string()),
-        _ => Err(crate::error::MemoryPError::Other(format!("Unknown tool: {}", name))),
+        _ => Err(crate::error::MemoryPError::Other(format!(
+            "Unknown tool: {}",
+            name
+        ))),
     }
 }

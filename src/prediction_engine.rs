@@ -89,9 +89,9 @@ impl PredictionEngine {
         info!("📊 Inicializando PredictionEngine (Chaos-based)");
         Self {
             name: "PredictionEngine-v2.0-Chaos".to_string(),
-            lyapunov_exponent: 0.42,          // Sistema semi-caótico (empirical)
-            correlation_dimension: 2.5,       // Complejidad moderada
-            entropy_rate: 0.73,               // Información moderada por paso
+            lyapunov_exponent: 0.42,    // Sistema semi-caótico (empirical)
+            correlation_dimension: 2.5, // Complejidad moderada
+            entropy_rate: 0.73,         // Información moderada por paso
             movement_history: Vec::new(),
             prediction_cache: HashMap::new(),
         }
@@ -119,17 +119,17 @@ impl PredictionEngine {
 
     /// Predice el próximo movimiento basado en historial y caos
     pub async fn predict_next_move(&self, history: &[String]) -> Result<(String, f64, f64)> {
-        debug!("Prediciendo próximo movimiento (historial: {} elementos)", history.len());
+        debug!(
+            "Prediciendo próximo movimiento (historial: {} elementos)",
+            history.len()
+        );
 
         if history.is_empty() {
             return Ok(("initialize".to_string(), 0.0, 0.0));
         }
 
         // Convertir histórico a números
-        let history_vec: Vec<f64> = history
-            .iter()
-            .map(|s| self.hash_to_f64(s))
-            .collect();
+        let history_vec: Vec<f64> = history.iter().map(|s| self.hash_to_f64(s)).collect();
 
         let entropy = self.compute_entropy(&history_vec);
 
@@ -208,12 +208,8 @@ impl PredictionEngine {
             return 0.0;
         }
         let mean = data.iter().sum::<f64>() / data.len() as f64;
-        let variance = data
-            .iter()
-            .map(|x| (x - mean).powi(2))
-            .sum::<f64>()
-            / data.len() as f64;
-        variance.sqrt()  // Return standard deviation
+        let variance = data.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data.len() as f64;
+        variance.sqrt() // Return standard deviation
     }
 
     /// Registra movimiento en histórico para aprendizaje

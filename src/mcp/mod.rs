@@ -17,8 +17,8 @@ pub mod shared_memory_tools;
 pub mod tests;
 
 pub use http_server::{
-    start_http_server, AppState, FFIStatus, MCPInfo, McpSession, SearchQuery, SearchResult,
-    execute_tool,
+    execute_tool, start_http_server, AppState, FFIStatus, MCPInfo, McpSession, SearchQuery,
+    SearchResult,
 };
 
 /// Initialize MCP HTTP server on port 4040

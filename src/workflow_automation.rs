@@ -2,13 +2,13 @@
 //!
 //! Pipelines YAML dinámicos con auto-push, auto-fusión y auto-reparación
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tokio::fs;
-use tracing::{debug, info, warn, error};
-use serde::{Serialize, Deserialize};
+use tracing::{debug, error, info, warn};
 
-use crate::error::{Result, MemoryPError as Error};
+use crate::error::{MemoryPError as Error, Result};
 
 /// Tipo de acción en el workflow
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -96,7 +96,7 @@ impl WorkflowAutomation {
     pub fn new(workflows_dir: PathBuf) -> Self {
         info!("🔄 Inicializando Sistema de Automatización de Workflows");
         info!("📁 Directorio: {}", workflows_dir.display());
-        
+
         Self {
             workflows_dir,
             pipelines: HashMap::new(),
@@ -111,9 +111,13 @@ impl WorkflowAutomation {
     }
 
     /// Genera un pipeline YAML dinámicamente
-    pub async fn generate_dynamic_pipeline(&self, name: &str, actions: Vec<WorkflowActionType>) -> Result<WorkflowPipeline> {
+    pub async fn generate_dynamic_pipeline(
+        &self,
+        name: &str,
+        actions: Vec<WorkflowActionType>,
+    ) -> Result<WorkflowPipeline> {
         info!("🎨 Generando pipeline dinámico: {}", name);
-        
+
         let mut workflow_actions = Vec::new();
 
         for action_type in actions {
@@ -121,9 +125,7 @@ impl WorkflowAutomation {
                 WorkflowActionType::Build => WorkflowAction {
                     name: "Build Project".to_string(),
                     action_type: WorkflowActionType::Build,
-                    commands: vec![
-                        "cargo build --release".to_string(),
-                    ],
+                    commands: vec!["cargo build --release".to_string()],
                     conditions: vec![],
                     continue_on_error: false,
                     timeout_seconds: 600,
@@ -131,9 +133,7 @@ impl WorkflowAutomation {
                 WorkflowActionType::Test => WorkflowAction {
                     name: "Run Tests".to_string(),
                     action_type: WorkflowActionType::Test,
-                    commands: vec![
-                        "cargo test --all-features".to_string(),
-                    ],
+                    commands: vec!["cargo test --all-features".to_string()],
                     conditions: vec![],
                     continue_on_error: false,
                     timeout_seconds: 300,
@@ -157,12 +157,10 @@ impl WorkflowAutomation {
                         "git commit -m 'chore: automated commit'".to_string(),
                         "git push origin HEAD".to_string(),
                     ],
-                    conditions: vec![
-                        WorkflowCondition {
-                            condition_type: "has_changes".to_string(),
-                            value: "true".to_string(),
-                        }
-                    ],
+                    conditions: vec![WorkflowCondition {
+                        condition_type: "has_changes".to_string(),
+                        value: "true".to_string(),
+                    }],
                     continue_on_error: true,
                     timeout_seconds: 60,
                 },
@@ -173,29 +171,24 @@ impl WorkflowAutomation {
                         "git fetch origin".to_string(),
                         "git merge origin/main --no-edit".to_string(),
                     ],
-                    conditions: vec![
-                        WorkflowCondition {
-                            condition_type: "tests_passed".to_string(),
-                            value: "true".to_string(),
-                        }
-                    ],
+                    conditions: vec![WorkflowCondition {
+                        condition_type: "tests_passed".to_string(),
+                        value: "true".to_string(),
+                    }],
                     continue_on_error: false,
                     timeout_seconds: 120,
                 },
                 WorkflowActionType::RepairDeps => WorkflowAction {
                     name: "Repair Dependencies".to_string(),
                     action_type: WorkflowActionType::RepairDeps,
-                    commands: vec![
-                        "cargo update".to_string(),
-                        "cargo check".to_string(),
-                    ],
+                    commands: vec!["cargo update".to_string(), "cargo check".to_string()],
                     conditions: vec![],
                     continue_on_error: true,
                     timeout_seconds: 300,
                 },
                 _ => continue,
             };
-            
+
             workflow_actions.push(action);
         }
 
@@ -211,26 +204,26 @@ impl WorkflowAutomation {
     /// Convierte un pipeline a YAML de GitHub Actions
     pub fn pipeline_to_github_yaml(&self, pipeline: &WorkflowPipeline) -> Result<String> {
         info!("📄 Convirtiendo pipeline a GitHub Actions YAML");
-        
+
         let mut yaml = String::new();
-        
+
         // Header
         yaml.push_str(&format!("name: {}\n\n", pipeline.name));
-        
+
         // Triggers
         yaml.push_str("on:\n");
         for trigger in &pipeline.triggers {
             yaml.push_str(&format!("  - {}\n", trigger));
         }
         yaml.push_str("\n");
-        
+
         // Jobs
         yaml.push_str("jobs:\n");
         yaml.push_str("  main:\n");
         yaml.push_str("    runs-on: ubuntu-latest\n");
         yaml.push_str("    steps:\n");
         yaml.push_str("      - uses: actions/checkout@v4\n\n");
-        
+
         // Actions
         for (idx, action) in pipeline.actions.iter().enumerate() {
             yaml.push_str(&format!("      - name: {}\n", action.name));
@@ -238,29 +231,29 @@ impl WorkflowAutomation {
             for cmd in &action.commands {
                 yaml.push_str(&format!("          {}\n", cmd));
             }
-            
+
             if action.continue_on_error {
                 yaml.push_str("        continue-on-error: true\n");
             }
-            
+
             if idx < pipeline.actions.len() - 1 {
                 yaml.push_str("\n");
             }
         }
-        
+
         Ok(yaml)
     }
 
     /// Guarda un pipeline como archivo YAML
     pub async fn save_pipeline_yaml(&self, pipeline: &WorkflowPipeline) -> Result<PathBuf> {
         let yaml_content = self.pipeline_to_github_yaml(pipeline)?;
-        
+
         // Crear directorio si no existe
         fs::create_dir_all(&self.workflows_dir).await?;
-        
+
         let file_path = self.workflows_dir.join(format!("{}.yml", pipeline.name));
         fs::write(&file_path, yaml_content).await?;
-        
+
         info!("✅ Pipeline guardado: {}", file_path.display());
         Ok(file_path)
     }
@@ -268,10 +261,12 @@ impl WorkflowAutomation {
     /// Ejecuta un pipeline localmente
     pub async fn execute_pipeline(&self, pipeline_name: &str) -> Result<ExecutionResult> {
         info!("▶️  Ejecutando pipeline: {}", pipeline_name);
-        
-        let pipeline = self.pipelines.get(pipeline_name)
+
+        let pipeline = self
+            .pipelines
+            .get(pipeline_name)
             .ok_or_else(|| Error::Other(format!("Pipeline no encontrado: {}", pipeline_name)))?;
-        
+
         let mut execution_result = ExecutionResult {
             pipeline_name: pipeline_name.to_string(),
             success: true,
@@ -285,7 +280,7 @@ impl WorkflowAutomation {
 
         for action in &pipeline.actions {
             info!("🔧 Ejecutando acción: {}", action.name);
-            
+
             // Verificar condiciones
             if !self.check_conditions(&action.conditions).await? {
                 info!("⏭️  Saltando acción (condiciones no cumplidas)");
@@ -294,16 +289,20 @@ impl WorkflowAutomation {
 
             // Ejecutar comandos
             let action_result = self.execute_action(action).await;
-            
+
             match action_result {
                 Ok(log) => {
                     execution_result.actions_executed += 1;
-                    execution_result.logs.push(format!("✅ {}: {}", action.name, log));
+                    execution_result
+                        .logs
+                        .push(format!("✅ {}: {}", action.name, log));
                 }
                 Err(e) => {
                     execution_result.actions_failed += 1;
-                    execution_result.logs.push(format!("❌ {}: {}", action.name, e));
-                    
+                    execution_result
+                        .logs
+                        .push(format!("❌ {}: {}", action.name, e));
+
                     if !action.continue_on_error {
                         execution_result.success = false;
                         error!("❌ Pipeline falló en acción: {}", action.name);
@@ -316,9 +315,15 @@ impl WorkflowAutomation {
         execution_result.execution_time_ms = start.elapsed().as_millis() as u64;
 
         if execution_result.success {
-            info!("✅ Pipeline completado exitosamente en {}ms", execution_result.execution_time_ms);
+            info!(
+                "✅ Pipeline completado exitosamente en {}ms",
+                execution_result.execution_time_ms
+            );
         } else {
-            warn!("⚠️  Pipeline completado con errores en {}ms", execution_result.execution_time_ms);
+            warn!(
+                "⚠️  Pipeline completado con errores en {}ms",
+                execution_result.execution_time_ms
+            );
         }
 
         Ok(execution_result)
@@ -354,23 +359,23 @@ impl WorkflowAutomation {
     /// Ejecuta una acción individual
     async fn execute_action(&self, action: &WorkflowAction) -> Result<String> {
         debug!("Ejecutando {} comandos", action.commands.len());
-        
+
         let mut output = String::new();
-        
+
         for cmd in &action.commands {
             debug!("Comando: {}", cmd);
             // Aquí iría la ejecución real del comando
             // Por ahora, simulamos éxito
             output.push_str(&format!("{}\n", cmd));
         }
-        
+
         Ok(output)
     }
 
     /// Auto-detecta y repara inconsistencias en dependencias
     pub async fn auto_repair_dependencies(&self) -> Result<RepairResult> {
         info!("🔧 Iniciando auto-reparación de dependencias...");
-        
+
         let mut repair_result = RepairResult {
             issues_found: Vec::new(),
             issues_fixed: Vec::new(),
@@ -380,20 +385,27 @@ impl WorkflowAutomation {
         // Verificar Cargo.toml
         if let Ok(cargo_content) = fs::read_to_string("Cargo.toml").await {
             debug!("📦 Analizando Cargo.toml...");
-            
+
             // Detectar versiones desactualizadas (simplificado)
             if cargo_content.contains("version = \"0.") {
-                repair_result.issues_found.push("Versiones de desarrollo detectadas".to_string());
+                repair_result
+                    .issues_found
+                    .push("Versiones de desarrollo detectadas".to_string());
             }
         }
 
         // Verificar Cargo.lock
         if !PathBuf::from("Cargo.lock").exists() {
-            repair_result.issues_found.push("Cargo.lock no encontrado".to_string());
-            repair_result.issues_fixed.push("Generar Cargo.lock".to_string());
+            repair_result
+                .issues_found
+                .push("Cargo.lock no encontrado".to_string());
+            repair_result
+                .issues_fixed
+                .push("Generar Cargo.lock".to_string());
         }
 
-        info!("✅ Auto-reparación completada: {} issues encontrados, {} reparados",
+        info!(
+            "✅ Auto-reparación completada: {} issues encontrados, {} reparados",
             repair_result.issues_found.len(),
             repair_result.issues_fixed.len()
         );
@@ -434,13 +446,13 @@ mod tests {
     #[tokio::test]
     async fn test_generate_dynamic_pipeline() {
         let automation = WorkflowAutomation::new(PathBuf::from("/tmp/workflows"));
-        
-        let actions = vec![
-            WorkflowActionType::Build,
-            WorkflowActionType::Test,
-        ];
-        
-        let pipeline = automation.generate_dynamic_pipeline("test-pipeline", actions).await.unwrap();
+
+        let actions = vec![WorkflowActionType::Build, WorkflowActionType::Test];
+
+        let pipeline = automation
+            .generate_dynamic_pipeline("test-pipeline", actions)
+            .await
+            .unwrap();
         assert_eq!(pipeline.name, "test-pipeline");
         assert_eq!(pipeline.actions.len(), 2);
     }
@@ -448,7 +460,7 @@ mod tests {
     #[tokio::test]
     async fn test_pipeline_to_yaml() {
         let automation = WorkflowAutomation::new(PathBuf::from("/tmp/workflows"));
-        
+
         let pipeline = WorkflowPipeline {
             name: "test".to_string(),
             description: "Test pipeline".to_string(),
@@ -456,7 +468,7 @@ mod tests {
             actions: vec![],
             env_vars: HashMap::new(),
         };
-        
+
         let yaml = automation.pipeline_to_github_yaml(&pipeline).unwrap();
         assert!(yaml.contains("name: test"));
     }

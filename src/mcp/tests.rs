@@ -3,8 +3,8 @@
 #[cfg(test)]
 mod mcp_tools_tests {
     use crate::mcp::http_server::{execute_tool, AppState, FFIStatus};
-    use std::sync::Arc;
     use serde_json::json;
+    use std::sync::Arc;
 
     #[tokio::test]
     async fn test_search_hybrid_tool() {
@@ -43,8 +43,14 @@ mod mcp_tools_tests {
         assert!(result.is_ok(), "search_hybrid should succeed: {:?}", result);
 
         let value = result.unwrap();
-        assert!(value.get("results").is_some(), "Response should have 'results' field");
-        assert!(value.get("total").is_some(), "Response should have 'total' field");
+        assert!(
+            value.get("results").is_some(),
+            "Response should have 'results' field"
+        );
+        assert!(
+            value.get("total").is_some(),
+            "Response should have 'total' field"
+        );
     }
 
     #[tokio::test]
@@ -81,7 +87,10 @@ mod mcp_tools_tests {
         assert!(result.is_ok(), "search_text should succeed: {:?}", result);
 
         let value = result.unwrap();
-        assert!(value.get("results").is_some(), "Response should have 'results' field");
+        assert!(
+            value.get("results").is_some(),
+            "Response should have 'results' field"
+        );
     }
 
     #[tokio::test]
@@ -118,6 +127,9 @@ mod mcp_tools_tests {
         assert!(result.is_ok(), "search_vector should succeed: {:?}", result);
 
         let value = result.unwrap();
-        assert!(value.get("results").is_some(), "Response should have 'results' field");
+        assert!(
+            value.get("results").is_some(),
+            "Response should have 'results' field"
+        );
     }
 }
