@@ -104,8 +104,9 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 
 /// Initialize Python JAX runtime and load inference models
+#[allow(unused_mut)]
 pub fn init() -> Result<()> {
-    let result = Ok(());
+    let mut result = Ok(());
     INIT.call_once(|| {
         #[cfg(has_jax_ffi)]
         {
