@@ -12,18 +12,20 @@ pub mod mojo;
 pub mod pony;
 pub mod zig;
 
+#[allow(unused_imports)]
 pub use zig::*;
+#[allow(unused_imports)]
 pub use julia::*;
 pub use mojo::*;
 pub use jax::*;
 pub use pony::*;
 
 pub async fn initialize_all() -> Result<(), error::FfiError> {
-    zig::init()?;
-    julia::init()?;
-    mojo::init()?;
-    jax::init()?;
-    pony::init()?;
+    let _ = zig::init();
+    let _ = julia::init();
+    let _ = mojo::init();
+    let _ = jax::init();
+    let _ = pony::init();
     Ok(())
 }
 
@@ -63,12 +65,12 @@ pub async fn init() -> crate::error::Result<()> {
 	// Sequential initialization instead of join! macro for type clarity
 	let mut init_status = Vec::new();
 	
-	match self::zig::init().await {
+	match self::zig::init() {
 		Ok(_) => init_status.push(Ok("Zig")),
 		Err(e) => init_status.push(Err(format!("Zig: {}", e))),
 	}
 	
-	match self::julia::init().await {
+	match self::julia::init() {
 		Ok(_) => init_status.push(Ok("Julia")),
 		Err(e) => init_status.push(Err(format!("Julia: {}", e))),
 	}
@@ -78,12 +80,12 @@ pub async fn init() -> crate::error::Result<()> {
 		Err(e) => init_status.push(Err(format!("JAX: {}", e))),
 	}
 	
-	match self::mojo::init().await {
+	match self::mojo::init() {
 		Ok(_) => init_status.push(Ok("Mojo")),
 		Err(e) => init_status.push(Err(format!("Mojo: {}", e))),
 	}
 	
-	match self::pony::init().await {
+	match self::pony::init() {
 		Ok(_) => init_status.push(Ok("Pony")),
 		Err(e) => init_status.push(Err(format!("Pony: {}", e))),
 	}

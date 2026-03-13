@@ -45,6 +45,7 @@ extern "C" {
     fn shared_memory_buffer_unref(buffer: *mut std::os::raw::c_void);
 }
 
+#[allow(dead_code)]
 pub fn init() -> Result<()> {
     #[cfg(has_zig_ffi)]
     unsafe {

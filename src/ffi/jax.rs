@@ -97,9 +97,8 @@ impl EmbeddingGenerator {
 	}
 }
 
-//! JAX ML Inference Backend
-//! Wraps real Python JAX from brain/python/jax_inference.py
-
+/// JAX ML Inference Backend
+/// Wraps real Python JAX from brain/python/jax_inference.py
 use std::sync::Once;
 
 static INIT: Once = Once::new();

@@ -1,4 +1,5 @@
-//! src/ffi/mojo.rs - Mojo SIMD kernel bindings
+/// Mojo SIMD kernel bindings and inference engine
+/// Wraps real Mojo kernels from brain/mojo/mojo_inference.mojo
 
 use super::error::{FfiError, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -12,16 +13,13 @@ extern "C" {
 	fn mojo_cosine_similarity(a_ptr: usize, b_ptr: usize, n: isize) -> f64;
 }
 
-//! Mojo SIMD Inference Engine
-//! Wraps real Mojo kernels from brain/mojo/mojo_inference.mojo
-
 use std::sync::Once;
 
 static INIT: Once = Once::new();
 
 /// Initialize Mojo inference engine and load compiled kernels
-pub fn init() -> Result<(), String> {
-    let mut result = Ok(());
+pub fn init() -> Result<()> {
+    let result = Ok(());
     INIT.call_once(|| {
         #[cfg(has_mojo_ffi)]
         {
@@ -38,20 +36,20 @@ pub fn init() -> Result<(), String> {
 }
 
 #[cfg(has_mojo_ffi)]
-fn try_load_mojo_kernels() -> Result<(), String> {
+fn try_load_mojo_kernels() -> Result<()> {
     // Mojo inference engine available
     // Would load libmojo_kernels.so/dll and initialize SIMD accelerators
     Ok(())
 }
 
 #[cfg(not(has_mojo_ffi))]
-fn try_load_mojo_kernels() -> Result<(), String> {
+fn try_load_mojo_kernels() -> Result<()> {
     Ok(())
 }
 
 /// Run SIMD inference on embedding
 #[allow(dead_code)]
-pub fn simd_inference(embedding: &[f64]) -> Result<Vec<f64>, String> {
+pub fn simd_inference(embedding: &[f64]) -> Result<Vec<f64>> {
     #[cfg(has_mojo_ffi)]
     {
         // Call mojo_inference.predict() with SIMD acceleration
@@ -67,7 +65,7 @@ pub fn simd_inference(embedding: &[f64]) -> Result<Vec<f64>, String> {
 
 /// Batch SIMD inference
 #[allow(dead_code)]
-pub fn batch_simd_inference(embeddings: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, String> {
+pub fn batch_simd_inference(embeddings: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
     #[cfg(has_mojo_ffi)]
     {
         // Vectorized inference using SIMD - real kernels
@@ -78,7 +76,9 @@ pub fn batch_simd_inference(embeddings: &[Vec<f64>]) -> Result<Vec<Vec<f64>>, St
     {
         Ok(embeddings.to_vec())
     }
-}() -> Result<()> {
+}
+
+pub fn init_mojo_runtime() -> Result<()> {
 	#[cfg(has_mojo_ffi)]
 	{
 		MOJO_AVAILABLE.store(true, Ordering::SeqCst);

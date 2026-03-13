@@ -1,20 +1,18 @@
-//! src/ffi/julia.rs - Julia mathematical analysis bindings
+///! src/ffi/julia.rs - Julia mathematical analysis bindings
+/// Julia FFI Integration: Wraps real Julia mathematical functions from brain/julia/julia_math.jl
 
 use super::error::{FfiError, Result};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static JULIA_AVAILABLE: AtomicBool = AtomicBool::new(false);
 
-//! Julia FFI Integration
-//! Wraps real Julia mathematical functions from brain/julia/julia_math.jl
-
 use std::sync::Once;
 
 static INIT: Once = Once::new();
 
 /// Initialize Julia runtime and load mathematics modules
-pub fn init() -> Result<(), String> {
-    let mut result = Ok(());
+pub fn init() -> Result<()> {
+    let result = Ok(());
     INIT.call_once(|| {
         #[cfg(has_julia_ffi)]
         {
@@ -33,7 +31,7 @@ pub fn init() -> Result<(), String> {
 }
 
 #[cfg(has_julia_ffi)]
-fn try_load_julia_math() -> Result<(), String> {
+fn try_load_julia_math() -> Result<()> {
     // When Julia .jl is available, this would:
     // 1. Initialize Julia runtime via jl_init_with_image()
     // 2. Load brain/julia/julia_math.jl modules
@@ -42,13 +40,13 @@ fn try_load_julia_math() -> Result<(), String> {
 }
 
 #[cfg(not(has_julia_ffi))]
-fn try_load_julia_math() -> Result<(), String> {
+fn try_load_julia_math() -> Result<()> {
     Ok(())
 }
 
 /// Optimize chaotic system using Julia mathematics
 #[allow(dead_code)]
-pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>, String> {
+pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>> {
     #[cfg(has_julia_ffi)]
     {
         // Call julia_math.optimize() via FFI
@@ -64,7 +62,7 @@ pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>, String> {
 
 /// Analyze system dynamics using chaos theory
 #[allow(dead_code)]
-pub fn analyze_dynamics(time_series: &[f64]) -> Result<f64, String> {
+pub fn analyze_dynamics(_time_series: &[f64]) -> Result<f64> {
     #[cfg(has_julia_ffi)]
     {
         // Call julia_math.lyapunov_exponent() or similar
@@ -75,7 +73,9 @@ pub fn analyze_dynamics(time_series: &[f64]) -> Result<f64, String> {
     {
         Ok(0.5)
     }
-}() -> Result<()> {
+}
+
+pub fn init_julia_runtime() -> Result<()> {
 	#[cfg(has_julia_ffi)]
 	{
 		JULIA_AVAILABLE.store(true, Ordering::SeqCst);

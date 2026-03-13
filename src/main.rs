@@ -11,47 +11,30 @@ use memory_p::telemetry::{TelemetryConfig, TelemetrySystem};
 use memory_p::*;
 
 #[tokio::main]
-async use tracing_subscriber;
-
-#[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt::init();
-    tracing::info!("MEMORY_P v2.0 starting...");
-    
-    memory_p::ffi::initialize_all().await?;
-    
-    tracing::info!("Server ready on http://127.0.0.1:4040");
-    Ok(())
-}
     // Initialize logging
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
+        .with_max_level(tracing::Level::INFO)
+        .init();
     
     tracing::info!("Starting MEMORY_P v2.0");
     
-    // Initialize FFI
-    if let Err(e) = memory_p::ffi::initialize_all().await {
-        tracing::warn!("FFI initialization warning: {}", e);
-    }
-    
-    // Start HTTP server
-    tracing::info!("Starting server on 127.0.0.1:4040");
-}
+    // Initialize telemetry system
     let telemetry = Arc::new(TelemetrySystem::new(TelemetryConfig::default()));
     if let Err(e) = telemetry.start().await {
         eprintln!("Telemetry error: {}", e);
     }
 
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
-        .with_max_level(tracing::Level::INFO)
-        .init();
-
+    // Run HTTP server
     if let Err(e) = http_server(telemetry.clone()).await {
         eprintln!("Server error: {}", e);
     }
 
+    // Graceful shutdown
     ffi::shutdown();
     let _ = telemetry.shutdown().await;
+    Ok(())
 }
 
 async fn http_server(telemetry: Arc<TelemetrySystem>) -> error::Result<()> {
@@ -75,9 +58,7 @@ async fn http_server(telemetry: Arc<TelemetrySystem>) -> error::Result<()> {
     ));
     let _ = kpi_tracker.start().await;
 
-    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new(
-        prediction_engine::PredictionConfig::default(),
-    ));
+    let prediction_engine = Arc::new(prediction_engine::PredictionEngine::new());
     let decision_engine = Arc::new(decision_logic::DecisionEngine::new());
 
     // Create router with all routes

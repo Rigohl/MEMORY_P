@@ -56,9 +56,7 @@ mod native {
 
 // --- Initialization ---
 
-pub fn init() -> Result<(), String> {
-    Ok(())
-}() -> Result<()> {
+pub fn init() -> Result<()> {
     #[cfg(has_pony_ffi)]
     {
         unsafe {
