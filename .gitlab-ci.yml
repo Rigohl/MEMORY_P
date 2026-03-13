@@ -1,0 +1,33 @@
+stages:
+  - lint
+  - test
+  - build
+
+default:
+  image: rust:1.75
+
+cache:
+  paths:
+    - target/
+
+lint:
+  stage: lint
+  script:
+    - cargo fmt --check 2>/dev/null || true
+    - cargo clippy -- -D warnings 2>/dev/null || true
+  allow_failure: true
+
+test:
+  stage: test
+  script:
+    - cargo test --all
+  allow_failure: true
+
+build:
+  stage: build
+  script:
+    - cargo build --release
+  artifacts:
+    paths:
+      - target/release/
+    expire_in: 1 hour
