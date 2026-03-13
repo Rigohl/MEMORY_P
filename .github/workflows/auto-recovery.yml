@@ -29,6 +29,10 @@ env:
   RUST_BACKTRACE: full
   MAX_RETRY_ATTEMPTS: 3
 
+concurrency:
+  group: recovery-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: write
