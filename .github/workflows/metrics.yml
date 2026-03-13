@@ -14,13 +14,13 @@ jobs:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v3
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
       
       - name: Cache cargo
-        uses: actions/cache@v5
+        uses: actions/cache@v3
         with:
           path: |
             ~/.cargo/registry
@@ -52,7 +52,7 @@ jobs:
     name: Build Time Tracking
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v3
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -80,7 +80,7 @@ jobs:
     name: Test Execution Time
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v3
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
