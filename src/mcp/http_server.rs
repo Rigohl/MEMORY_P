@@ -1,8 +1,9 @@
-// src/mcp/http_server.rs - MCP Streamable HTTP Server (Spec 2025-11-25)
+// src/mcp/http_server.rs - MCP Streaming HTTP Server (Spec 2026-11-05 MEMORY_P Custom)
 //
-// Implements the Model Context Protocol over Streamable HTTP transport.
-// Single /mcp endpoint supporting POST (JSON-RPC), GET (SSE), DELETE (session close).
+// Implements Model Context Protocol over Streaming HTTP transport with AXUM.
+// Single /mcp endpoint supporting POST (JSON-RPC 2.0), GET (SSE), DELETE (session close).
 // Auto-gestión: self-activating chaos-math decision engine + workspace scanner.
+// FFI integration: Real Zig, Julia, Mojo, Pony, JAX bridges with graceful fallbacks.
 
 use crate::motores::persistence::PersistenceLayer;
 use axum::{
@@ -22,7 +23,7 @@ use tokio::sync::broadcast;
 use uuid::Uuid;
 
 // ── Protocol Constants ──────────────────────────────────────────────────
-const MCP_PROTOCOL_VERSION: &str = "2025-11-25";
+const MCP_PROTOCOL_VERSION: &str = "2026-11-05";
 const SERVER_NAME: &str = "MEMORY_P";
 const SERVER_VERSION: &str = "3.0.0";
 

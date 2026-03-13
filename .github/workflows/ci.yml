@@ -189,6 +189,42 @@ jobs:
         if: always()
         run: docker-compose down
 
+  code-patterns-analysis:
+    name: Smart Code Pattern Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Analyze for code duplication
+        run: |
+          echo "🔍 Detecting duplicate patterns in src/..."
+          # Look for similar functions and structures
+          find src -name "*.rs" | head -20 | xargs wc -l | sort -rn | head -10
+
+      - name: Check FFI/BRAIN usage patterns
+        run: |
+          echo "🧠 Analyzing FFI + BRAIN integration..."
+          echo "FFI modules available:"
+          ls -la src/ffi/ | grep ".rs"
+          echo "BRAIN implementations:"
+          ls -la brain/ | grep -E "\.jl|\.mojo|\.pony|\.py"
+          
+      - name: Verify MCP protocol endpoints
+        run: |
+          echo "🔌 MCP Protocol Status:"
+          grep -n "2026-11-05\|MCP_PROTOCOL_VERSION" src/mcp/http_server.rs || echo "⚠️  MCP version check needed"
+          
+      - name: Upload pattern analysis
+        uses: actions/upload-artifact@v6
+        with:
+          name: code-patterns-report
+          path: |
+            *.txt
+            *.md
+          retention-days: 7
+        continue-on-error: true
+
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest

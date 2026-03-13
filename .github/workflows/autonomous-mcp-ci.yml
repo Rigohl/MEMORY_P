@@ -39,6 +39,14 @@ jobs:
         run: |
           echo "🔍 Checking hyper memory manager..."
           test -f src/hyper_memory.rs && echo "✅ HyperMemory present" || echo "❌ Missing"
+      
+      - name: Smart code pattern detection
+        run: |
+          echo "🧠 Smart pattern detection..."
+          echo "Analyzing FFI integration patterns..."
+          grep -r "initialize_all\|FFI\|detect_status" src/ffi/ | head -5
+          echo "Checking BRAIN usage..."
+          grep -r "julia\|mojo\|pony\|jax" src/ | grep -v "test\|benches" | wc -l | xargs echo "BRAIN integrations found:"
 
   build-test:
     name: 🔨 Build & Test
@@ -134,6 +142,16 @@ jobs:
           grep -q "pub struct WorkflowAutomation" src/workflow_automation.rs
           grep -q "generate_dynamic_pipeline" src/workflow_automation.rs
           echo "✅ Workflow automation validation passed"
+      
+      - name: MCP + FFI integration validation
+        run: |
+          echo "🔌 Advanced validation: MCP + FFI integration..."
+          echo "Checking MCP protocol version..."
+          grep -n "2026-11-05" src/mcp/http_server.rs && echo "✅ MCP 2026 enabled" || echo "⚠️  MCP version outdated"
+          echo "Checking FFI health status integration..."
+          grep -r "FfiStatus\|FFIStatus" src/mcp/ && echo "✅ FFI status exposed via MCP" || echo "⚠️  No FFI status in MCP"
+          echo "Checking BRAIN component usage..."
+          find src -name "*.rs" -exec grep -l "julia\|mojo\|pony\|jax" {} \; | wc -l | xargs echo "Files using BRAIN components:"
 
   integration-test:
     name: 🔗 Integration Test

@@ -48,16 +48,29 @@ jobs:
         run: |
           tokei . --output json > tokei-report.json
           tokei . > tokei-report.txt
-          echo "## Code Metrics" >> $GITHUB_STEP_SUMMARY
-          cat tokei-report.txt >> $GITHUB_STEP_SUMMARY
+      
+      - name: Smart code search analysis
+        run: |
+          echo "🔍 Smart code pattern detection..."
+          echo "Searching for potential code improvements..."
+          echo "FFI/BRAIN usage patterns:"
+          find src/ffi -name "*.rs" | xargs wc -l | tail -1 | xargs echo "FFI modules total lines:"
+          find brain -type f | xargs wc -l 2>/dev/null | tail -1 | xargs echo "BRAIN implementations total lines:"
+          
+          echo "Motores subsystem:"
+          find src/motores -type f -name "*.rs" | xargs wc -l 2>/dev/null | tail -1 | xargs echo "Motores total lines:"
+          
+          echo "🧠 MCP Protocol usage:"
+          grep -r "JsonRpcRequest\|JsonRpcResponse\|MCP_PROTOCOL_VERSION" src/mcp/ | wc -l | xargs echo "MCP protocol references:"
       
       - name: Upload metrics
         uses: actions/upload-artifact@v6
         with:
-          name: code-metrics
+          name: code-metrics-report
           path: |
             tokei-report.json
             tokei-report.txt
+          retention-days: 30
 
   unused-dependencies:
     name: Find Unused Dependencies

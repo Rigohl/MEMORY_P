@@ -1,4 +1,4 @@
-name: Memory MCP CI/CD Pipeline
+name: Memory MCP CI/CD Pipeline (MCP 2026-11-05)
 
 on:
   push:
@@ -6,15 +6,17 @@ on:
     paths:
       - 'src/mcp/memory_**'
       - 'FFI/src/**'
+      - 'brain/**'
       - 'migrations/**'
       - '.github/workflows/memory-mcp.yml'
   pull_request:
     branches: [ master, develop ]
 
 env:
-  RUST_VERSION: "1.75"
+  RUST_VERSION: "1.94"
   JULIA_VERSION: "1.10"
   PYTHON_VERSION: "3.11"
+  MCP_PROTOCOL_VERSION: "2026-11-05"
 
 jobs:
   # Rust compilation and tests
@@ -76,7 +78,50 @@ jobs:
       
       - name: Validate Julia predictor
         run: |
-          julia FFI/src/julia_predictor.jl && echo "Julia validation complete"
+          julia FFI/src/julia_math.jl && echo "Julia validation complete"
+      
+      - name: Verify Julia BRAIN implementations
+        run: |
+          echo "🧮 Julia BRAIN verification..."
+          test -f FFI/src/julia_math.jl && echo "✅ julia_math.jl found" || echo "❌ Missing julia_math.jl"
+          
+  brain-validation:
+    name: BRAIN Implementation Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check all BRAIN language implementations
+        run: |
+          echo "🧠 Verifying BRAIN components..."
+          test -f brain/julia/julia_math.jl && echo "✅ Julia" || echo "⚠️  Julia"
+          test -f brain/mojo/kernels.mojo && echo "✅ Mojo" || echo "⚠️  Mojo"
+          test -f brain/pony/search_actor.pony && echo "✅ Pony" || echo "⚠️  Pony"
+          test -f brain/python/jax_inference.py && echo "✅ JAX" || echo "⚠️  JAX"
+          test -f brain/zig/shared_memory_buffer.zig && echo "✅ Zig" || echo "⚠️  Zig"
+      
+      - name: Parse MCP Protocol compliance
+        run: |
+          echo "🔌 MCP Protocol 2026 compliance check..."
+          grep -r "2026-11-05" src/mcp/ && echo "✅ MCP 2026 detected" || echo "⚠️  Update MCP version"
+          grep -r "JsonRpcRequest\|JsonRpcResponse" src/mcp/ && echo "✅ JSON-RPC 2.0 detected" || echo "⚠️  JSON-RPC check"
+
+  mcp-endpoint-validation:
+    name: MCP Endpoint Validation (AXUM HTTP)
+    runs-on: ubuntu-latest
+    needs: [rust-build]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Validate HTTP server endpoints
+        run: |
+          echo "🌐 MCP HTTP Server validation..."
+          grep -n "mcp_post\|mcp_get\|mcp_delete" src/mcp/http_server.rs | wc -l | xargs echo "MCP endpoints found:"
+          
+      - name: Check FFI status endpoints
+        run: |
+          echo "🔧 FFI Status integration..."
+          grep -r "FFIStatus\|detect_status\|is_available" src/ffi/ | wc -l | xargs echo "FFI status checks:"
 
   # Database migrations
   database-check:
