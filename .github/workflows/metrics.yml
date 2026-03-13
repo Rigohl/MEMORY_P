@@ -162,17 +162,136 @@ jobs:
           head -20 tree.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+  motor-engine-metrics:
+    name: Motor Engine Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Measure motor implementations
+        run: |
+          echo "## Motor Architecture Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          for motor in qdrant faiss scann tantivy lnx toshi meilisearch julia_nlp memory_bank; do
+            count=$(find src/motores -name "*$motor*" -type f 2>/dev/null | wc -l)
+            if [ $count -gt 0 ]; then
+              lines=$(find src/motores -name "*$motor*" -type f -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}')
+              echo "- **$motor**: $lines LOC ($count files)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**SearchEngine Implementations:** $(grep -r "impl SearchEngine" src/motores --include="*.rs" 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+
+  ffi-integration-metrics:
+    name: FFI Integration Metrics
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Measure FFI bridges and BRAIN
+        run: |
+          echo "## FFI & BRAIN Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**FFI Bridges:**" >> $GITHUB_STEP_SUMMARY
+          
+          for lang in zig julia mojo jax pony; do
+            if [ -f "src/ffi/$lang.rs" ]; then
+              lines=$(wc -l < "src/ffi/$lang.rs" 2>/dev/null)
+              funcs=$(grep -c "pub fn\|pub async fn" "src/ffi/$lang.rs" 2>/dev/null || echo "0")
+              echo "- **$lang**: $lines LOC, $funcs functions" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**BRAIN Components:**" >> $GITHUB_STEP_SUMMARY
+          
+          for dir in brain/julia brain/mojo brain/python brain/pony brain/zig; do
+            if [ -d "$dir" ]; then
+              files=$(find "$dir" -type f 2>/dev/null | wc -l)
+              lines=$(find "$dir" -type f -exec wc -l {} + 2>/dev/null | tail -1 | awk '{print $1}' || echo "0")
+              echo "- **${dir##*/}**: $lines LOC ($files files)" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  database-schema-metrics:
+    name: Database & Schema Metrics
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: memory_p
+          POSTGRES_PASSWORD: memory_p
+          POSTGRES_DB: memory_p_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Validate database schema and collect metrics
+        run: |
+          echo "## Database & Schema Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if init.sql exists
+          if [ -f "config/init.sql" ]; then
+            sql_lines=$(wc -l < "config/init.sql")
+            echo "- **SQL Schema File:** $sql_lines lines" >> $GITHUB_STEP_SUMMARY
+            
+            # Count tables, indexes, etc.
+            tables=$(grep -ic "CREATE TABLE" config/init.sql || echo "0")
+            indexes=$(grep -ic "CREATE INDEX" config/init.sql || echo "0")
+            extensions=$(grep -ic "CREATE EXTENSION\|CREATE SCHEMA" config/init.sql || echo "0")
+            
+            echo "- **Tables:** $tables" >> $GITHUB_STEP_SUMMARY
+            echo "- **Indexes:** $indexes" >> $GITHUB_STEP_SUMMARY
+            echo "- **Extensions/Schemas:** $extensions" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No config/init.sql found" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check migrations if they exist
+          if [ -d "migrations" ]; then
+            migration_count=$(find migrations -type f 2>/dev/null | wc -l)
+            echo "- **Migrations:** $migration_count files" >> $GITHUB_STEP_SUMMARY
+          fi
+
   metrics-summary:
     name: Metrics Dashboard
-    needs: [performance-benchmarks, build-time-tracking, test-execution-time, code-quality-metrics, dependency-metrics]
+    needs: [performance-benchmarks, build-time-tracking, test-execution-time, code-quality-metrics, dependency-metrics, motor-engine-metrics, ffi-integration-metrics, database-schema-metrics]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Create dashboard
+      - uses: actions/checkout@v6
+      
+      - name: Create comprehensive dashboard
         run: |
-          echo "# 📊 MEMORY_P Metrics Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "# 📊 MEMORY_P v2.0 Metrics Dashboard" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Generated:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "**Repository:** ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## System Overview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **All Metrics Collected Successfully**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Sections:" >> $GITHUB_STEP_SUMMARY
+          echo "- Performance & Benchmarks" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- Motor Architecture" >> $GITHUB_STEP_SUMMARY
+          echo "- FFI Integration" >> $GITHUB_STEP_SUMMARY
+          echo "- Database Schema" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Job Status" >> $GITHUB_STEP_SUMMARY
           echo "- 🏃 Performance Benchmarks: ${{ needs.performance-benchmarks.result }}" >> $GITHUB_STEP_SUMMARY

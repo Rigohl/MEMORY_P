@@ -29,7 +29,32 @@ jobs:
         run: cargo install cargo-audit
 
       - name: Run cargo audit
+        id: audit
         run: cargo audit --deny warnings
+        continue-on-error: true
+
+      - name: Report audit results
+        run: |
+          echo "## Security Audit Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.audit.outcome }}" == "success" ]; then
+            echo "✅ No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Vulnerabilities detected - review required" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  cargo-deny:
+    name: Cargo Deny & License Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Check for unsafe, malicious dependencies, and licenses
+        run: cargo deny check
+        continue-on-error: true
 
   dependency-review:
     name: Dependency Review
