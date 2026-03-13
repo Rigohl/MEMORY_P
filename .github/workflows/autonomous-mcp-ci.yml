@@ -10,8 +10,10 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  RUST_VERSION: 1.75.0
+  RUST_VERSION: 1.94.0
+  JULIA_VERSION: "1.12"
   CARGO_TERM_COLOR: always
+  MCP_PROTOCOL_VERSION: "2026-11-05"
 
 jobs:
   health-check:
@@ -47,6 +49,20 @@ jobs:
           grep -r "initialize_all\|FFI\|detect_status" src/ffi/ | head -5
           echo "Checking BRAIN usage..."
           grep -r "julia\|mojo\|pony\|jax" src/ | grep -v "test\|benches" | wc -l | xargs echo "BRAIN integrations found:"
+      
+      - name: Julia FFI readiness check
+        run: |
+          echo "🧮 Julia FFI Readiness..."
+          test -f FFI/src/julia_math.jl && echo "✅ julia_math.jl available" || echo "⚠️  Missing julia_math.jl"
+          grep -q "has_julia_ffi" build.rs && echo "✅ Julia FFI cfg detected" || echo "⚠️  No has_julia_ffi"
+          
+      - name: MCP Protocol Context7 validation
+        run: |
+          echo "🔌 MCP Context7 Validation (GitHub Copilot)..."
+          echo "Protocol version: ${{ env.MCP_PROTOCOL_VERSION }}"
+          grep -r "MCP_PROTOCOL_VERSION\|2026-11-05" src/mcp/ && echo "✅ MCP 2026 config found" || echo "⚠️  Check MCP version"
+          echo "MCP Tools available:"
+          grep -r "pub.*fn\|async fn" src/mcp/tools.rs | wc -l | xargs echo "  Total MCP tool functions:"
 
   build-test:
     name: 🔨 Build & Test

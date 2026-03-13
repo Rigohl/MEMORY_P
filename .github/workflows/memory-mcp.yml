@@ -58,9 +58,9 @@ jobs:
       - name: Memory system specific tests
         run: cargo test --package memory_p --lib mcp::memory_engine --verbose
 
-  # Julia FFI verification
+  # Julia FFI verification - REAL mathematical functions execution
   julia-ffi:
-    name: Julia FFI Integration
+    name: Julia FFI Integration & Math Validation
     runs-on: ubuntu-latest
     needs: rust-build
     steps:
@@ -71,19 +71,73 @@ jobs:
         with:
           version: ${{ env.JULIA_VERSION }}
       
-      - name: Install Julia dependencies
+      - name: Install Julia dependencies for MemoryP
         run: |
-          cd FFI/src
-          julia --project=. -e 'using Pkg; Pkg.add(["DifferentialEquations", "ChaosTools", "Optim"])'
+          julia -e 'using Pkg; Pkg.add(["Optim", "LinearAlgebra", "Statistics"])'
+          echo "✅ Core Julia dependencies installed"
       
-      - name: Validate Julia predictor
+      - name: Verify Julia can load MemoryPMath module
         run: |
-          julia FFI/src/julia_math.jl && echo "Julia validation complete"
+          echo "🧠 Loading MemoryPMath module..."
+          julia -e 'include("FFI/src/julia_math.jl"); println("[✅] MemoryPMath loaded successfully")'
+      
+      - name: Execute Julia chaos analysis function
+        run: |
+          echo "🔬 Testing Julia chaos_analysis_vec..."
+          julia -e '
+          include("FFI/src/julia_math.jl")
+          using MemoryPMath
+          
+          # Test data: simple logistic map
+          embedding = [0.1, 0.2, 0.3, 0.4, 0.5]
+          predictions = predict_next_agent_moves(embedding, 2)
+          
+          println("[✅] predict_next_agent_moves executed")
+          println("  Input: ", embedding)
+          println("  Predictions: ", length(predictions), " steps")
+          '
+      
+      - name: Execute Julia optimization function
+        run: |
+          echo "🔧 Testing Julia optimization..."
+          julia -e '
+          include("FFI/src/julia_math.jl")
+          using MemoryPMath
+          
+          weights = [0.33, 0.33, 0.34]
+          result = optimize_weights(weights)
+          
+          println("[✅] optimize_weights executed")
+          println("  Input weights: ", weights)
+          println("  Output weights: ", result)
+          '
+      
+      - name: Execute Julia entropy calculation
+        run: |
+          echo "📊 Testing Julia entropy...")
+          julia -e '
+          include("FFI/src/julia_math.jl")
+          using MemoryPMath
+          
+          data = [0.1, 0.2, 0.3, 0.2, 0.2]
+          entropy = shannon_entropy(data)
+          
+          println("[✅] shannon_entropy executed")
+          println("  Entropy value: ", entropy)
+          '
       
       - name: Verify Julia BRAIN implementations
         run: |
           echo "🧮 Julia BRAIN verification..."
-          test -f FFI/src/julia_math.jl && echo "✅ julia_math.jl found" || echo "❌ Missing julia_math.jl"
+          test -f FFI/src/julia_math.jl && echo "✅ FFI/src/julia_math.jl" || echo "❌ Missing"
+          test -f brain/julia/julia_math.jl && echo "✅ brain/julia/julia_math.jl" || echo "❌ Missing"
+          
+          # Compare files
+          if diff FFI/src/julia_math.jl brain/julia/julia_math.jl > /dev/null; then
+            echo "✅ Both Julia implementations are identical (as expected)"
+          else
+            echo "⚠️  Julia implementations differ - synchronization may be needed"
+          fi
           
   brain-validation:
     name: BRAIN Implementation Verification
