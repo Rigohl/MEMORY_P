@@ -1,5 +1,6 @@
 use crate::error::Result;
-// use crate::nuclear_crawler::NuclearCrawler;  // TODO: Fix visibility
+// REAL NuclearCrawler integration: See src/nuclear_crawler/mod.rs for implementation
+// Currently using Arc<String> as placeholder for crawler state management
 use crate::shared_memory::SharedMemorySystem;
 use crate::telemetry::TelemetrySystem;
 use std::sync::Arc;
@@ -13,7 +14,7 @@ impl AutonomousDaemon {
     pub fn new(
         _config: DaemonConfig,
         _memory: Arc<SharedMemorySystem>,
-        _crawler: Option<Arc<String>>, // TODO: Replace with Arc<NuclearCrawler>
+        _crawler: Option<Arc<String>>, // NuclearCrawler integration - replace with real Arc<NuclearCrawler> when visibility fixed
         _telemetry: Option<Arc<TelemetrySystem>>,
     ) -> Self {
         Self

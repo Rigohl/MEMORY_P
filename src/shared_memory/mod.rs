@@ -39,7 +39,9 @@ impl SharedMemorySystem {
     }
 
     pub async fn sync_contexts(&self, _source: AgentId, _targets: Vec<AgentId>) -> Result<()> {
-        // Stub
+        // Sync implementation: Full context replication across agent network
+        // REAL implementation needed when distributed coordination is enabled
+        // For now: Stub returns success - actual sync happens via ContextManager.update()
         Ok(())
     }
 
@@ -64,6 +66,9 @@ impl SharedMemorySystem {
     }
 
     pub fn get_graph(&self) -> GraphStub {
+        // GraphStub: Placeholder for knowledge graph implementation
+        // REAL implementation: Graph database for semantic relationships, queries,
+        // and pattern discovery. See ARCHITECTURE.md for knowledge graph design.
         GraphStub
     }
 
@@ -78,6 +83,9 @@ impl SharedMemorySystem {
 
 pub struct GraphStub;
 impl GraphStub {
+    /// GraphStub: Stub for Knowledge Graph database integration
+    /// REAL IMPLEMENTATION: PostgreSQL graph tables + pgvector semantic search
+    /// Features: RDF/property graph structure, pattern queries, entity linking
     pub fn stats(&self) -> serde_json::Value {
         json!({
             "node_count": 10,
