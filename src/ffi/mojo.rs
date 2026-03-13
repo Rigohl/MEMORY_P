@@ -36,6 +36,7 @@ pub fn init() -> Result<()> {
 }
 
 #[cfg(has_mojo_ffi)]
+#[allow(dead_code)]
 fn try_load_mojo_kernels() -> Result<()> {
     // Mojo inference engine available
     // Would load libmojo_kernels.so/dll and initialize SIMD accelerators
@@ -43,6 +44,7 @@ fn try_load_mojo_kernels() -> Result<()> {
 }
 
 #[cfg(not(has_mojo_ffi))]
+#[allow(dead_code)]
 fn try_load_mojo_kernels() -> Result<()> {
     Ok(())
 }

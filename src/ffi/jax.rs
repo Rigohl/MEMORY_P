@@ -105,7 +105,7 @@ static INIT: Once = Once::new();
 
 /// Initialize Python JAX runtime and load inference models
 pub fn init() -> Result<()> {
-    let mut result = Ok(());
+    let result = Ok(());
     INIT.call_once(|| {
         #[cfg(has_jax_ffi)]
         {
@@ -122,6 +122,7 @@ pub fn init() -> Result<()> {
 }
 
 #[cfg(has_jax_ffi)]
+#[allow(dead_code)]
 fn try_init_jax_runtime() -> Result<()> {
     // Initialize Python runtime via PyO3 or ctypes
     // Load jax_inference.py module
@@ -130,6 +131,7 @@ fn try_init_jax_runtime() -> Result<()> {
 }
 
 #[cfg(not(has_jax_ffi))]
+#[allow(dead_code)]
 fn try_init_jax_runtime() -> Result<()> {
     Ok(())
 }

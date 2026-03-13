@@ -31,6 +31,7 @@ pub fn init() -> Result<()> {
 }
 
 #[cfg(has_julia_ffi)]
+#[allow(dead_code)]
 fn try_load_julia_math() -> Result<()> {
     // When Julia .jl is available, this would:
     // 1. Initialize Julia runtime via jl_init_with_image()
@@ -40,6 +41,7 @@ fn try_load_julia_math() -> Result<()> {
 }
 
 #[cfg(not(has_julia_ffi))]
+#[allow(dead_code)]
 fn try_load_julia_math() -> Result<()> {
     Ok(())
 }

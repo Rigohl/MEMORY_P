@@ -202,6 +202,7 @@ impl PredictionEngine {
     }
 
     /// Calcula varianza de un vector (usado en fallback de Rust)
+    #[allow(dead_code)]
     fn compute_variance(&self, data: &[f64]) -> f64 {
         if data.is_empty() {
             return 0.0;

@@ -12,12 +12,15 @@ pub mod mojo;
 pub mod pony;
 pub mod zig;
 
-#[allow(unused_imports)]
+#[allow(ambiguous_glob_reexports)]
 pub use zig::*;
-#[allow(unused_imports)]
+#[allow(ambiguous_glob_reexports)]
 pub use julia::*;
+#[allow(ambiguous_glob_reexports)]
 pub use mojo::*;
+#[allow(ambiguous_glob_reexports)]
 pub use jax::*;
+#[allow(ambiguous_glob_reexports)]
 pub use pony::*;
 
 pub async fn initialize_all() -> Result<(), error::FfiError> {
