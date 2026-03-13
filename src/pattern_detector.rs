@@ -254,8 +254,8 @@ impl PatternDetector {
 
     /// Detecta patrones temporales
     fn detect_temporal_patterns(&self, actions: &[UserAction]) -> TemporalPatterns {
-        let mut hour_counts = vec![0usize; 24];
-        let mut day_counts = vec![0usize; 7];
+        let mut hour_counts = [0usize; 24];
+        let mut day_counts = [0usize; 7];
         let mut total_duration = 0.0;
 
         for action in actions {
@@ -452,7 +452,7 @@ mod tests {
         let detector = PatternDetector::new();
 
         // Record some actions
-        for i in 0..10 {
+        for _i in 0..10 {
             detector
                 .record_action(
                     "test_user",

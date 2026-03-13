@@ -594,7 +594,7 @@ pub fn ultra_workflow(
                     let mut findings = Vec::new();
                     if let Ok(analysis) = CodeAnalyzer::analyze_file(path) {
                         findings.push(format!("Complexity: {:.1}", analysis.complexity_estimate));
-                        if analysis.security_score < 80 {
+                        if analysis.security_score < 80.0 {
                             findings
                                 .push(format!("Low Security Score: {}", analysis.security_score));
                         }
@@ -724,7 +724,7 @@ impl ScanUtils {
             .filter(|e| e.file_type().is_file())
             .filter(|e| {
                 if let Some(ext) = extension {
-                    e.path().extension().map_or(false, |p_ext| p_ext == ext)
+                    e.path().extension().is_some_and(|p_ext| p_ext == ext)
                 } else {
                     true
                 }

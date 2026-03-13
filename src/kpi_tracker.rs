@@ -6,7 +6,7 @@ use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
@@ -34,8 +34,8 @@ pub struct SixSigmaMetric {
     pub category: KpiCategory,
     pub value: f64,
     pub target: f64,
-    pub upper_spec_limit: f64, // USL
-    pub lower_spec_limit: f64, // LSL
+    pub upper_spec_limit: f64,    // USL
+    pub lower_spec_limit: f64,    // LSL
     pub timestamp: DateTime<Utc>, // Changed from Instant
     pub unit: String,
 }
@@ -129,13 +129,13 @@ pub enum AlertSeverity {
 pub struct KpiTracker {
     /// Métricas actuales
     metrics: Arc<DashMap<String, Vec<SixSigmaMetric>>>,
-    
+
     /// Configuración
     config: KpiConfig,
-    
+
     /// Estado de ejecución
     running: Arc<RwLock<bool>>,
-    
+
     /// Alertas activas
     alerts: Arc<DashMap<String, KpiAlert>>,
 }
@@ -144,16 +144,16 @@ pub struct KpiTracker {
 pub struct KpiConfig {
     /// Intervalo de medición (segundos)
     pub measurement_interval: Duration,
-    
+
     /// Retención de datos históricos (segundos)
     pub retention_period: Duration,
-    
+
     /// Umbral de alerta Cpk
     pub cpk_warning_threshold: f64,
-    
+
     /// Umbral crítico Cpk
     pub cpk_critical_threshold: f64,
-    
+
     /// Target Sigma level
     pub target_sigma_level: f64,
 }
@@ -183,7 +183,7 @@ impl KpiTracker {
     /// Inicia el tracking de KPIs (auto-ejecutado)
     pub async fn start(&self) -> Result<()> {
         info!("📊 Iniciando KPI Tracker - Six Sigma Always-On");
-        
+
         let mut running = self.running.write().await;
         if *running {
             warn!("KPI Tracker ya está ejecutándose");
@@ -194,25 +194,28 @@ impl KpiTracker {
 
         // Iniciar mediciones automáticas
         self.start_auto_measurement().await;
-        
+
         // Iniciar análisis Six Sigma
         self.start_six_sigma_analysis().await;
-        
+
         // Iniciar limpieza de datos antiguos
         self.start_data_cleanup().await;
-        
+
         info!("✅ KPI Tracker iniciado");
-        info!("   • Mediciones: cada {:?}", self.config.measurement_interval);
+        info!(
+            "   • Mediciones: cada {:?}",
+            self.config.measurement_interval
+        );
         info!("   • Target Sigma: {}", self.config.target_sigma_level);
         info!("   • Retención: {:?}", self.config.retention_period);
-        
+
         Ok(())
     }
 
     /// Registra una métrica
     pub fn record_metric(&self, metric: SixSigmaMetric) {
         let key = format!("{}:{:?}", metric.name, metric.category);
-        
+
         self.metrics
             .entry(key.clone())
             .and_modify(|metrics| {
@@ -223,7 +226,7 @@ impl KpiTracker {
                 }
             })
             .or_insert_with(|| vec![metric.clone()]);
-        
+
         // Verificar alertas
         self.check_alerts(&metric);
     }
@@ -240,31 +243,112 @@ impl KpiTracker {
                 ),
                 timestamp: Utc::now(),
             };
-            
+
             self.alerts.insert(metric.name.clone(), alert);
         }
     }
 
     /// Inicia mediciones automáticas
     async fn start_auto_measurement(&self) {
-        let _metrics = self.metrics.clone();
+        let metrics = self.metrics.clone();
+        let alerts = self.alerts.clone();
         let running = self.running.clone();
         let interval = self.config.measurement_interval;
 
         tokio::spawn(async move {
             info!("📈 Auto-measurement iniciado");
-            
+
             loop {
                 if !*running.read().await {
                     break;
                 }
 
-                // Simular mediciones (en implementación real, recoger métricas del sistema)
-                // Ejemplo: medir latencia, throughput, error rate, etc.
-                
+                let cycle_start = Instant::now();
+                let tracked_series = metrics.len() as f64;
+                let active_alerts = alerts.len() as f64;
+                let metric_points = metrics
+                    .iter()
+                    .map(|entry| entry.value().len())
+                    .sum::<usize>() as f64;
+                let estimated_memory = (metrics
+                    .iter()
+                    .map(|entry| entry.value().len())
+                    .sum::<usize>()
+                    * std::mem::size_of::<SixSigmaMetric>())
+                    as f64;
+
+                let loop_latency_ms = cycle_start.elapsed().as_secs_f64() * 1000.0;
+                let now = Utc::now();
+
+                let samples = [
+                    SixSigmaMetric {
+                        name: "tracker_loop_latency_ms".to_string(),
+                        category: KpiCategory::Performance,
+                        value: loop_latency_ms,
+                        target: 5.0,
+                        upper_spec_limit: 50.0,
+                        lower_spec_limit: 0.0,
+                        timestamp: now,
+                        unit: "ms".to_string(),
+                    },
+                    SixSigmaMetric {
+                        name: "tracked_metric_series".to_string(),
+                        category: KpiCategory::Efficiency,
+                        value: tracked_series,
+                        target: tracked_series.max(1.0),
+                        upper_spec_limit: 100_000.0,
+                        lower_spec_limit: 0.0,
+                        timestamp: now,
+                        unit: "series".to_string(),
+                    },
+                    SixSigmaMetric {
+                        name: "active_kpi_alerts".to_string(),
+                        category: KpiCategory::Defects,
+                        value: active_alerts,
+                        target: 0.0,
+                        upper_spec_limit: 100.0,
+                        lower_spec_limit: 0.0,
+                        timestamp: now,
+                        unit: "alerts".to_string(),
+                    },
+                    SixSigmaMetric {
+                        name: "tracker_metric_points".to_string(),
+                        category: KpiCategory::Quality,
+                        value: metric_points,
+                        target: metric_points.max(1.0),
+                        upper_spec_limit: 1_000_000.0,
+                        lower_spec_limit: 0.0,
+                        timestamp: now,
+                        unit: "points".to_string(),
+                    },
+                    SixSigmaMetric {
+                        name: "tracker_memory_bytes".to_string(),
+                        category: KpiCategory::Cost,
+                        value: estimated_memory,
+                        target: estimated_memory.max(1.0),
+                        upper_spec_limit: 512.0 * 1024.0 * 1024.0,
+                        lower_spec_limit: 0.0,
+                        timestamp: now,
+                        unit: "bytes".to_string(),
+                    },
+                ];
+
+                for metric in samples {
+                    let key = format!("{}:{:?}", metric.name, metric.category);
+                    metrics
+                        .entry(key)
+                        .and_modify(|items| {
+                            items.push(metric.clone());
+                            if items.len() > 10_000 {
+                                items.drain(0..1000);
+                            }
+                        })
+                        .or_insert_with(|| vec![metric.clone()]);
+                }
+
                 tokio::time::sleep(interval).await;
             }
-            
+
             info!("📈 Auto-measurement detenido");
         });
     }
@@ -278,7 +362,7 @@ impl KpiTracker {
 
         tokio::spawn(async move {
             info!("🎯 Six Sigma Analysis iniciado");
-            
+
             loop {
                 if !*running.read().await {
                     break;
@@ -287,24 +371,23 @@ impl KpiTracker {
                 // Analizar cada categoría de métricas
                 for entry in metrics.iter() {
                     let (name, metric_list) = entry.pair();
-                    
+
                     if metric_list.len() < 30 {
                         continue; // Necesitamos suficientes datos
                     }
-                    
+
                     // Calcular estadísticas
                     let values: Vec<f64> = metric_list.iter().map(|m| m.value).collect();
                     let mean = values.iter().sum::<f64>() / values.len() as f64;
-                    
-                    let variance = values.iter()
-                        .map(|v| (v - mean).powi(2))
-                        .sum::<f64>() / values.len() as f64;
+
+                    let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>()
+                        / values.len() as f64;
                     let std_dev = variance.sqrt();
-                    
+
                     // Obtener última métrica para specs
                     if let Some(last_metric) = metric_list.last() {
                         let cpk = last_metric.calculate_cpk(mean, std_dev);
-                        
+
                         // Generar alertas según Cpk
                         if cpk < config.cpk_critical_threshold {
                             let alert = KpiAlert {
@@ -334,7 +417,7 @@ impl KpiTracker {
 
                 tokio::time::sleep(Duration::from_secs(60)).await; // Analizar cada minuto
             }
-            
+
             info!("🎯 Six Sigma Analysis detenido");
         });
     }
@@ -347,7 +430,7 @@ impl KpiTracker {
 
         tokio::spawn(async move {
             info!("🧹 Data cleanup iniciado");
-            
+
             loop {
                 if !*running.read().await {
                     break;
@@ -356,15 +439,18 @@ impl KpiTracker {
                 // Limpiar métricas antiguas
                 for mut entry in metrics.iter_mut() {
                     let metric_list = entry.value_mut();
-                    let cutoff = Utc::now() - chrono::Duration::from_std(retention_period)
-                        .unwrap_or_else(|_| chrono::Duration::days(7));  // Fallback to 7 days
-                    
+                    let retention = match chrono::Duration::from_std(retention_period) {
+                        Ok(duration) => duration,
+                        Err(_) => chrono::Duration::seconds(retention_period.as_secs() as i64),
+                    };
+                    let cutoff = Utc::now() - retention;
+
                     metric_list.retain(|m| m.timestamp > cutoff);
                 }
 
                 tokio::time::sleep(Duration::from_secs(3600)).await; // Limpiar cada hora
             }
-            
+
             info!("🧹 Data cleanup detenido");
         });
     }
@@ -390,29 +476,28 @@ impl KpiTracker {
 
             for entry in self.metrics.iter() {
                 let metric_list = entry.value();
-                
+
                 if metric_list.is_empty() {
                     continue;
                 }
-                
+
                 if metric_list[0].category != category {
                     continue;
                 }
-                
+
                 // Calcular Cpk promedio
                 if metric_list.len() >= 30 {
                     let values: Vec<f64> = metric_list.iter().map(|m| m.value).collect();
                     let mean = values.iter().sum::<f64>() / values.len() as f64;
-                    let variance = values.iter()
-                        .map(|v| (v - mean).powi(2))
-                        .sum::<f64>() / values.len() as f64;
+                    let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>()
+                        / values.len() as f64;
                     let std_dev = variance.sqrt();
-                    
+
                     if let Some(last_metric) = metric_list.last() {
                         let cpk = last_metric.calculate_cpk(mean, std_dev);
                         cpk_sum += cpk;
                         count += 1;
-                        
+
                         // Contar defectos
                         for m in metric_list.iter() {
                             opportunities += 1;
@@ -431,14 +516,20 @@ impl KpiTracker {
                 } else {
                     0.0
                 };
-                
+
                 // Calcular Sigma level aproximado
                 let dpmo = defect_rate * 10_000.0;
-                let sigma_level = if dpmo <= 3.4 { 6.0 }
-                    else if dpmo <= 233.0 { 5.0 }
-                    else if dpmo <= 6_210.0 { 4.0 }
-                    else if dpmo <= 66_807.0 { 3.0 }
-                    else { 2.0 };
+                let sigma_level = if dpmo <= 3.4 {
+                    6.0
+                } else if dpmo <= 233.0 {
+                    5.0
+                } else if dpmo <= 6_210.0 {
+                    4.0
+                } else if dpmo <= 66_807.0 {
+                    3.0
+                } else {
+                    2.0
+                };
 
                 category_metrics.push(CategoryMetrics {
                     category,
@@ -457,17 +548,24 @@ impl KpiTracker {
         let overall_sigma_level = if overall_count > 0 {
             let avg_cpk = overall_cpk_sum / overall_count as f64;
             // Conversión aproximada Cpk a Sigma
-            if avg_cpk >= 2.0 { 6.0 }
-            else if avg_cpk >= 1.67 { 5.0 }
-            else if avg_cpk >= 1.33 { 4.0 }
-            else if avg_cpk >= 1.0 { 3.0 }
-            else { 2.0 }
+            if avg_cpk >= 2.0 {
+                6.0
+            } else if avg_cpk >= 1.67 {
+                5.0
+            } else if avg_cpk >= 1.33 {
+                4.0
+            } else if avg_cpk >= 1.0 {
+                3.0
+            } else {
+                2.0
+            }
         } else {
             0.0
         };
 
         // Recoger alertas activas
-        let alerts: Vec<KpiAlert> = self.alerts
+        let alerts: Vec<KpiAlert> = self
+            .alerts
             .iter()
             .map(|entry| entry.value().clone())
             .collect();
@@ -515,9 +613,9 @@ mod tests {
     async fn test_kpi_tracker() {
         let config = KpiConfig::default();
         let tracker = KpiTracker::new(config);
-        
+
         assert!(tracker.start().await.is_ok());
-        
+
         let metric = SixSigmaMetric {
             name: "test_metric".to_string(),
             category: KpiCategory::Quality,
@@ -528,12 +626,12 @@ mod tests {
             timestamp: Utc::now(),
             unit: "%".to_string(),
         };
-        
+
         tracker.record_metric(metric);
-        
+
         let dashboard = tracker.get_dashboard();
-        assert_eq!(dashboard.categories.len() <= 6, true);
-        
+        assert!(dashboard.categories.len() <= 6);
+
         tracker.stop().await;
     }
 }

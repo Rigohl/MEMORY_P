@@ -172,7 +172,7 @@ impl RoutingAI {
             stats.success_rate = stats.success_rate * 0.95 + 0.05;
             stats.recent_errors = stats.recent_errors.saturating_sub(1);
         } else {
-            stats.success_rate = stats.success_rate * 0.95;
+            stats.success_rate *= 0.95;
             stats.recent_errors = stats.recent_errors.saturating_add(1);
         }
     }

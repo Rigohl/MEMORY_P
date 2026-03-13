@@ -49,14 +49,14 @@ pub const FfiResult = extern struct {
 };
 
 /// Inicializa el sistema FFI
-export fn ffi_init() callconv(.C) bool {
+export fn ffi_init() callconv(.c) bool {
     std.debug.print("[Zig FFI] Inicializando FFI bridge...\n", .{});
     // TODO: Inicializar cada runtime (Julia, JAX, etc)
     return true;
 }
 
 /// Finaliza el sistema FFI y libera recursos
-export fn ffi_shutdown() callconv(.C) void {
+export fn ffi_shutdown() callconv(.c) void {
     std.debug.print("[Zig FFI] Cerrando FFI bridge...\n", .{});
     // TODO: Finalizar cada runtime
 }
@@ -66,7 +66,7 @@ export fn ffi_dispatch(
     lang: Language,
     operation: [*:0]const u8,
     input: FfiVec,
-) callconv(.C) FfiResult {
+) callconv(.c) FfiResult {
     std.debug.print("[Zig FFI] Despachando operación '{s}' a lenguaje {}\n", .{ operation, lang });
 
     return switch (lang) {
@@ -180,7 +180,7 @@ fn zig_call(operation: [*:0]const u8, input: FfiVec) FfiResult {
 }
 
 /// Libera memoria de un FfiResult desde Rust
-export fn ffi_free_result(result: *FfiResult) callconv(.C) void {
+export fn ffi_free_result(result: *FfiResult) callconv(.c) void {
     var allocator = std.heap.page_allocator;
 
     if (result.data.data) |ptr| {

@@ -3,7 +3,7 @@ name: "memory-p-mcp-expert"
 description: "Especialista en protocolo MCP y endpoints para MEMORY_P"
 version: "1.0.0"
 role: "coding"
-tools: ["analyze", "edit", "test", "validate"]
+tools: [vscode/getProjectSetupInfo, vscode/installExtension, vscode/memory, vscode/newWorkspace, vscode/runCommand, vscode/vscodeAPI, vscode/extensions, vscode/askQuestions, execute/runNotebookCell, execute/testFailure, execute/getTerminalOutput, execute/awaitTerminal, execute/killTerminal, execute/createAndRunTask, execute/runInTerminal, read/getNotebookSummary, read/problems, read/readFile, read/readNotebookCellOutput, read/terminalSelection, read/terminalLastCommand, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, edit/rename, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/searchSubagent, search/usages, web/fetch, web/githubRepo, browser/openBrowserPage, todo]
 author: "MEMORY_P Team"
 tags: ["mcp", "protocol", "api", "rust", "axum"]
 ---

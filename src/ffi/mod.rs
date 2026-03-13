@@ -18,7 +18,7 @@ pub use mojo::*;
 pub use jax::*;
 pub use pony::*;
 
-pub async fn initialize_all() -> Result<(), String> {
+pub async fn initialize_all() -> Result<(), error::FfiError> {
     zig::init()?;
     julia::init()?;
     mojo::init()?;
@@ -60,27 +60,35 @@ impl FfiStatus {
 pub async fn init() -> crate::error::Result<()> {
 	tracing::info!("Initializing FFI subsystems...");
 
-	let results = tokio::join!(
-		async { self::zig::init().map(|_| "Zig").map_err(|e| format!("Zig: {e}")) },
-		async {
-			self::julia::init()
-				.map(|_| "Julia")
-				.map_err(|e| format!("Julia: {e}"))
-		},
-		async { self::jax::init().map(|_| "JAX").map_err(|e| format!("JAX: {e}")) },
-		async {
-			self::mojo::init()
-				.map(|_| "Mojo")
-				.map_err(|e| format!("Mojo: {e}"))
-		},
-		async {
-			self::pony::init()
-				.map(|_| "Pony")
-				.map_err(|e| format!("Pony: {e}"))
-		},
-	);
+	// Sequential initialization instead of join! macro for type clarity
+	let mut init_status = Vec::new();
+	
+	match self::zig::init().await {
+		Ok(_) => init_status.push(Ok("Zig")),
+		Err(e) => init_status.push(Err(format!("Zig: {}", e))),
+	}
+	
+	match self::julia::init().await {
+		Ok(_) => init_status.push(Ok("Julia")),
+		Err(e) => init_status.push(Err(format!("Julia: {}", e))),
+	}
+	
+	match self::jax::init() {
+		Ok(_) => init_status.push(Ok("JAX")),
+		Err(e) => init_status.push(Err(format!("JAX: {}", e))),
+	}
+	
+	match self::mojo::init().await {
+		Ok(_) => init_status.push(Ok("Mojo")),
+		Err(e) => init_status.push(Err(format!("Mojo: {}", e))),
+	}
+	
+	match self::pony::init().await {
+		Ok(_) => init_status.push(Ok("Pony")),
+		Err(e) => init_status.push(Err(format!("Pony: {}", e))),
+	}
 
-	for result in [results.0, results.1, results.2, results.3, results.4] {
+	for result in init_status {
 		match result {
 			Ok(name) => tracing::info!("  {} FFI: ready", name),
 			Err(msg) => tracing::warn!("  {}", msg),

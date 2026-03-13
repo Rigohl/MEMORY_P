@@ -1,229 +1,146 @@
 # kernels.mojo - SIMD Kernels for MEMORY_P v2.0
 #
-# Proporciona kernels ultra-optimizados con SIMD intrinsics
-# para operaciones críticas de performance.
+# REAL FFI shared library for Rust integration via C ABI.
+# Uses LLVM dialect MLIR operations for pointer dereference since Mojo 0.26.1
+# does not support UnsafePointer construction from raw addresses in @export fns.
 #
-# NOTE: Este es un stub simplificado. Mojo requiere compilador específico.
+# Build: mojo build kernels.mojo --emit shared-lib -o libmojo_kernels.so
+# NO fn main() — required for --emit shared-lib
 
-from memory import memset_zero
-from algorithm import vectorize
 from math import sqrt
 
-# SIMD width óptimo para f64 en x86-64
-alias simd_width = 4
+
+# === LLVM Dialect Memory Helpers ===
+# These use raw MLIR operations to convert Int addresses to memory accesses.
+# Int params in @export correspond to C's `const double*` / `double*` / `size_t`.
+
+fn llvm_load_f64(addr: Int, offset: Int) -> Float64:
+    """Load Float64 from (addr + offset*8) via LLVM dialect."""
+    var total_addr = addr + offset * 8
+    var i64v = __mlir_op.`index.castu`[_type = __mlir_type.i64](
+        total_addr._mlir_value
+    )
+    var llvm_ptr = __mlir_op.`llvm.inttoptr`[_type = __mlir_type[`!llvm.ptr`]](
+        i64v
+    )
+    var llvm_val = __mlir_op.`llvm.load`[_type = __mlir_type.f64](llvm_ptr)
+    # Convert LLVM f64 → Mojo Float64 via List buffer intermediary
+    var buf = List[Float64]()
+    buf.append(0.0)
+    var buf_i64 = __mlir_op.`index.castu`[_type = __mlir_type.i64](
+        Int(buf.unsafe_ptr())._mlir_value
+    )
+    var buf_llvm = __mlir_op.`llvm.inttoptr`[_type = __mlir_type[`!llvm.ptr`]](
+        buf_i64
+    )
+    __mlir_op.`llvm.store`(llvm_val, buf_llvm)
+    return buf[0]
 
 
-@export("mojo_dot_product")
-fn dot_product(
-    a: DTypePointer[DType.float64],
-    b: DTypePointer[DType.float64],
-    n: Int
-) -> Float64:
-    """
-    Calcula dot product de dos vectores con SIMD.
+fn llvm_store_f64(addr: Int, offset: Int, val: Float64):
+    """Store Float64 to (addr + offset*8) via LLVM dialect."""
+    var total_addr = addr + offset * 8
+    var i64v = __mlir_op.`index.castu`[_type = __mlir_type.i64](
+        total_addr._mlir_value
+    )
+    var llvm_ptr = __mlir_op.`llvm.inttoptr`[_type = __mlir_type[`!llvm.ptr`]](
+        i64v
+    )
+    # Convert Mojo Float64 (!pop.scalar<f64>) → LLVM f64
+    var llvm_val = __mlir_op.`builtin.unrealized_conversion_cast`[
+        _type = __mlir_type.f64
+    ](val._mlir_value)
+    __mlir_op.`llvm.store`(llvm_val, llvm_ptr)
 
-    Args:
-        a, b: Punteros a vectores de entrada
-        n: Longitud de los vectores
 
-    Returns:
-        Dot product (a · b)
+# === Exported FFI Functions ===
 
-    Performance:
-        ~12 µs para 1M elementos (vs 850 µs sin SIMD)
-    """
+
+@export
+fn mojo_dot_product(a_ptr: Int, b_ptr: Int, n: Int) -> Float64:
+    """Dot product of two f64 vectors. ABI: (ptr, ptr, len) -> f64."""
     var result: Float64 = 0.0
-
-    # Procesar en bloques SIMD
-    @parameter
-    fn compute_simd[width: Int](i: Int):
-        let va = a.simd_load[width](i)
-        let vb = b.simd_load[width](i)
-        result += (va * vb).reduce_add()
-
-    # Vectorizar sobre el array completo
-    vectorize[simd_width, compute_simd](n)
-
+    for i in range(n):
+        result += llvm_load_f64(a_ptr, i) * llvm_load_f64(b_ptr, i)
     return result
 
 
-@export("mojo_cosine_similarity")
-fn cosine_similarity(
-    a: DTypePointer[DType.float64],
-    b: DTypePointer[DType.float64],
-    n: Int
-) -> Float64:
-    """
-    Calcula similitud coseno entre dos vectores con SIMD.
-
-    Args:
-        a, b: Punteros a vectores
-        n: Dimensión
-
-    Returns:
-        Similitud coseno en [-1, 1]
-    """
+@export
+fn mojo_cosine_similarity(a_ptr: Int, b_ptr: Int, n: Int) -> Float64:
+    """Cosine similarity between two f64 vectors. ABI: (ptr, ptr, len) -> f64."""
     var dot: Float64 = 0.0
     var norm_a: Float64 = 0.0
     var norm_b: Float64 = 0.0
-
-    @parameter
-    fn compute_simd[width: Int](i: Int):
-        let va = a.simd_load[width](i)
-        let vb = b.simd_load[width](i)
-
-        dot += (va * vb).reduce_add()
-        norm_a += (va * va).reduce_add()
-        norm_b += (vb * vb).reduce_add()
-
-    vectorize[simd_width, compute_simd](n)
-
-    # Normalizar
-    let norm_product = sqrt(norm_a) * sqrt(norm_b)
-
-    if norm_product < 1e-8:
+    for i in range(n):
+        var va = llvm_load_f64(a_ptr, i)
+        var vb = llvm_load_f64(b_ptr, i)
+        dot += va * vb
+        norm_a += va * va
+        norm_b += vb * vb
+    var denom = sqrt(norm_a) * sqrt(norm_b)
+    if denom < 1e-8:
         return 0.0
+    return dot / denom
 
-    return dot / norm_product
 
-
-@export("mojo_cosine_similarity_batch")
-fn cosine_similarity_batch(
-    query: DTypePointer[DType.float64],
-    corpus: DTypePointer[DType.float64],
-    n_docs: Int,
-    dim: Int,
-    results: DTypePointer[DType.float64]
+@export
+fn mojo_cosine_similarity_batch(
+    query_ptr: Int, corpus_ptr: Int, n_docs: Int, dim: Int, results_ptr: Int
 ):
-    """
-    Calcula similitudes coseno entre query y múltiples documentos.
+    """Batch cosine similarity: query vs n_docs documents.
+    ABI: (query_ptr, flat_corpus_ptr, n_docs, dim, results_out_ptr).
+    corpus is row-major: doc[i] starts at corpus_ptr + i*dim*8."""
+    # Pre-compute query norm
+    var query_norm_sq: Float64 = 0.0
+    for i in range(dim):
+        var vq = llvm_load_f64(query_ptr, i)
+        query_norm_sq += vq * vq
+    var query_norm = sqrt(query_norm_sq)
 
-    Args:
-        query: Vector de query (dim,)
-        corpus: Matriz de corpus (n_docs x dim)
-        n_docs: Número de documentos en corpus
-        dim: Dimensionalidad de vectores
-        results: Buffer de salida para similitudes (n_docs,)
-    """
-    # Calcular norma de query una vez
-    var query_norm: Float64 = 0.0
-
-    @parameter
-    fn compute_query_norm[width: Int](i: Int):
-        let vq = query.simd_load[width](i)
-        query_norm += (vq * vq).reduce_add()
-
-    vectorize[simd_width, compute_query_norm](dim)
-    query_norm = sqrt(query_norm)
-
-    # Para cada documento en el corpus
     for doc_idx in range(n_docs):
         var dot: Float64 = 0.0
-        var corpus_norm: Float64 = 0.0
-
-        let corpus_offset = doc_idx * dim
-
-        @parameter
-        fn compute_similarity[width: Int](i: Int):
-            let vq = query.simd_load[width](i)
-            let vc = corpus.simd_load[width](corpus_offset + i)
-
-            dot += (vq * vc).reduce_add()
-            corpus_norm += (vc * vc).reduce_add()
-
-        vectorize[simd_width, compute_similarity](dim)
-
-        # Calcular similitud
-        corpus_norm = sqrt(corpus_norm)
-        let norm_product = query_norm * corpus_norm
-
-        if norm_product > 1e-8:
-            results[doc_idx] = dot / norm_product
+        var doc_norm_sq: Float64 = 0.0
+        var doc_base = corpus_ptr + doc_idx * dim * 8
+        for i in range(dim):
+            var vq = llvm_load_f64(query_ptr, i)
+            var vc = llvm_load_f64(doc_base, i)
+            dot += vq * vc
+            doc_norm_sq += vc * vc
+        var doc_norm = sqrt(doc_norm_sq)
+        var denom = query_norm * doc_norm
+        if denom < 1e-8:
+            llvm_store_f64(results_ptr, doc_idx, 0.0)
         else:
-            results[doc_idx] = 0.0
+            llvm_store_f64(results_ptr, doc_idx, dot / denom)
 
 
-@export("mojo_matrix_multiply")
-fn matrix_multiply(
-    a: DTypePointer[DType.float64],
-    b: DTypePointer[DType.float64],
-    c: DTypePointer[DType.float64],
-    m: Int,
-    n: Int,
-    k: Int
+@export
+fn mojo_vector_normalize(v_ptr: Int, n: Int, out_ptr: Int):
+    """Normalize vector to unit length. ABI: (input_ptr, len, output_ptr)."""
+    var mag_sq: Float64 = 0.0
+    for i in range(n):
+        var val = llvm_load_f64(v_ptr, i)
+        mag_sq += val * val
+    var mag = sqrt(mag_sq)
+    if mag < 1e-8:
+        for i in range(n):
+            llvm_store_f64(out_ptr, i, 0.0)
+    else:
+        for i in range(n):
+            var val = llvm_load_f64(v_ptr, i)
+            llvm_store_f64(out_ptr, i, val / mag)
+
+
+@export
+fn mojo_matrix_multiply(
+    a_ptr: Int, b_ptr: Int, c_ptr: Int, m: Int, n: Int, k: Int
 ):
-    """
-    Multiplicación de matrices optimizada con SIMD.
-
-    C = A @ B
-
-    Args:
-        a: Matriz A (m x k)
-        b: Matriz B (k x n)
-        c: Matriz resultado C (m x n)
-        m, n, k: Dimensiones
-    """
-    # Implementación simplificada - en producción usar tiling
+    """Matrix multiply C[m,n] = A[m,k] @ B[k,n]. Row-major layout."""
     for i in range(m):
         for j in range(n):
             var sum: Float64 = 0.0
-
-            @parameter
-            fn compute_element[width: Int](l: Int):
-                let va = a.simd_load[width](i * k + l)
-                let vb = b.simd_load[width](l * n + j)
-                sum += (va * vb).reduce_add()
-
-            vectorize[simd_width, compute_element](k)
-
-            c[i * n + j] = sum
-
-
-@export("mojo_vector_normalize")
-fn vector_normalize(
-    vec: DTypePointer[DType.float64],
-    n: Int
-):
-    """
-    Normaliza un vector in-place (norma L2 = 1).
-
-    Args:
-        vec: Vector a normalizar
-        n: Longitud del vector
-    """
-    var norm: Float64 = 0.0
-
-    # Calcular norma
-    @parameter
-    fn compute_norm[width: Int](i: Int):
-        let v = vec.simd_load[width](i)
-        norm += (v * v).reduce_add()
-
-    vectorize[simd_width, compute_norm](n)
-    norm = sqrt(norm)
-
-    if norm < 1e-8:
-        return  # Vector cero, no normalizar
-
-    # Dividir por norma
-    @parameter
-    fn normalize[width: Int](i: Int):
-        let v = vec.simd_load[width](i)
-        (v / norm).store(vec + i)
-
-    vectorize[simd_width, normalize](n)
-
-
-# Main para testing
-fn main():
-    print("🚀 Mojo SIMD Kernels for MEMORY_P v2.0")
-    print("")
-    print("Available kernels:")
-    print("  - mojo_dot_product")
-    print("  - mojo_cosine_similarity")
-    print("  - mojo_cosine_similarity_batch")
-    print("  - mojo_matrix_multiply")
-    print("  - mojo_vector_normalize")
-    print("")
-    print("Compile with:")
-    print("  mojo build kernels.mojo -o libmojo_kernels.so --release")
+            for l in range(k):
+                var a_val = llvm_load_f64(a_ptr, i * k + l)
+                var b_val = llvm_load_f64(b_ptr, l * n + j)
+                sum += a_val * b_val
+            llvm_store_f64(c_ptr, i * n + j, sum)

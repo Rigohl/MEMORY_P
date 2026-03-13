@@ -17,7 +17,8 @@ impl EngineFactory {
     pub fn create_engine(
         name: &str,
         config: EngineConfig,
-    ) -> Result<Arc<dyn crate::motores::core::traits::SearchEngine>, Box<dyn Error>> {
+    ) -> Result<Arc<dyn crate::motores::core::traits::SearchEngine>, Box<dyn Error + Send + Sync>>
+    {
         match name {
             // Vector search engines
             "qdrant" => Ok(Arc::new(QdrantEngine::new(config))),

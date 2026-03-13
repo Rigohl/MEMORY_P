@@ -28,7 +28,7 @@ impl FusionEngine {
     pub async fn search_multi(
         &self,
         query: &SearchQuery,
-    ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    ) -> Result<Vec<SearchResult>, Box<dyn Error + Send + Sync>> {
         let engine_selections = self.router.route_query(query);
         let engines = self.engines.read().await;
 

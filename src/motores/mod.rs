@@ -6,13 +6,21 @@
 //! - 2 Specialized Engines (Julia NLP, MemoryBank Ultra)
 
 pub mod core;
+pub mod health;
+pub mod routing;
+
+pub use core::*;
+pub use health::*;
+pub use routing::*;
+
+pub async fn start_all() -> Result<(), String> {
+    Ok(())
+}
 pub mod factory;
 pub mod hybrid;
 pub mod specialized;
 pub mod text_search;
 pub mod vector_search;
 
-pub use core::{
-    traits::*, types::*, health_monitor::HealthMonitor, routing_ai::RoutingAI,
-};
+pub use core::{health_monitor::HealthMonitor, routing_ai::RoutingAI, traits::*, types::*};
 pub mod persistence;

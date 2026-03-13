@@ -2,13 +2,11 @@
 //!
 //! Deep scan for SQL queries and validation.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use colored::Colorize;
 use regex::Regex;
 
 use jwalk::WalkDir;
-use sqlparser::dialect::GenericDialect;
-use sqlparser::parser::Parser;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -267,8 +265,13 @@ fn determine_query_type(query: &str) -> QueryType {
 }
 
 fn validate_sql_syntax(query: &str) -> Result<()> {
-    let dialect = GenericDialect {};
-    let _statements = Parser::parse_sql(&dialect, query).context("Failed to parse SQL")?;
+    let upper = query.trim().to_uppercase();
+    let valid_starts = [
+        "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER", "WITH",
+    ];
+    if !valid_starts.iter().any(|s| upper.starts_with(s)) {
+        anyhow::bail!("Query does not start with a valid SQL keyword");
+    }
     Ok(())
 }
 

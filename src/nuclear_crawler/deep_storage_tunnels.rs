@@ -56,14 +56,32 @@ impl DeepStorageTunnels {
     pub async fn parallel_process(&self, data: Vec<Vec<u8>>) -> Result<Vec<Vec<u8>>> {
         info!("⚡ Procesamiento paralelo de {} items", data.len());
 
-        // Usar Rayon para procesamiento paralelo
         let processed: Vec<Vec<u8>> = data
             .par_iter()
             .map(|item| {
-                // Simular procesamiento
-                item.clone()
+                let capacity = std::cmp::max(
+                    item.len().max(8),
+                    self.parallel_buffer_size.min(1024 * 1024),
+                );
+                let buffer = crate::ffi::zig::ZigBridge::new(capacity).map_err(|e| {
+                    crate::error::MemoryPError::Other(format!(
+                        "Zig tunnel allocation failed: {}",
+                        e
+                    ))
+                })?;
+                buffer.write(item)?;
+                buffer.read(0, item.len())
             })
-            .collect();
+            .collect::<Result<Vec<Vec<u8>>>>()?;
+
+        let total_processed: usize = processed.iter().map(|item| item.len()).sum();
+        let mut tunnels = self.tunnels.write().await;
+        if !tunnels.is_empty() {
+            let average = total_processed / tunnels.len().max(1);
+            for tunnel in tunnels.iter_mut() {
+                tunnel.current_size = average.min(tunnel.capacity);
+            }
+        }
 
         Ok(processed)
     }

@@ -6,20 +6,23 @@ pub mod monitor;
 pub mod sync;
 pub mod types;
 
-pub use context::ContextManager;
-pub use types::*;
 use crate::error::Result;
-use std::sync::Arc;
+pub use context::ContextManager;
 use serde_json::json;
+use std::sync::Arc;
+pub use types::*;
 
 pub struct SharedMemorySystem {
     pub manager: Arc<ContextManager>,
 }
 
 impl SharedMemorySystem {
-    pub async fn initialize(&self) -> Result<()> { Ok(()) }
-    pub async fn shutdown(&self) -> Result<()> { Ok(()) }
-
+    pub async fn initialize(&self) -> Result<()> {
+        Ok(())
+    }
+    pub async fn shutdown(&self) -> Result<()> {
+        Ok(())
+    }
 
     pub async fn new() -> Result<Self> {
         Ok(Self {

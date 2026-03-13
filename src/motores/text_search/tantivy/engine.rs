@@ -1,6 +1,9 @@
 //! Tantivy text search engine - Real Implementation
 
-use crate::motores::core::{traits::SearchEngine, types::{Document as CoreDocument, *}};
+use crate::motores::core::{
+    traits::SearchEngine,
+    types::{Document as CoreDocument, *},
+};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::error::Error;
@@ -20,6 +23,8 @@ pub struct TantivyEngine {
 }
 
 impl TantivyEngine {
+    const DEFAULT_BUFFER_SIZE: u64 = 50_000_000;
+
     pub fn new(config: EngineConfig) -> Self {
         Self {
             config,
@@ -40,7 +45,7 @@ impl TantivyEngine {
 
 #[async_trait]
 impl SearchEngine for TantivyEngine {
-    async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
+    async fn initialize(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         tracing::info!("⚡ Initializing Tantivy engine...");
 
         let mut schema_builder = Schema::builder();
@@ -61,7 +66,15 @@ impl SearchEngine for TantivyEngine {
             .reload_policy(ReloadPolicy::Manual)
             .try_into()?;
 
-        let writer = index.writer(50_000_000)?;
+        let buffer_size = self
+            .config
+            .settings
+            .get("buffer_size")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(Self::DEFAULT_BUFFER_SIZE)
+            .try_into()
+            .unwrap_or(50_000_000);
+        let writer = index.writer(buffer_size)?;
 
         self.index = Some(index);
         self.reader = Some(reader);
@@ -76,7 +89,10 @@ impl SearchEngine for TantivyEngine {
         Ok(())
     }
 
-    async fn search(&self, query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+    async fn search(
+        &self,
+        query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn Error + Send + Sync>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
@@ -94,7 +110,7 @@ impl SearchEngine for TantivyEngine {
         let content_field = schema.get_field("content")?;
         let id_field = schema.get_field("id")?;
 
-        let query_parser = QueryParser::for_index(&index, vec![content_field]);
+        let query_parser = QueryParser::for_index(index, vec![content_field]);
         let tantivy_query = query_parser.parse_query(&query.text)?;
 
         let top_docs = searcher.search(&tantivy_query, &TopDocs::with_limit(query.limit))?;
@@ -103,12 +119,14 @@ impl SearchEngine for TantivyEngine {
         for (score, doc_address) in top_docs {
             let retrieved_doc: TantivyDocument = searcher.doc(doc_address)?;
 
-            let id = retrieved_doc.get_first(id_field)
+            let id = retrieved_doc
+                .get_first(id_field)
                 .and_then(|v| v.as_str()) // as_text -> as_str in 0.22?
                 .unwrap_or("unknown")
                 .to_string();
 
-            let content = retrieved_doc.get_first(content_field)
+            let content = retrieved_doc
+                .get_first(content_field)
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string();
@@ -126,7 +144,7 @@ impl SearchEngine for TantivyEngine {
         Ok(results)
     }
 
-    async fn index(&self, documents: &[CoreDocument]) -> Result<(), Box<dyn Error>> {
+    async fn index(&self, documents: &[CoreDocument]) -> Result<(), Box<dyn Error + Send + Sync>> {
         if !self.initialized {
             return Err("Engine not initialized".into());
         }
@@ -167,8 +185,8 @@ impl SearchEngine for TantivyEngine {
         Ok(())
     }
 
-    async fn delete(&self, ids: &[String]) -> Result<(), Box<dyn Error>> {
-         if !self.initialized {
+    async fn delete(&self, ids: &[String]) -> Result<(), Box<dyn Error + Send + Sync>> {
+        if !self.initialized {
             return Err("Engine not initialized".into());
         }
 
@@ -189,24 +207,28 @@ impl SearchEngine for TantivyEngine {
         Ok(())
     }
 
-    async fn update(&self, documents: &[CoreDocument]) -> Result<(), Box<dyn Error>> {
+    async fn update(&self, documents: &[CoreDocument]) -> Result<(), Box<dyn Error + Send + Sync>> {
         let ids: Vec<String> = documents.iter().map(|d| d.id.clone()).collect();
         self.delete(&ids).await?;
         self.index(documents).await?;
         Ok(())
     }
 
-    async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
+    async fn health(&self) -> Result<EngineHealth, Box<dyn Error + Send + Sync>> {
         Ok(EngineHealth {
             engine: "tantivy".to_string(),
             healthy: self.initialized,
-            status: if self.initialized { "Running".to_string() } else { "Not initialized".to_string() },
+            status: if self.initialized {
+                "Running".to_string()
+            } else {
+                "Not initialized".to_string()
+            },
             last_check: Self::current_timestamp(),
             details: HashMap::new(),
         })
     }
 
-    async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error>> {
+    async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error + Send + Sync>> {
         Ok(EngineMetrics {
             engine: "tantivy".to_string(),
             total_documents: 0,
@@ -220,7 +242,9 @@ impl SearchEngine for TantivyEngine {
         })
     }
 
-    fn engine_name(&self) -> &'static str { "tantivy" }
+    fn engine_name(&self) -> &'static str {
+        "tantivy"
+    }
 
     fn capabilities(&self) -> EngineCapabilities {
         EngineCapabilities {
@@ -237,7 +261,7 @@ impl SearchEngine for TantivyEngine {
         }
     }
 
-    async fn shutdown(&mut self) -> Result<(), Box<dyn Error>> {
+    async fn shutdown(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.initialized = false;
         let mut w = self.writer.lock().unwrap();
         *w = None;

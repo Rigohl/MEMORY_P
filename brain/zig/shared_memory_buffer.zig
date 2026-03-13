@@ -31,17 +31,17 @@ pub const SharedMemoryBuffer = extern struct {
 };
 
 /// Crea un nuevo buffer de memoria compartida
-export fn shared_memory_buffer_new(capacity: usize) callconv(.C) ?*SharedMemoryBuffer {
+export fn shared_memory_buffer_new(capacity: usize) callconv(.c) ?*SharedMemoryBuffer {
     var allocator = std.heap.page_allocator;
 
     // Alinear capacidad a PAGE_SIZE
     const aligned_capacity = std.mem.alignForward(usize, capacity, PAGE_SIZE);
 
     // Allocate buffer structure
-    var buffer = allocator.create(SharedMemoryBuffer) catch return null;
+    const buffer = allocator.create(SharedMemoryBuffer) catch return null;
 
-    // Allocate aligned memory
-    const data = allocator.alignedAlloc(u8, PAGE_SIZE, aligned_capacity) catch {
+    // Allocate memory (page_allocator already provides page-aligned memory)
+    const data = allocator.alloc(u8, aligned_capacity) catch {
         allocator.destroy(buffer);
         return null;
     };
@@ -64,7 +64,7 @@ export fn shared_memory_buffer_write(
     buffer: *SharedMemoryBuffer,
     data: [*]const u8,
     len: usize,
-) callconv(.C) isize {
+) callconv(.c) isize {
     if (!buffer.initialized) return -1;
     if (buffer.data == null) return -2;
 
@@ -92,7 +92,7 @@ export fn shared_memory_buffer_read(
     offset: usize,
     dest: [*]u8,
     len: usize,
-) callconv(.C) isize {
+) callconv(.c) isize {
     if (!buffer.initialized) return -1;
     if (buffer.data == null) return -2;
 
@@ -115,7 +115,7 @@ export fn shared_memory_buffer_read(
 export fn shared_memory_buffer_get_ptr(
     buffer: *const SharedMemoryBuffer,
     offset: usize,
-) callconv(.C) ?[*]const u8 {
+) callconv(.c) ?[*]const u8 {
     if (!buffer.initialized) return null;
     if (buffer.data == null) return null;
     if (offset >= buffer.used) return null;
@@ -124,18 +124,18 @@ export fn shared_memory_buffer_get_ptr(
 }
 
 /// Limpia el buffer (resetea contador de usado)
-export fn shared_memory_buffer_clear(buffer: *SharedMemoryBuffer) callconv(.C) void {
+export fn shared_memory_buffer_clear(buffer: *SharedMemoryBuffer) callconv(.c) void {
     buffer.used = 0;
 }
 
 /// Incrementa contador de referencias
-export fn shared_memory_buffer_ref(buffer: *SharedMemoryBuffer) callconv(.C) void {
+export fn shared_memory_buffer_ref(buffer: *SharedMemoryBuffer) callconv(.c) void {
     // Atomic increment
     _ = @atomicRmw(u32, &buffer.ref_count, .Add, 1, .seq_cst);
 }
 
 /// Decrementa contador de referencias y libera si llega a 0
-export fn shared_memory_buffer_unref(buffer: *SharedMemoryBuffer) callconv(.C) void {
+export fn shared_memory_buffer_unref(buffer: *SharedMemoryBuffer) callconv(.c) void {
     // Atomic decrement
     const old_count = @atomicRmw(u32, &buffer.ref_count, .Sub, 1, .seq_cst);
 
@@ -146,7 +146,7 @@ export fn shared_memory_buffer_unref(buffer: *SharedMemoryBuffer) callconv(.C) v
 }
 
 /// Libera el buffer
-export fn shared_memory_buffer_free(buffer: *SharedMemoryBuffer) callconv(.C) void {
+export fn shared_memory_buffer_free(buffer: *SharedMemoryBuffer) callconv(.c) void {
     if (!buffer.initialized) return;
 
     var allocator = std.heap.page_allocator;
@@ -167,7 +167,7 @@ export fn shared_memory_buffer_free(buffer: *SharedMemoryBuffer) callconv(.C) vo
 }
 
 /// Obtiene información del buffer
-export fn shared_memory_buffer_info(buffer: *const SharedMemoryBuffer) callconv(.C) BufferInfo {
+export fn shared_memory_buffer_info(buffer: *const SharedMemoryBuffer) callconv(.c) BufferInfo {
     return BufferInfo{
         .capacity = buffer.capacity,
         .used = buffer.used,

@@ -188,7 +188,7 @@ fn simulate_module_perf(
     };
 
     // Buffer size impact (optimal around 16-32KB)
-    let buf_factor = if buf_size >= 16384 && buf_size <= 32768 {
+    let buf_factor = if (16384..=32768).contains(&buf_size) {
         1.2
     } else {
         1.0
@@ -198,14 +198,14 @@ fn simulate_module_perf(
     let regex_factor = if regex_cache { 1.15 } else { 1.0 };
 
     // MMAP threshold impact (optimal 5-10MB)
-    let mmap_factor = if mmap_thresh >= 5_242_880 && mmap_thresh <= 10_485_760 {
+    let mmap_factor = if (5_242_880..=10_485_760).contains(&mmap_thresh) {
         1.1
     } else {
         1.0
     };
 
     // Batch size impact (optimal 100-500)
-    let batch_factor = if batch_size >= 100 && batch_size <= 500 {
+    let batch_factor = if (100..=500).contains(&batch_size) {
         1.25
     } else {
         1.0
@@ -572,7 +572,7 @@ pub fn run_phase4_repair(iterations: usize) -> Result<SimResult> {
     let completed = AtomicUsize::new(0);
 
     // Repair scenarios to simulate
-    let repair_types = vec![
+    let repair_types = [
         ("format_fix", 0.95),    // Formatting repairs
         ("import_sort", 0.90),   // Import organization
         ("unused_remove", 0.85), // Dead code removal
@@ -649,7 +649,7 @@ pub fn run_phase5_edit(iterations: usize) -> Result<SimResult> {
     let completed = AtomicUsize::new(0);
 
     // Edit operation types
-    let edit_ops = vec![
+    let edit_ops = [
         ("replace", 1.0),        // String replacement
         ("regex_replace", 0.85), // Regex-based replacement
         ("append", 0.95),        // Append content

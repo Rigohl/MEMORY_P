@@ -14,6 +14,12 @@ pub struct DeepwebTor {
     circuit_id: Arc<RwLock<Option<String>>>,
 }
 
+impl Default for DeepwebTor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeepwebTor {
     pub fn new() -> Self {
         Self {

@@ -13,6 +13,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+// Import shared_memory_buffer so its exported C symbols are included in the library
+comptime {
+    _ = @import("shared_memory_buffer.zig");
+}
+
 /// Stack size límite para usar stack allocation
 const STACK_ALLOC_THRESHOLD: usize = 256;
 
@@ -80,7 +85,7 @@ pub const FfiResult = extern struct {
 };
 
 /// Inicializa el sistema FFI con arena allocator
-export fn ffi_init() callconv(.C) bool {
+export fn ffi_init() callconv(.c) bool {
     std.debug.print("[Zig FFI] 🚀 Inicializando FFI bridge (ultra-low-latency mode)...\n", .{});
 
     // Inicializar arena allocator para allocaciones rápidas
@@ -95,7 +100,7 @@ export fn ffi_init() callconv(.C) bool {
 }
 
 /// Finaliza el sistema FFI y libera recursos
-export fn ffi_shutdown() callconv(.C) void {
+export fn ffi_shutdown() callconv(.c) void {
     std.debug.print("[Zig FFI] 🔧 Cerrando FFI bridge...\n", .{});
 
     if (arena_initialized) {
@@ -111,7 +116,7 @@ export fn ffi_dispatch(
     lang: Language,
     operation: [*:0]const u8,
     input: FfiVec,
-) callconv(.C) FfiResult {
+) callconv(.c) FfiResult {
     // Hot path - inline dispatch basado en language enum
     return switch (lang) {
         .Julia => julia_call(operation, input),
@@ -259,7 +264,7 @@ inline fn zig_call(operation: [*:0]const u8, input: FfiVec) FfiResult {
 }
 
 /// Libera memoria de un FfiResult desde Rust
-export fn ffi_free_result(result: *FfiResult) callconv(.C) void {
+export fn ffi_free_result(result: *FfiResult) callconv(.c) void {
     // Si usamos arena, no necesitamos free explícito
     if (!arena_initialized) {
         const allocator = std.heap.page_allocator;
@@ -282,7 +287,6 @@ export fn ffi_free_result(result: *FfiResult) callconv(.C) void {
 // ============================================================================
 
 test "FfiVec zero-copy creation" {
-    var allocator = std.testing.allocator;
     var data = [_]f64{ 1.0, 2.0, 3.0 };
 
     // Zero-copy: debe apuntar a la misma memoria
@@ -294,7 +298,7 @@ test "FfiVec zero-copy creation" {
 }
 
 test "FfiVec with copy" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
     const data = [_]f64{ 1.0, 2.0, 3.0 };
     var vec = try FfiVec.from_slice(&data, allocator);
     defer vec.deinit(allocator);
@@ -305,7 +309,7 @@ test "FfiVec with copy" {
 
 test "Zig native call - small array (stack allocation)" {
     const input_data = [_]f64{ 1.0, 2.0, 3.0 };
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
     const input = try FfiVec.from_slice(&input_data, allocator);
     defer input.deinit(allocator);
 
@@ -325,7 +329,7 @@ test "Zig native call - small array (stack allocation)" {
 }
 
 test "Zig native call - large array (heap allocation)" {
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
 
     // Crear array grande (>256 elementos)
     var input_data: [512]f64 = undefined;
@@ -347,7 +351,7 @@ test "Zig native call - large array (heap allocation)" {
 
 test "Performance: dispatch latency" {
     const input_data = [_]f64{ 1.0, 2.0, 3.0, 4.0, 5.0 };
-    var allocator = std.testing.allocator;
+    const allocator = std.testing.allocator;
     const input = try FfiVec.from_slice(&input_data, allocator);
     defer input.deinit(allocator);
 

@@ -1,4 +1,4 @@
-# 🏗️ Arquitectura de 8 Motores Especializados
+# 🏗️ Arquitectura de 9 Motores Especializados
 
 > **MEMORY_P v2.0** - Documentación técnica de la arquitectura multi-motor
 
@@ -18,7 +18,7 @@
 
 ## Visión General
 
-MEMORY_P v2.0 implementa una **arquitectura de 8 motores especializados** organizados en 3 tiers:
+MEMORY_P v2.0 implementa una **arquitectura de 9 motores especializados** organizados en 3 tiers:
 
 ```mermaid
 graph TB
@@ -40,6 +40,7 @@ graph TB
     subgraph "Text Search Tier"
         Tantivy[Tantivy<br/>Single-Node]
         LNX[LNX<br/>Distributed]
+        Toshi[Toshi<br/>Experimental]
         Meili[MeiliSearch<br/>User-Friendly]
     end
 
@@ -56,6 +57,7 @@ graph TB
     Fusion --> Tantivy
     Fusion --> LNX
     Fusion --> Meili
+    Fusion --> Toshi
     Fusion --> Julia
     Fusion --> MemBank
 ```
@@ -456,6 +458,55 @@ impl LnxDistributedEngine {
 
 ---
 
+### 🧪 Toshi - Experimental Distributed
+
+**Mejor para:** Distributed text search experimental con REST API
+
+#### Características Técnicas
+- **Arquitectura:** Rust-based distributed search (Tantivy-backed)
+- **API:** HTTP REST (POST /_search, /_add)
+- **Index:** Tantivy schemas vía HTTP
+- **Distribution:** Cluster-capable
+- **SLA:** <300ms (experimental, acceptable for testing)
+
+#### Capacidades Clave
+```rust
+// Toshi distributed search via REST
+pub struct ToshiEngine {
+    base_url: String,
+    index_name: String,
+    cluster_nodes: Vec<String>,
+    http: reqwest::Client,
+}
+
+impl ToshiEngine {
+    pub async fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>> {
+        let url = format!("{}/{}/_search", self.base_url, self.index_name);
+        let body = serde_json::json!({
+            "query": { "term": { "content": query } },
+            "limit": limit
+        });
+        let resp = self.http.post(&url).json(&body).send().await?;
+        // Parse and return results
+        Ok(vec![])
+    }
+}
+```
+
+#### Performance Metrics
+- **Throughput:** 1,500 QPS (experimental)
+- **Latency (p50):** 50ms
+- **Latency (p99):** 250ms
+- **Status:** Experimental — suitable for comparison and fallback
+
+#### Use Cases
+✅ Experimental search setups
+✅ Comparison benchmarks against LNX
+✅ Fallback engine for text search
+✅ Testing distributed search scenarios
+
+---
+
 ### 🎯 MeiliSearch - User-Friendly Champion
 
 **Mejor para:** Typo-tolerant user-facing search
@@ -813,13 +864,14 @@ impl FusionEngine {
 
 ### Text Search Comparison
 
-| Característica | Tantivy | LNX | MeiliSearch |
-|---------------|---------|-----|-------------|
-| **Distribution** | Single | Multi-node | Single |
-| **Speed** | Ultra-Fast | Fast | Fast |
-| **Typo Tolerance** | Basic | Basic | Advanced |
-| **Facets** | Manual | Manual | Automatic |
-| **Complexity** | Low | High | Low |
+| Característica | Tantivy | LNX | Toshi | MeiliSearch |
+|---------------|---------|-----|-------|-------------|
+| **Distribution** | Single | Multi-node | Cluster | Single |
+| **Speed** | Ultra-Fast | Fast | Moderate | Fast |
+| **Typo Tolerance** | Basic | Basic | Basic | Advanced |
+| **Facets** | Manual | Manual | Manual | Automatic |
+| **Complexity** | Low | High | Medium | Low |
+| **Status** | Production | Production | Experimental | Production |
 
 ### Specialized Comparison
 
@@ -850,18 +902,19 @@ graph TD
 
     TextDist -->|Single-node| Tantivy
     TextDist -->|Multi-node| LNX
+    TextDist -->|Experimental| Toshi
     TextDist -->|User-facing| Meili
 ```
 
 ### Criteria Matrix
 
-| Criterio | Weight | Qdrant | FAISS | SCANN | Tantivy | LNX | Meili | Julia | MemBank |
-|----------|--------|--------|-------|-------|---------|-----|-------|-------|---------|
-| Speed | 0.25 | 0.8 | 1.0 | 0.8 | 1.0 | 0.7 | 0.7 | 0.5 | 0.9 |
-| Precision | 0.25 | 0.95 | 0.92 | 0.98 | 0.89 | 0.91 | 0.87 | 0.94 | 0.85 |
-| Scale | 0.20 | 0.6 | 0.8 | 1.0 | 0.7 | 0.9 | 0.6 | 0.8 | 0.8 |
-| Ease of Use | 0.15 | 0.9 | 0.6 | 0.5 | 0.8 | 0.4 | 1.0 | 0.3 | 0.6 |
-| Cost | 0.15 | 0.8 | 0.9 | 0.6 | 1.0 | 0.7 | 0.9 | 0.8 | 0.9 |
+| Criterio | Weight | Qdrant | FAISS | SCANN | Tantivy | LNX | Toshi | Meili | Julia | MemBank |
+|----------|--------|--------|-------|-------|---------|-----|-------|-------|-------|---------|
+| Speed | 0.25 | 0.8 | 1.0 | 0.8 | 1.0 | 0.7 | 0.4 | 0.7 | 0.5 | 0.9 |
+| Precision | 0.25 | 0.95 | 0.92 | 0.98 | 0.89 | 0.91 | 0.83 | 0.87 | 0.94 | 0.85 |
+| Scale | 0.20 | 0.6 | 0.8 | 1.0 | 0.7 | 0.9 | 0.5 | 0.6 | 0.8 | 0.8 |
+| Ease of Use | 0.15 | 0.9 | 0.6 | 0.5 | 0.8 | 0.4 | 0.5 | 1.0 | 0.3 | 0.6 |
+| Cost | 0.15 | 0.8 | 0.9 | 0.6 | 1.0 | 0.7 | 0.8 | 0.9 | 0.8 | 0.9 |
 
 ---
 

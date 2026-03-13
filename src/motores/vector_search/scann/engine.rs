@@ -1,20 +1,13 @@
-//! SCANN (Google) vector search engine
-//!
-//! Enterprise trillion-scale learned indexing
+//! SCANN (Scalable Closest Approximate Nearest Neighbors) vector search engine
 
-use crate::motores::core::{
-    traits::{SearchEngine, VectorSearchEngine},
-    types::*,
-};
+use crate::motores::core::{traits::SearchEngine, types::*};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct ScannEngine {
-    #[allow(dead_code)]
     config: EngineConfig,
-    vector_size: usize,
     initialized: bool,
 }
 
@@ -22,58 +15,70 @@ impl ScannEngine {
     pub fn new(config: EngineConfig) -> Self {
         Self {
             config,
-            vector_size: 512,
             initialized: false,
         }
     }
 
-    fn current_timestamp() -> i64 {
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() as i64
+    /// Obtiene acceso a la configuración del motor
+    #[allow(dead_code)]
+    pub fn config(&self) -> &EngineConfig {
+        &self.config
     }
 }
 
 #[async_trait]
 impl SearchEngine for ScannEngine {
-    async fn search(&self, __query: &SearchQuery) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
+    async fn initialize(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
+        self.initialized = true;
+        Ok(())
+    }
+
+    async fn shutdown(&mut self) -> Result<(), Box<dyn Error + Send + Sync>> {
+        self.initialized = false;
+        Ok(())
+    }
+
+    async fn search(
+        &self,
+        query: &SearchQuery,
+    ) -> Result<Vec<SearchResult>, Box<dyn Error + Send + Sync>> {
+        if query.vector.is_none() {
+            return Err("Vector required for SCANN search".into());
         }
         Ok(vec![])
     }
 
-    async fn index(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
-        }
+    async fn index(&self, _documents: &[Document]) -> Result<(), Box<dyn Error + Send + Sync>> {
         Ok(())
     }
 
-    async fn delete(&self, __ids: &[String]) -> Result<(), Box<dyn Error>> {
+    async fn delete(&self, _ids: &[String]) -> Result<(), Box<dyn Error + Send + Sync>> {
         Ok(())
     }
 
-    async fn update(&self, __documents: &[Document]) -> Result<(), Box<dyn Error>> {
+    async fn update(&self, _documents: &[Document]) -> Result<(), Box<dyn Error + Send + Sync>> {
         Ok(())
     }
 
-    async fn health(&self) -> Result<EngineHealth, Box<dyn Error>> {
+    async fn health(&self) -> Result<EngineHealth, Box<dyn Error + Send + Sync>> {
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
         Ok(EngineHealth {
             engine: "scann".to_string(),
             healthy: self.initialized,
-            status: if self.initialized {
-                "Running".to_string()
-            } else {
-                "Not initialized".to_string()
-            },
-            last_check: Self::current_timestamp(),
+            status: "ok".to_string(),
+            last_check: ts,
             details: HashMap::new(),
         })
     }
 
-    async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error>> {
+    async fn metrics(&self) -> Result<EngineMetrics, Box<dyn Error + Send + Sync>> {
+        let ts = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
         Ok(EngineMetrics {
             engine: "scann".to_string(),
             total_documents: 0,
@@ -83,7 +88,7 @@ impl SearchEngine for ScannEngine {
             memory_usage_bytes: 0,
             error_rate: 0.0,
             cache_hit_rate: 0.0,
-            timestamp: Self::current_timestamp(),
+            timestamp: ts,
         })
     }
 
@@ -94,56 +99,7 @@ impl SearchEngine for ScannEngine {
     fn capabilities(&self) -> EngineCapabilities {
         EngineCapabilities {
             supports_vector_search: true,
-            supports_full_text: false,
-            supports_fuzzy: false,
-            supports_real_time: false,
-            supports_distributed: true,
-            supports_replication: true,
-            supports_facets: false,
-            supports_typo_tolerance: false,
-            max_vector_dimension: Some(2048),
-            max_scale: Some(1_000_000_000_000), // Trillion-scale
+            ..Default::default()
         }
-    }
-
-    async fn initialize(&mut self) -> Result<(), Box<dyn Error>> {
-        self.initialized = true;
-        Ok(())
-    }
-
-    async fn shutdown(&mut self) -> Result<(), Box<dyn Error>> {
-        self.initialized = false;
-        Ok(())
-    }
-}
-
-#[async_trait]
-impl VectorSearchEngine for ScannEngine {
-    async fn vector_search(
-        &self,
-        vector: &[f32],
-        limit: usize,
-    ) -> Result<Vec<SearchResult>, Box<dyn Error>> {
-        if !self.initialized {
-            return Err("Engine not initialized".into());
-        }
-        if vector.len() != self.vector_size {
-            return Err(format!(
-                "Vector dimension mismatch: expected {}, got {}",
-                self.vector_size,
-                vector.len()
-            )
-            .into());
-        }
-        let _ = limit; // Unused in stub
-        Ok(vec![])
-    }
-
-    fn vector_dimension(&self) -> usize {
-        self.vector_size
-    }
-
-    fn distance_metric(&self) -> &str {
-        "DotProduct"
     }
 }

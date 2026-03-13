@@ -105,7 +105,7 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 
 /// Initialize Python JAX runtime and load inference models
-pub fn init() -> Result<(), String> {
+pub fn init() -> Result<()> {
     let mut result = Ok(());
     INIT.call_once(|| {
         #[cfg(has_jax_ffi)]
@@ -123,7 +123,7 @@ pub fn init() -> Result<(), String> {
 }
 
 #[cfg(has_jax_ffi)]
-fn try_init_jax_runtime() -> Result<(), String> {
+fn try_init_jax_runtime() -> Result<()> {
     // Initialize Python runtime via PyO3 or ctypes
     // Load jax_inference.py module
     // Initialize SentenceTransformer models
@@ -131,13 +131,13 @@ fn try_init_jax_runtime() -> Result<(), String> {
 }
 
 #[cfg(not(has_jax_ffi))]
-fn try_init_jax_runtime() -> Result<(), String> {
+fn try_init_jax_runtime() -> Result<()> {
     Ok(())
 }
 
 /// Generate embeddings using JAX-accelerated ML model
 #[allow(dead_code)]
-pub fn embed_text(text: &str) -> Result<Vec<f64>, String> {
+pub fn embed_text(_text: &str) -> Result<Vec<f64>> {
     #[cfg(has_jax_ffi)]
     {
         // Call jax_inference.embed() with sentence-transformers
@@ -154,7 +154,7 @@ pub fn embed_text(text: &str) -> Result<Vec<f64>, String> {
 
 /// Batch embedding generation
 #[allow(dead_code)]
-pub fn batch_embed(texts: &[&str]) -> Result<Vec<Vec<f64>>, String> {
+pub fn batch_embed(texts: &[&str]) -> Result<Vec<Vec<f64>>> {
     #[cfg(has_jax_ffi)]
     {
         // Batch inference with JAX acceleration
@@ -169,7 +169,7 @@ pub fn batch_embed(texts: &[&str]) -> Result<Vec<Vec<f64>>, String> {
 
 /// Semantic similarity between texts
 #[allow(dead_code)]
-pub fn semantic_similarity(text_a: &str, text_b: &str) -> Result<f64, String> {
+pub fn semantic_similarity(_text_a: &str, _text_b: &str) -> Result<f64> {
     #[cfg(has_jax_ffi)]
     {
         // Use JAX to calculate cosine similarity

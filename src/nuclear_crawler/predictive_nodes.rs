@@ -23,6 +23,12 @@ pub struct PredictiveNodes {
     running: Arc<RwLock<bool>>,
 }
 
+impl Default for PredictiveNodes {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PredictiveNodes {
     pub fn new() -> Self {
         Self {
@@ -164,14 +170,26 @@ impl PredictiveNodes {
 
     /// Ejecuta búsqueda (simulada)
     async fn execute_search(&self, query: &str) -> Result<Vec<String>> {
-        // En implementación real: buscar en índices reales
         info!("🔍 Ejecutando búsqueda: {}", query);
 
-        // Simular resultados
-        Ok(vec![
-            format!("resultado_1_{}", query),
-            format!("resultado_2_{}", query),
-        ])
+        let indices = vec![
+            "tantivy".to_string(),
+            "memory_bank".to_string(),
+            "julia_nlp".to_string(),
+        ];
+
+        let results = crate::ffi::pony::distributed_search(query, &indices)
+            .await
+            .map_err(|e| MemoryPError::Other(format!("Pony predictive search failed: {}", e)))?;
+
+        if results.is_empty() {
+            Err(MemoryPError::Other(format!(
+                "No se encontraron resultados distribuidos para '{}'",
+                query
+            )))
+        } else {
+            Ok(results)
+        }
     }
 
     pub fn get_stats(&self) -> serde_json::Value {

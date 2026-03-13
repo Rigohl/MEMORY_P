@@ -115,7 +115,7 @@ impl MetricsExporter {
             let metric = entry.value();
             metrics_by_name
                 .entry(metric.name.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(metric.clone());
         }
 

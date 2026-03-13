@@ -1,101 +1,103 @@
-//! src/shared_memory/graph.rs - Sistema de Grafo de Conocimiento (Nodos e Interconexiones)
+//! shared_memory/graph.rs - Knowledge Graph for shared memory system
+//!
+//! Provides a simple knowledge graph structure for storing relationships
+//! between concepts, agents, and search results.
 
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use crate::shared_memory::types::ContextId;
-use dashmap::DashMap;
-use std::sync::Arc;
+use std::collections::HashMap;
 
-/// Tipo de relación entre nodos
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum RelationType {
-    Prerequisite,
-    RelatedTo,
-    PartOf,
-    ConflictsWith,
-    DerivedFrom,
-}
-
-/// Nodo en el grafo de memoria
+/// A node in the knowledge graph
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryNode {
-    pub id: ContextId,
+pub struct GraphNode {
+    pub id: String,
     pub label: String,
-    pub weight: f64,
+    pub node_type: NodeType,
     pub metadata: HashMap<String, String>,
 }
 
-/// Conexión entre nodos
+/// Types of nodes in the knowledge graph
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum NodeType {
+    Concept,
+    Agent,
+    SearchResult,
+    Pattern,
+    Context,
+}
+
+/// An edge connecting two nodes
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryEdge {
-    pub from: ContextId,
-    pub to: ContextId,
-    pub relation: RelationType,
-    pub strength: f64,
+pub struct GraphEdge {
+    pub source: String,
+    pub target: String,
+    pub relation: String,
+    pub weight: f64,
 }
 
-/// Grafo de memoria relacional
-pub struct RelationalMemoryGraph {
-    nodes: Arc<DashMap<ContextId, MemoryNode>>,
-    edges: Arc<DashMap<(ContextId, ContextId, RelationType), MemoryEdge>>,
-    adjacency: Arc<DashMap<ContextId, HashSet<(ContextId, RelationType)>>>,
+/// Knowledge graph for shared memory
+#[derive(Debug, Clone, Default)]
+pub struct KnowledgeGraph {
+    nodes: HashMap<String, GraphNode>,
+    edges: Vec<GraphEdge>,
 }
 
-impl RelationalMemoryGraph {
+impl KnowledgeGraph {
     pub fn new() -> Self {
         Self {
-            nodes: Arc::new(DashMap::new()),
-            edges: Arc::new(DashMap::new()),
-            adjacency: Arc::new(DashMap::new()),
+            nodes: HashMap::new(),
+            edges: Vec::new(),
         }
     }
 
-    /// Añade o actualiza un nodo
-    pub fn add_node(&self, node: MemoryNode) {
+    pub fn add_node(&mut self, node: GraphNode) {
         self.nodes.insert(node.id.clone(), node);
     }
 
-    /// Crea una interconexión entre nodos
-    pub fn connect(&self, from: ContextId, to: ContextId, relation: RelationType, strength: f64) {
-        let edge = MemoryEdge {
-            from: from.clone(),
-            to: to.clone(),
-            relation: relation.clone(),
-            strength,
-        };
-        self.edges.insert((from.clone(), to.clone(), relation.clone()), edge);
-
-        self.adjacency.entry(from).or_insert_with(HashSet::new).insert((to, relation));
+    pub fn add_edge(&mut self, edge: GraphEdge) {
+        self.edges.push(edge);
     }
 
-    /// Obtiene todos los nodos relacionados
-    pub fn get_related(&self, id: &ContextId) -> Vec<MemoryNode> {
-        if let Some(targets) = self.adjacency.get(id) {
-            targets.iter()
-                .filter_map(|(to_id, _)| self.nodes.get(to_id).map(|n| n.clone()))
-                .collect()
-        } else {
-            Vec::new()
-        }
+    pub fn get_node(&self, id: &str) -> Option<&GraphNode> {
+        self.nodes.get(id)
     }
 
-    /// Auto-gestión: Fortalece conexiones activas y debilita las olvidadas
-    pub async fn optimize_graph(&self) {
-        // Lógica de decaimiento y fortalecimiento
-        for mut edge_ref in self.edges.iter_mut() {
-            let edge = edge_ref.value_mut();
-            edge.strength *= 0.95; // Decaimiento natural
-        }
+    pub fn node_count(&self) -> usize {
+        self.nodes.len()
+    }
 
-        // Eliminar conexiones extremadamente débiles
-        self.edges.retain(|_, edge| edge.strength > 0.01);
+    pub fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
+    pub fn neighbors(&self, node_id: &str) -> Vec<&GraphNode> {
+        self.edges
+            .iter()
+            .filter(|e| e.source == node_id || e.target == node_id)
+            .filter_map(|e| {
+                let neighbor_id = if e.source == node_id {
+                    &e.target
+                } else {
+                    &e.source
+                };
+                self.nodes.get(neighbor_id.as_str())
+            })
+            .collect()
     }
 
     pub fn stats(&self) -> serde_json::Value {
         serde_json::json!({
             "node_count": self.nodes.len(),
             "edge_count": self.edges.len(),
-            "average_strength": self.edges.iter().map(|e| e.strength).sum::<f64>() / self.edges.len().max(1) as f64
+            "node_types": self.node_type_counts(),
         })
+    }
+
+    fn node_type_counts(&self) -> HashMap<String, usize> {
+        let mut counts = HashMap::new();
+        for node in self.nodes.values() {
+            let key = format!("{:?}", node.node_type);
+            *counts.entry(key).or_insert(0) += 1;
+        }
+        counts
     }
 }

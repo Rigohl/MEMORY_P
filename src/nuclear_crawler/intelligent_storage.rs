@@ -33,6 +33,12 @@ pub struct IntelligentStorage {
     running: Arc<RwLock<bool>>,
 }
 
+impl Default for IntelligentStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IntelligentStorage {
     pub fn new() -> Self {
         Self {

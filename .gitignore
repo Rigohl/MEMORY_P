@@ -137,3 +137,6 @@ FFI/lib/*.dylib
 FFI/lib/*.dll
 FFI/lib/*.a
 FFI/build/
+# pixi environments
+.pixi/*
+!.pixi/config.toml

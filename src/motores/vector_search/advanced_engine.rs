@@ -71,7 +71,7 @@ impl DistanceMetric {
     /// Convierte distancia a score de similitud (0-1, mayor = más similar)
     pub fn distance_to_similarity(&self, distance: f32) -> f32 {
         match self {
-            DistanceMetric::Cosine => 1.0 - distance.max(0.0).min(2.0),
+            DistanceMetric::Cosine => 1.0 - distance.clamp(0.0, 2.0),
             DistanceMetric::DotProduct => (-distance).max(0.0),
             DistanceMetric::Euclidean | DistanceMetric::Manhattan => 1.0 / (1.0 + distance),
         }
@@ -113,8 +113,7 @@ impl Eq for VectorSearchResult {}
 
 impl PartialOrd for VectorSearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // Mayor score = mayor prioridad
-        other.score.partial_cmp(&self.score)
+        Some(self.cmp(other))
     }
 }
 
@@ -133,6 +132,12 @@ pub struct VectorFilter {
     pub must_not: Option<serde_json::Map<String, serde_json::Value>>,
     /// Rango de timestamp
     pub timestamp_range: Option<(i64, i64)>,
+}
+
+impl Default for VectorFilter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VectorFilter {

@@ -13,7 +13,7 @@ pub enum SyncEvent {
     /// Contexto actualizado
     ContextUpdated {
         agent_id: AgentId,
-        context: SharedContext,
+        context: Box<SharedContext>,
     },
 
     /// Contexto creado
@@ -88,7 +88,7 @@ impl SyncCoordinator {
     pub async fn broadcast_update(&self, agent_id: AgentId, context: SharedContext) -> Result<()> {
         let event = SyncEvent::ContextUpdated {
             agent_id: agent_id.clone(),
-            context,
+            context: Box::new(context),
         };
 
         match self.event_tx.send(event) {
@@ -137,6 +137,16 @@ impl SyncCoordinator {
 
         info!("✅ Coordinador de sincronización finalizado");
         Ok(())
+    }
+}
+
+impl Clone for SyncCoordinator {
+    fn clone(&self) -> Self {
+        Self {
+            event_tx: self.event_tx.clone(),
+            subscribers: Arc::clone(&self.subscribers),
+            initialized: Arc::clone(&self.initialized),
+        }
     }
 }
 
@@ -195,16 +205,6 @@ mod tests {
                 assert_eq!(received_id, agent_id);
             }
             _ => panic!("Tipo de evento incorrecto"),
-        }
-    }
-}
-
-impl Clone for SyncCoordinator {
-    fn clone(&self) -> Self {
-        Self {
-            event_tx: self.event_tx.clone(),
-            subscribers: Arc::clone(&self.subscribers),
-            initialized: Arc::clone(&self.initialized),
         }
     }
 }

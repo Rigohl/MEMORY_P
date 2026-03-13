@@ -21,7 +21,7 @@ Minimal installation - only Rust core without FFI extensions.
 
 ### Prerequisites
 
-- **Rust 1.75+**: https://rustup.rs/
+- **Rust stable (latest)**: https://rustup.rs/
 - **Git**: For cloning repository
 
 ### Installation
@@ -77,16 +77,27 @@ brew install git curl wget pkg-config openssl python3
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source $HOME/.cargo/env
-rustc --version  # Should be 1.75+
+rustup update stable
+rustup default stable
+rustc --version
 ```
 
 ### Step 3: Install Zig (FFI Bridge)
 
 ```bash
-# Download Zig 0.12+
-wget https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz
-tar -xf zig-linux-x86_64-0.12.0.tar.xz
-sudo mv zig-linux-x86_64-0.12.0 /opt/zig
+# Download latest Zig stable (example stable on 2026-03-11: 0.15.2)
+ZIG_VERSION=$(python3 - <<'PY'
+import json, urllib.request
+data = json.load(urllib.request.urlopen('https://ziglang.org/download/index.json'))
+for key, value in data.items():
+  if key != 'master' and isinstance(value, dict) and value.get('x86_64-linux'):
+    print(value['version'])
+    break
+PY
+)
+wget https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz
+tar -xf zig-x86_64-linux-${ZIG_VERSION}.tar.xz
+sudo mv zig-x86_64-linux-${ZIG_VERSION} /opt/zig
 echo 'export PATH=/opt/zig:$PATH' >> ~/.bashrc
 source ~/.bashrc
 
@@ -97,12 +108,11 @@ zig version
 ### Step 4: Install Julia (Mathematical Core)
 
 ```bash
-# Download Julia 1.10+
-wget https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.0-linux-x86_64.tar.gz
-tar -xf julia-1.10.0-linux-x86_64.tar.gz
-sudo mv julia-1.10.0 /opt/julia
-echo 'export PATH=/opt/julia/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+# Recommended installer: juliaup (tracks latest stable automatically)
+curl -fsSL https://install.julialang.org | sh -s -- --yes
+export PATH="$HOME/.juliaup/bin:$PATH"
+juliaup add release
+juliaup default release
 
 # Verify
 julia --version
@@ -119,12 +129,11 @@ julia -e 'using Pkg; Pkg.add(["Optim", "LinearAlgebra", "Statistics"])'
 # Ensure Python 3.11+
 python3 --version
 
-# Install JAX (CPU version)
+# Install latest JAX + embeddings stack
 pip3 install --upgrade pip
-pip3 install jax[cpu]==0.4.28 sentence-transformers==3.0.1
+pip3 install --upgrade 'jax[cpu]' jaxlib sentence-transformers
 
-# For GPU support (CUDA 12):
-# pip3 install jax[cuda12]==0.4.28
+# For GPU support, install the latest CUDA-compatible wheel recommended by JAX docs.
 
 # Verify
 python3 -c "import jax; print('JAX version:', jax.__version__)"
@@ -140,7 +149,7 @@ python3 -c "import jax; print('JAX version:', jax.__version__)"
 mojo --version
 ```
 
-**Note**: Mojo is optional. MEMORY_P will use Rust fallbacks if unavailable.
+**Note**: Mojo is still optional operationally, but the repo goal is real integration when the compiler/runtime is available.
 
 ### Step 7: Install Pony (Actor System) [Optional]
 
@@ -155,7 +164,7 @@ brew install ponyc
 ponyc --version
 ```
 
-**Note**: Pony is optional. MEMORY_P will use Tokio async if unavailable.
+**Note**: Pony remains best-effort in the current build, while Zig and Julia are treated as mandatory by `build.rs`.
 
 ### Step 8: Build MEMORY_P with FFI
 
@@ -168,11 +177,9 @@ make check-deps  # Verify what's available
 make all-ffi     # Build all available FFI components
 cd ..
 
-# Build Rust with FFI features
-cargo build --release --features ffi-all
-
-# Or selectively:
-# cargo build --release --features ffi-zig,ffi-julia,ffi-jax
+# Build Rust
+# In WSL, avoid building target/ directly on /mnt/d due known drvfs fingerprint issues.
+CARGO_TARGET_DIR=$HOME/.cache/memory_p-target cargo build --release
 ```
 
 ### Step 9: Configure Environment
@@ -225,7 +232,7 @@ EOF
 
 ```bash
 # For NVIDIA GPUs with CUDA 12
-pip3 install jax[cuda12]==0.4.28 jaxlib[cuda12]==0.4.28
+# Install the latest CUDA-compatible JAX build matching your CUDA stack.
 
 # Verify GPU
 python3 << 'EOF'
@@ -295,19 +302,27 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Zig
-RUN wget https://ziglang.org/download/0.12.0/zig-linux-x86_64-0.12.0.tar.xz && \
-    tar -xf zig-linux-x86_64-0.12.0.tar.xz && \
-    mv zig-linux-x86_64-0.12.0 /opt/zig
+RUN python3 - <<'PY' > /tmp/zig-version.txt
+import json, urllib.request
+data = json.load(urllib.request.urlopen('https://ziglang.org/download/index.json'))
+for key, value in data.items():
+  if key != 'master' and isinstance(value, dict) and value.get('x86_64-linux'):
+    print(value['version'])
+    break
+PY
+RUN export ZIG_VERSION=$(cat /tmp/zig-version.txt) && \
+  wget https://ziglang.org/download/${ZIG_VERSION}/zig-x86_64-linux-${ZIG_VERSION}.tar.xz && \
+  tar -xf zig-x86_64-linux-${ZIG_VERSION}.tar.xz && \
+  mv zig-x86_64-linux-${ZIG_VERSION} /opt/zig
 ENV PATH="/opt/zig:${PATH}"
 
 # Install Julia
-RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.0-linux-x86_64.tar.gz && \
-    tar -xf julia-1.10.0-linux-x86_64.tar.gz && \
-    mv julia-1.10.0 /opt/julia
-ENV PATH="/opt/julia/bin:${PATH}"
+RUN curl -fsSL https://install.julialang.org | sh -s -- --yes
+ENV PATH="/root/.juliaup/bin:${PATH}"
+RUN juliaup add release && juliaup default release
 
 # Install JAX
-RUN pip3 install jax[cpu]==0.4.28 sentence-transformers==3.0.1
+RUN pip3 install --upgrade 'jax[cpu]' jaxlib sentence-transformers
 
 # Copy project
 WORKDIR /app
@@ -317,7 +332,7 @@ COPY . .
 RUN cd FFI && make all-ffi
 
 # Build MEMORY_P
-RUN cargo build --release --features ffi-all
+RUN CARGO_TARGET_DIR=/root/.cache/memory_p-target cargo build --release
 
 # Expose port
 EXPOSE 4040
@@ -385,7 +400,7 @@ export JULIA_HOME=$(julia -e 'print(Sys.BINDIR)')
 nvcc --version
 
 # Install matching JAX
-pip3 install jax[cuda12]==0.4.28  # For CUDA 12
+pip3 install --upgrade 'jax[cuda12]'  # Match current JAX recommendations for your CUDA major version
 ```
 
 #### 4. Compilation errors

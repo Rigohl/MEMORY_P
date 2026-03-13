@@ -227,10 +227,10 @@ impl PredictiveEngine {
         }
 
         // Si el tiempo promedio es alto, priorizar optimizaciones
-        if history.avg_execution_time > 500.0 {
-            if task_id.contains("optimize") || task_id.contains("performance") {
-                adjusted_priority *= 1.5;
-            }
+        if history.avg_execution_time > 500.0
+            && (task_id.contains("optimize") || task_id.contains("performance"))
+        {
+            adjusted_priority *= 1.5;
         }
 
         // Limitar a rango válido
@@ -401,7 +401,7 @@ mod tests {
             .calculate_dynamic_priority("test_task", 50)
             .await
             .unwrap();
-        assert!(priority >= 0 && priority <= 100);
+        assert!(priority <= 100);
     }
 
     #[tokio::test]
