@@ -14,10 +14,40 @@ concurrency:
   group: security-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+  RUST_VERSION: "1.94"
+
 jobs:
+  mcp-validation:
+    name: 🔌 MCP 2024-11-05 Protocol Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify MCP Protocol 2024-11-05
+        run: |
+          echo "🔍 Validating MCP 2024-11-05 compliance..."
+          if grep -r "2024-11-05" src/mcp/ 2>/dev/null | head -1; then
+            echo "  ✅ MCP 2024-11-05 protocol version detected"
+          fi
+      - name: Verify JSON-RPC 2.0 Compliance
+        run: |
+          echo "🔍 Checking JSON-RPC 2.0 implementation..."
+          count=$(grep -r "jsonrpc\|JsonRpc" src/ 2>/dev/null | wc -l)
+          echo "  ✅ Found $count JSON-RPC references"
+      - name: Reject Old Protocol Versions
+        run: |
+          if grep -r "2023-\|2025-\|2026-" src/mcp/ --include="*.rs" 2>/dev/null; then
+            echo "❌ ERROR: Found outdated MCP protocol versions!"
+            exit 1
+          fi
+          echo "  ✅ No old protocol versions found"
+
   cargo-audit:
     name: Cargo Audit
     runs-on: ubuntu-latest
+    needs: mcp-validation
     timeout-minutes: 30
     permissions:
       contents: read

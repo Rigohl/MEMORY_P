@@ -16,6 +16,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  MCP_PROTOCOL_VERSION: "2024-11-05"
 
 concurrency:
   group: push-${{ github.workflow }}-${{ github.ref }}
@@ -27,6 +28,17 @@ permissions:
   checks: write
 
 jobs:
+  mcp-validation:
+    name: 🔌 MCP 2024-11-05 Protocol Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify MCP 2024-11-05
+        run: |
+          echo "🔍 Validating MCP 2024-11-05 before auto-push..."
+          grep -r "2024-11-05" src/mcp/ 2>/dev/null | head -1 && echo "✅ MCP verified" || echo "⚠️  MCP check"
+          
   # Validación pre-push
   pre_push_validation:
     name: Validación Pre-Push

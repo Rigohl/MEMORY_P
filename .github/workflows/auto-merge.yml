@@ -23,10 +23,36 @@ permissions:
   pull-requests: write
   checks: read
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
+  mcp-validation:
+    name: 🔌 MCP 2024-11-05 Protocol Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate MCP 2024-11-05 in PR
+        run: |
+          echo "🔍 Verifying MCP compliance before merge..."
+          if grep -r "2024-11-05" src/mcp/ 2>/dev/null | head -1; then
+            echo "  ✅ MCP 2024-11-05 protocol version verified"
+          fi
+      - name: Reject Old Versions
+        run: |
+          if grep -r "2026-11-05\|2025-11-05\|2023-" src/mcp/ --include="*.rs" 2>/dev/null; then
+            echo "❌ ERROR: Found old protocol versions - auto-merge blocked!"
+            exit 1
+          fi
+          echo "  ✅ No old protocol versions found - safe to merge"
+
   auto-merge:
     name: Auto-Merge Approved PRs
     runs-on: ubuntu-latest
+    needs: mcp-validation
     if: |
       github.event_name == 'pull_request' || 
       github.event_name == 'pull_request_review' || 

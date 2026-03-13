@@ -317,7 +317,7 @@ jobs:
           echo "════════════════════════════════════════"
           
           echo "MCP Protocol Version:"
-          grep "2026-11-05\|MCP_PROTOCOL_VERSION" src/mcp/http_server.rs | head -3 | sed 's/^/  /'
+          grep "2024-11-05\|MCP_PROTOCOL_VERSION" src/mcp/http_server.rs | head -3 | sed 's/^/  /'
           
           echo ""
           echo "FFI Status Exposure:"
@@ -381,7 +381,7 @@ jobs:
             echo "  ✅ Python/JAX ML modules"
             echo "  ✅ Pony actor system"
             echo "  ✅ Zig FFI bridges"
-            echo "  ✅ MCP Protocol 2026-11-05"
+            echo "  ✅ MCP Protocol 2024-11-05"
           else
             echo "⚠️  Some components need attention"
           fi
