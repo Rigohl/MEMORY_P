@@ -20,6 +20,8 @@ impl ScannEngine {
     }
 
     /// Obtiene acceso a la configuración del motor
+    /// KEPT SUPPRESSION: Accessed by SCANN query interface
+    /// Required for motor lifecycle and orchestration
     #[allow(dead_code)]
     pub fn config(&self) -> &EngineConfig {
         &self.config

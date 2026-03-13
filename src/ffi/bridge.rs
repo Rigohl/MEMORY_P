@@ -1,7 +1,6 @@
 //! src/ffi/bridge.rs - Core Zig bridge wrappers
 
-use super::error::{FfiError, Result};
-use std::ffi::{CStr, CString};
+use super::error::Result;
 use std::os::raw::c_char;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::time::Instant;

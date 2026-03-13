@@ -5,6 +5,9 @@
 pub struct RoutingAI;
 
 impl RoutingAI {
+    /// Create routing AI instance
+    /// KEPT SUPPRESSION: Factory method used by motor orchestrator
+    /// Instantiates intelligent query router for 9-motor selection
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self

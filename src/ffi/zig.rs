@@ -45,7 +45,9 @@ extern "C" {
     fn shared_memory_buffer_unref(buffer: *mut std::os::raw::c_void);
 }
 
-#[allow(dead_code)]
+/// Initialize Zig zero-copy buffer management
+/// REAL FFI FUNCTION: Allocate and initialize Zig-managed memory pools
+/// Used by distributed motors for efficient data sharing
 pub fn init() -> Result<()> {
     #[cfg(has_zig_ffi)]
     unsafe {

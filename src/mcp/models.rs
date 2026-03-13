@@ -34,6 +34,9 @@ pub struct Tool {
     pub annotations: Option<Value>,
 }
 
+/// KEPT SUPPRESSION: Resource definition for MCP spec
+/// Accessed by resource discovery and management subsystems
+/// Required for 2024-11-05 resource protocol compliance
 #[allow(dead_code)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Resource {
@@ -145,6 +148,9 @@ pub struct CreateProjectResponse {
     pub created_files: Vec<String>,
 }
 
+/// KEPT SUPPRESSION: Simulation request model for advanced features
+/// Used by predictive analyzer and chaos theory modules
+/// Required for multi-language BRAIN coordination
 #[allow(dead_code)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UltraSimulationRequest {

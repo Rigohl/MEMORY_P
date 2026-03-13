@@ -53,7 +53,6 @@ pub fn init() -> Result<()> {
 }
 
 #[cfg(has_julia_ffi)]
-#[allow(dead_code)]
 fn try_load_julia_math() -> Result<()> {
     // REAL Julia FFI Implementation:
     // This code executes when Julia C API is available (usually installed via Juliaup or system package)
@@ -77,13 +76,13 @@ fn try_load_julia_math() -> Result<()> {
 }
 
 #[cfg(not(has_julia_ffi))]
-#[allow(dead_code)]
+/// FALLBACK: No-op when Julia FFI unavailable
+/// Used for systems without Julia or DynamicalSystems.jl installed
 fn try_load_julia_math() -> Result<()> {
     Ok(())
 }
 
 /// Optimize chaotic system using Julia mathematics
-#[allow(dead_code)]
 pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>> {
     #[cfg(has_julia_ffi)]
     {
@@ -99,7 +98,6 @@ pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>> {
 }
 
 /// Analyze system dynamics using chaos theory
-#[allow(dead_code)]
 pub fn analyze_dynamics(_time_series: &[f64]) -> Result<f64> {
     #[cfg(has_julia_ffi)]
     {

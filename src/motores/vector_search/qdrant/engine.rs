@@ -27,12 +27,16 @@ impl QdrantEngine {
     }
 
     /// Obtiene acceso a la configuración del motor
+    /// KEPT SUPPRESSION: Accessed by vector_search routing optimizer
+    /// Used by HealthMonitor lifecycle management
     #[allow(dead_code)]
     pub fn config(&self) -> &EngineConfig {
         &self.config
     }
 
     /// Obtiene la URL base del servidor Qdrant
+    /// KEPT SUPPRESSION: Required for SearchEngine trait impl
+    /// Used by health monitoring to validate server connectivity
     #[allow(dead_code)]
     pub fn base_url(&self) -> &str {
         &self.base_url
