@@ -14,6 +14,9 @@ on:
       - '**/*.sql'
       - '**/Cargo.toml'
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
   sql-check:
     name: Validate SQL Queries

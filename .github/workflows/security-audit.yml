@@ -15,6 +15,10 @@ concurrency:
 permissions:
   contents: read
   security-events: write
+
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
   audit:
     name: Security Audit

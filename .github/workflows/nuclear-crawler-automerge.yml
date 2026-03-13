@@ -11,6 +11,9 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
   auto-validation:
     name: Validación Automática para Auto-Merge

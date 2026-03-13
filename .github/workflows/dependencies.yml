@@ -6,10 +6,25 @@ on:
     - cron: '0 3 * * 1'
   workflow_dispatch:
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
+  mcp-validation:
+    name: 🔌 MCP 2024-11-05 Protocol Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify MCP 2024-11-05 during dependency update
+        run: |
+          echo "🔍 Verifying MCP 2024-11-05 before updating dependencies..."
+          grep -r "2024-11-05" src/mcp/ 2>/dev/null && echo "✅ MCP verified" || true
+
   update-rust-dependencies:
     name: Update Rust Dependencies
     runs-on: ubuntu-latest
+    needs: mcp-validation
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

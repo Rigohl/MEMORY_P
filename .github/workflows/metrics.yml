@@ -9,6 +9,9 @@ on:
     - cron: '0 0 * * 0'  # Weekly on Sundays
   workflow_dispatch:
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 jobs:
   performance-benchmarks:
     name: Performance Benchmarks

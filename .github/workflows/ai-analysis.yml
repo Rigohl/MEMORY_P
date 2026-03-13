@@ -13,6 +13,9 @@ concurrency:
   group: ai-analysis-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
+
 permissions:
   contents: read
   issues: write

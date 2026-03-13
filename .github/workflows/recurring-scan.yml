@@ -23,6 +23,7 @@ on:
           - forensic
 
 env:
+  MCP_PROTOCOL_VERSION: "2024-11-05"
   CARGO_TERM_COLOR: always
 
 permissions:
