@@ -28,7 +28,8 @@ if ($status) {
             $message = Read-Host 'Commit message'
             git commit -m $message
             git push origin master
-        } else {
+        }
+        else {
             Write-Host 'ℹ️  Continuing with uncommitted changes...'
         }
     }

@@ -1,0 +1,1066 @@
+    Blocking waiting for file lock on artifact directory
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\bridge.rs:48:7
+   |
+48 | #[cfg(has_zig_ffi)]
+   |       ^^^^^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 31 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\bridge.rs:56:11
+   |
+56 |     #[cfg(has_zig_ffi)]
+   |           ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\bridge.rs:62:15
+   |
+62 |     #[cfg(not(has_zig_ffi))]
+   |               ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\bridge.rs:96:11
+   |
+96 |     #[cfg(has_zig_ffi)]
+   |           ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\bridge.rs:129:15
+    |
+129 |     #[cfg(not(has_zig_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:159:7
+    |
+159 | #[cfg(has_jax_ffi)]
+    |       ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:171:11
+    |
+171 | #[cfg(not(has_jax_ffi))]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+  --> src\ffi\jax.rs:65:15
+   |
+65 |         #[cfg(has_jax_ffi)]
+   |               ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+  --> src\ffi\jax.rs:77:19
+   |
+77 |         #[cfg(not(has_jax_ffi))]
+   |                   ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:144:15
+    |
+144 |         #[cfg(has_jax_ffi)]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:151:19
+    |
+151 |         #[cfg(not(has_jax_ffi))]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:182:11
+    |
+182 |     #[cfg(has_jax_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:190:15
+    |
+190 |     #[cfg(not(has_jax_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:200:11
+    |
+200 |     #[cfg(has_jax_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:206:15
+    |
+206 |     #[cfg(not(has_jax_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:216:11
+    |
+216 |     #[cfg(has_jax_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_jax_ffi`
+   --> src\ffi\jax.rs:222:15
+    |
+222 |     #[cfg(not(has_jax_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_jax_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_jax_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:54:7
+   |
+54 | #[cfg(has_julia_ffi)]
+   |       ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:78:11
+   |
+78 | #[cfg(not(has_julia_ffi))]
+   |           ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:34:15
+   |
+34 |         #[cfg(has_julia_ffi)]
+   |               ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:44:19
+   |
+44 |         #[cfg(not(has_julia_ffi))]
+   |                   ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:89:11
+   |
+89 |     #[cfg(has_julia_ffi)]
+   |           ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\ffi\julia.rs:99:15
+   |
+99 |     #[cfg(not(has_julia_ffi))]
+   |               ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\ffi\julia.rs:110:11
+    |
+110 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\ffi\julia.rs:119:15
+    |
+119 |     #[cfg(not(has_julia_ffi))]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\ffi\julia.rs:140:11
+    |
+140 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\ffi\julia.rs:146:15
+    |
+146 |     #[cfg(not(has_julia_ffi))]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\ffi\julia.rs:156:11
+    |
+156 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+ --> src\ffi\mojo.rs:9:7
+  |
+9 | #[cfg(has_mojo_ffi)]
+  |       ^^^^^^^^^^^^
+  |
+  = help: consider using a Cargo feature instead
+  = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+           [lints.rust]
+           unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+  = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:46:7
+   |
+46 | #[cfg(has_mojo_ffi)]
+   |       ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:56:11
+   |
+56 | #[cfg(not(has_mojo_ffi))]
+   |           ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:31:15
+   |
+31 |         #[cfg(has_mojo_ffi)]
+   |               ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:38:19
+   |
+38 |         #[cfg(not(has_mojo_ffi))]
+   |                   ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:67:11
+   |
+67 |     #[cfg(has_mojo_ffi)]
+   |           ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:76:15
+   |
+76 |     #[cfg(not(has_mojo_ffi))]
+   |               ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:87:11
+   |
+87 |     #[cfg(has_mojo_ffi)]
+   |           ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+  --> src\ffi\mojo.rs:94:15
+   |
+94 |     #[cfg(not(has_mojo_ffi))]
+   |               ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+   --> src\ffi\mojo.rs:101:11
+    |
+101 |     #[cfg(has_mojo_ffi)]
+    |           ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+   --> src\ffi\mojo.rs:107:15
+    |
+107 |     #[cfg(not(has_mojo_ffi))]
+    |               ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+   --> src\ffi\mojo.rs:122:11
+    |
+122 |     #[cfg(has_mojo_ffi)]
+    |           ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_mojo_ffi`
+   --> src\ffi\mojo.rs:140:11
+    |
+140 |     #[cfg(has_mojo_ffi)]
+    |           ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_mojo_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_mojo_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+  --> src\ffi\pony.rs:28:7
+   |
+28 | #[cfg(has_pony_ffi)]
+   |       ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+  --> src\ffi\pony.rs:75:11
+   |
+75 |     #[cfg(has_pony_ffi)]
+   |           ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+  --> src\ffi\pony.rs:86:15
+   |
+86 |     #[cfg(not(has_pony_ffi))]
+   |               ^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+   --> src\ffi\pony.rs:100:15
+    |
+100 |         #[cfg(has_pony_ffi)]
+    |               ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+   --> src\ffi\pony.rs:118:11
+    |
+118 |     #[cfg(has_pony_ffi)]
+    |           ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_pony_ffi`
+   --> src\ffi\pony.rs:137:15
+    |
+137 |     #[cfg(not(has_pony_ffi))]
+    |               ^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_pony_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_pony_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:28:7
+   |
+28 | #[cfg(has_zig_ffi)]
+   |       ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:30:7
+   |
+30 | #[cfg(has_zig_ffi)]
+   |       ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:43:7
+   |
+43 | #[cfg(has_zig_ffi)]
+   |       ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:69:11
+   |
+69 |     #[cfg(has_zig_ffi)]
+   |           ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:81:15
+   |
+81 |     #[cfg(not(has_zig_ffi))]
+   |               ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+  --> src\ffi\zig.rs:92:11
+   |
+92 |     #[cfg(has_zig_ffi)]
+   |           ^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:101:15
+    |
+101 |     #[cfg(not(has_zig_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:108:11
+    |
+108 |     #[cfg(has_zig_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:113:15
+    |
+113 |     #[cfg(not(has_zig_ffi))]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:125:11
+    |
+125 |     #[cfg(has_zig_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:139:15
+    |
+139 |         #[cfg(has_zig_ffi)]
+    |               ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:163:19
+    |
+163 |             #[cfg(has_zig_ffi)]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:195:19
+    |
+195 |             #[cfg(has_zig_ffi)]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:224:19
+    |
+224 |             #[cfg(has_zig_ffi)]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:243:19
+    |
+243 |             #[cfg(has_zig_ffi)]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:270:11
+    |
+270 |     #[cfg(has_zig_ffi)]
+    |           ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_zig_ffi`
+   --> src\ffi\zig.rs:287:19
+    |
+287 |             #[cfg(has_zig_ffi)]
+    |                   ^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_zig_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_zig_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_faiss_ffi`
+   --> src\motores\vector_search\faiss\engine.rs:192:15
+    |
+192 |         #[cfg(has_faiss_ffi)]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_faiss_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_faiss_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_faiss_ffi`
+   --> src\motores\vector_search\faiss\engine.rs:230:15
+    |
+230 |         #[cfg(has_faiss_ffi)]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_faiss_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_faiss_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: variable does not need to be mutable
+  --> src\ffi\julia.rs:32:9
+   |
+32 |     let mut result = Ok(());
+   |         ----^^^^^^
+   |         |
+   |         help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> src\ffi\mojo.rs:29:9
+   |
+29 |     let mut result = Ok(());
+   |         ----^^^^^^
+   |         |
+   |         help: remove this `mut`
+
+warning: function `try_load_julia_math` is never used
+  --> src\ffi\julia.rs:81:4
+   |
+81 | fn try_load_julia_math() -> Result<()> {
+   |    ^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `try_load_mojo_kernels` is never used
+  --> src\ffi\mojo.rs:59:4
+   |
+59 | fn try_load_mojo_kernels() -> Result<()> {
+   |    ^^^^^^^^^^^^^^^^^^^^^
+
+warning: `memory_p` (lib) generated 70 warnings (run `cargo fix --lib -p memory_p` to apply 2 suggestions)
+   Compiling memory_p v0.3.0 (D:\REPOSITORIOS\memory_p_fresh)
+error[E0432]: unresolved import `super::error`
+  --> src\bin\..\ffi\julia.rs:15:12
+   |
+15 | use super::error::{FfiError, Result};
+   |            ^^^^^
+   |            |
+   |            unresolved import
+   |            help: a similar path exists: `clap::error`
+
+warning: unused imports: `AtomicBool` and `Ordering`
+  --> src\bin\julia_optimization_engine.rs:10:25
+   |
+10 | use std::sync::atomic::{AtomicBool, Ordering};
+   |                         ^^^^^^^^^^  ^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `std::sync::Arc`
+  --> src\bin\julia_optimization_engine.rs:11:5
+   |
+11 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:54:7
+   |
+54 | #[cfg(has_julia_ffi)]
+   |       ^^^^^^^^^^^^^
+   |
+   = help: expected names are: `docsrs`, `feature`, and `test` and 31 more
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:78:11
+   |
+78 | #[cfg(not(has_julia_ffi))]
+   |           ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:34:15
+   |
+34 |         #[cfg(has_julia_ffi)]
+   |               ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:44:19
+   |
+44 |         #[cfg(not(has_julia_ffi))]
+   |                   ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:89:11
+   |
+89 |     #[cfg(has_julia_ffi)]
+   |           ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+  --> src\bin\..\ffi\julia.rs:99:15
+   |
+99 |     #[cfg(not(has_julia_ffi))]
+   |               ^^^^^^^^^^^^^
+   |
+   = help: consider using a Cargo feature instead
+   = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+            [lints.rust]
+            unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+   = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\bin\..\ffi\julia.rs:110:11
+    |
+110 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\bin\..\ffi\julia.rs:119:15
+    |
+119 |     #[cfg(not(has_julia_ffi))]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\bin\..\ffi\julia.rs:140:11
+    |
+140 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\bin\..\ffi\julia.rs:146:15
+    |
+146 |     #[cfg(not(has_julia_ffi))]
+    |               ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+warning: unexpected `cfg` condition name: `has_julia_ffi`
+   --> src\bin\..\ffi\julia.rs:156:11
+    |
+156 |     #[cfg(has_julia_ffi)]
+    |           ^^^^^^^^^^^^^
+    |
+    = help: consider using a Cargo feature instead
+    = help: or consider adding in `Cargo.toml` the `check-cfg` lint config for the lint:
+             [lints.rust]
+             unexpected_cfgs = { level = "warn", check-cfg = ['cfg(has_julia_ffi)'] }
+    = help: or consider adding `println!("cargo::rustc-check-cfg=cfg(has_julia_ffi)");` to the top of the `build.rs`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+
+For more information about this error, try `rustc --explain E0432`.
+warning: `memory_p` (bin "julia_optimization_engine") generated 13 warnings
+error: could not compile `memory_p` (bin "julia_optimization_engine") due to 1 previous error; 13 warnings emitted
