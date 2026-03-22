@@ -2,7 +2,6 @@
 use super::types::*;
 use async_trait::async_trait;
 use std::error::Error as StdError;
-use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct ClusterInfo {
