@@ -66,6 +66,7 @@ pub mod error;
 pub mod ffi;
 pub mod health;
 pub mod hyper_memory;
+pub mod json_rpc;
 pub mod kpi_tracker;
 pub mod mcp;
 pub mod mega_simulator;

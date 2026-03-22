@@ -1,6 +1,7 @@
 //! Fusion engine for coordinating multiple search engines
 
 use crate::motores::core::{traits::SearchEngine, types::*, RoutingAI};
+use crate::prediction_engine::PredictionEngine;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
@@ -14,9 +15,10 @@ pub struct FusionEngine {
 
 impl FusionEngine {
     pub fn new() -> Self {
+        let prediction_engine = Arc::new(PredictionEngine::new());
         Self {
             engines: Arc::new(RwLock::new(HashMap::new())),
-            router: Arc::new(RoutingAI::new()),
+            router: Arc::new(RoutingAI::new(prediction_engine)),
         }
     }
 

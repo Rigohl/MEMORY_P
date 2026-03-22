@@ -17,7 +17,7 @@ mod mcp_tools_tests {
                 engines: vec![],
                 tools: vec![],
             },
-            ffi_status: crate::mcp::http_server::FfiStatus {
+            ffi_status: crate::mcp::http_server::FFIStatus {
                 zig: true,
                 julia: false,
                 mojo: false,
@@ -63,7 +63,7 @@ mod mcp_tools_tests {
                 engines: vec![],
                 tools: vec![],
             },
-            ffi_status: crate::mcp::http_server::FfiStatus {
+            ffi_status: crate::mcp::http_server::FFIStatus {
                 zig: true,
                 julia: false,
                 mojo: false,
@@ -103,7 +103,7 @@ mod mcp_tools_tests {
                 engines: vec![],
                 tools: vec![],
             },
-            ffi_status: crate::mcp::http_server::FfiStatus {
+            ffi_status: crate::mcp::http_server::FFIStatus {
                 zig: true,
                 julia: false,
                 mojo: false,

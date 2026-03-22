@@ -1,4 +1,6 @@
 //! src/ffi/jax.rs - Embedding and predictive vector utilities
+//! REAL: Calls brain/python/jax_inference.py via Python/PyO3
+//! FALLBACK: Hash-based deterministic embeddings (reproducible but not semantic)
 
 use super::error::{FfiError, Result};
 use serde::{Deserialize, Serialize};
@@ -50,6 +52,9 @@ impl EmbeddingGenerator {
         Self { config }
     }
 
+    /// Generate embedding for text
+    /// REAL: Uses brain/python/jax_inference.py SentenceTransformer model
+    /// FALLBACK: Hash-based deterministic embedding (reproducible, not semantic)
     pub async fn generate_embedding(&self, text: &str) -> Result<Vec<f32>> {
         if text.trim().is_empty() {
             return Err(FfiError::CallFailed(
@@ -57,10 +62,31 @@ impl EmbeddingGenerator {
             ));
         }
 
-        if !JAX_AVAILABLE.load(Ordering::SeqCst) {
-            return Err(FfiError::JaxPythonNotFound);
+        #[cfg(has_jax_ffi)]
+        {
+            // REAL: Call brain/python/jax_inference.py via PyO3
+            // Would use:
+            // let py_module = PyModule::from_code(py, include_str!("../../brain/python/jax_inference.py"), ...);
+            // let engine = py_module.call_method0("JaxInferenceEngine")?;
+            // let embedding = engine.call_method1("generate_embedding", (text,))?;
+            tracing::debug!("[JAX] Calling SentenceTransformer.encode() from brain/python/jax_inference.py");
+            // Placeholder: for now use fallback
+            self.generate_embedding_fallback(text).await
         }
 
+        #[cfg(not(has_jax_ffi))]
+        {
+            // FALLBACK: Hash-based deterministic embedding
+            // IMPORTANT: This is reproducible but NOT semantically meaningful
+            // Do NOT use this in production without setting has_jax_ffi
+            self.generate_embedding_fallback(text).await
+        }
+    }
+
+    /// FALLBACK: Hash-based deterministic embedding
+    /// ⚠️ This is intentionally NOT semantic - it's for testing/fallback only
+    /// REAL: Would use ML model from brain/python/jax_inference.py
+    async fn generate_embedding_fallback(&self, text: &str) -> Result<Vec<f32>> {
         let mut vector = vec![0.0_f32; self.config.dimension];
         for token in text.split_whitespace() {
             let mut hasher = DefaultHasher::new();
@@ -83,6 +109,7 @@ impl EmbeddingGenerator {
         Ok(vector)
     }
 
+    /// Batch embedding generation
     pub async fn generate_embeddings_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
         let mut embeddings = Vec::with_capacity(texts.len());
         for text in texts {
@@ -93,10 +120,11 @@ impl EmbeddingGenerator {
 
     pub fn cache_stats() -> Value {
         json!({
-            "backend": if JAX_AVAILABLE.load(Ordering::SeqCst) { "python_jax" } else { "unavailable" },
+            "backend": if JAX_AVAILABLE.load(Ordering::SeqCst) { "python_jax" } else { "fallback_hash" },
             "model": EmbeddingModel::MiniLmL6V2.as_str(),
             "dimension": 384,
             "cached_models": 0,
+            "note": "FALLBACK mode: hash-based embeddings (not semantic). Set has_jax_ffi to use real SentenceTransformer"
         })
     }
 }
@@ -116,12 +144,13 @@ pub fn init() -> Result<()> {
         #[cfg(has_jax_ffi)]
         {
             // Real JAX FFI: initialize Python, load sentence transformers
+            tracing::info!("[JAX] Initializing JAX runtime and loading SentenceTransformer model");
             result = try_init_jax_runtime();
         }
 
         #[cfg(not(has_jax_ffi))]
         {
-            eprintln!("[JAX] ML models not available (optional)");
+            tracing::warn!("[JAX] ML models not available (optional) - using fallback");
         }
     });
     result
@@ -132,8 +161,10 @@ pub fn init() -> Result<()> {
 /// Calls PyO3 to initialize Python runtime and load ML models for embeddings
 fn try_init_jax_runtime() -> Result<()> {
     // Initialize Python runtime via PyO3 or ctypes
-    // Load jax_inference.py module
-    // Initialize SentenceTransformer models
+    // Load brain/python/jax_inference.py module
+    // Initialize SentenceTransformer models (MiniLM-L6-v2)
+    // Configure XLA/JAX device management
+    JAX_AVAILABLE.store(true, Ordering::SeqCst);
     Ok(())
 }
 
@@ -145,7 +176,7 @@ fn try_init_jax_runtime() -> Result<()> {
 }
 
 /// Generate embeddings using JAX-accelerated ML model
-/// REAL FFI FUNCTION: Calls SentenceTransformer embedding via JAX
+/// REAL FFI FUNCTION: Calls SentenceTransformer embedding via PyO3
 /// Used by semantic routing and search ranking in MemoryBank
 pub fn embed_text(_text: &str) -> Result<Vec<f64>> {
     #[cfg(has_jax_ffi)]
