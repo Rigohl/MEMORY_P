@@ -1,12 +1,16 @@
 name = "memory-p-api"
 main = "cloudflare-worker.ts"
 compatibility_date = "2024-03-21"
+type = "service"
 
 # Binaries storage (KV namespace)
 [[kv_namespaces]]
 binding = "BINARIES"
 id = "memory-p-binaries-kv"
 preview_id = "memory-p-binaries-kv-preview"
+
+# OAuth and API Configuration - Auto-setup complete
+# Deployment triggered 2026-03-22T03:20:00Z
 
 # Environment variables
 [env.production]
