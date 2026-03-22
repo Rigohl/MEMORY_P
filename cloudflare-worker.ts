@@ -173,14 +173,14 @@ export default {
         for (const [motorName, motor] of Object.entries(MOTORS_MAP)) {
             try {
                 const response = await fetch(`http://localhost:${motor.port}/mcp/health`);
-                const status = await response.json();
+                const data = (await response.json()) as any;
 
                 // Store in KV for monitoring
                 await env.BINARIES.put(
                     `health:${motorName}`,
                     JSON.stringify({
                         motor: motorName,
-                        status: status.result?.status || "unknown",
+                        status: data?.result?.status || "unknown",
                         timestamp: new Date().toISOString(),
                     })
                 );

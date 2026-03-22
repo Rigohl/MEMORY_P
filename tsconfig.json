@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2020",
+    "lib": ["ES2022", "WebWorker"],
+    "declaration": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "types": ["@cloudflare/workers-types"],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["cloudflare-worker.ts"],
+  "exclude": ["node_modules", "src", "dist", ".build"]
+}

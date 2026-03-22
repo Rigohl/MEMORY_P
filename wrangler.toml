@@ -1,27 +1,9 @@
-name = "memory-p-mcp-gateway"
+name = "memory-p-api"
 main = "cloudflare-worker.ts"
 compatibility_date = "2024-03-21"
-
-# API Gateway Mode - proxy to local MCP HTTP servers
-[env.production]
-name = "memory-p-api"
 
 # Binaries storage (KV namespace)
 [[kv_namespaces]]
 binding = "BINARIES"
 id = "memory-p-binaries-kv"
-
-# Analytics
-[analytics]
-enabled = true
-
-# Routes
-routes = [
-  { pattern = "api.memory-p.workers.dev/*", zone_name = "memory-p.workers.dev" }
-]
-
-# Logics
-[build]
-command = "npm install && npx tsc"
-cwd = "./cloudflare"
-watch_paths = ["cloudflare/**/*.ts"]
+preview_id = "memory-p-binaries-kv-preview"
