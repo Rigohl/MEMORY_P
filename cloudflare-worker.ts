@@ -6,6 +6,7 @@
 
 interface Env {
     BINARIES: KVNamespace;
+    MEMORY_P_API_KEY?: string;
 }
 
 interface JsonRpcRequest {
@@ -55,6 +56,38 @@ const MOTORS_MAP: Record<string, { port: number; name: string }> = {
 };
 
 /**
+ * Authenticate request using API key
+ */
+function authenticateRequest(request: Request, env: Env): { valid: boolean; reason?: string } {
+    // Health check is public
+    const url = new URL(request.url);
+    if (url.pathname === "/health") {
+        return { valid: true };
+    }
+
+    // Get API key from environment (set in wrangler.toml)
+    const expectedKey = env.MEMORY_P_API_KEY || "demo-key-change-in-production";
+
+    // Check Authorization header
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader) {
+        // Support "Bearer {token}" format
+        const token = authHeader.replace("Bearer ", "").trim();
+        if (token === expectedKey) {
+            return { valid: true };
+        }
+    }
+
+    // Check X-API-Key header
+    const apiKey = request.headers.get("X-API-Key");
+    if (apiKey === expectedKey) {
+        return { valid: true };
+    }
+
+    return { valid: false, reason: "Missing or invalid API key. Use -H 'X-API-Key: your-key' or -H 'Authorization: Bearer your-key'" };
+}
+
+/**
  * Route incoming MCP JSON-RPC requests to appropriate microservice
  */
 export default {
@@ -63,11 +96,28 @@ export default {
         const corsHeaders = {
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
         };
 
         if (request.method === "OPTIONS") {
             return new Response(null, { headers: corsHeaders });
+        }
+
+        // Authenticate request
+        const auth = authenticateRequest(request, env);
+        if (!auth.valid) {
+            return new Response(
+                JSON.stringify({
+                    jsonrpc: "2.0",
+                    id: null,
+                    error: {
+                        code: -32000,
+                        message: "Unauthorized",
+                        data: auth.reason,
+                    },
+                }),
+                { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+            );
         }
 
         const url = new URL(request.url);

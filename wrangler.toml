@@ -7,3 +7,10 @@ compatibility_date = "2024-03-21"
 binding = "BINARIES"
 id = "memory-p-binaries-kv"
 preview_id = "memory-p-binaries-kv-preview"
+
+# Environment variables
+[env.production]
+vars = { MEMORY_P_API_KEY = "change-this-in-production" }
+
+[env.development]
+vars = { MEMORY_P_API_KEY = "dev-key-12345" }
