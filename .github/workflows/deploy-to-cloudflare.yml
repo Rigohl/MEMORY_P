@@ -1,0 +1,58 @@
+name: Deploy MEMORY_P Gateway to Cloudflare
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'cloudflare-worker.ts'
+      - 'wrangler.toml'
+      - 'tsconfig.json'
+      - 'package.json'
+      - '.github/workflows/deploy-to-cloudflare.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy to Cloudflare Workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy --env production
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Health check
+        run: |
+          sleep 5
+          curl -s https://memory-p-api.workers.dev/health | jq .
+        continue-on-error: true
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "✅ MEMORY_P Gateway deployed successfully"
+          echo "URL: https://memory-p-api.workers.dev"
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed"
+          exit 1
