@@ -1,0 +1,221 @@
+# ============================================================================
+# MEMORY_P v2.0 .gitignore - Professional Grade
+# ============================================================================
+
+# ==== BUILD & COMPILATION ====
+/target/
+/target_new/
+*.rlib
+*.so
+*.dylib
+*.dll
+*.a
+*.o
+*.obj
+FFI/target/
+FFI/build/
+FFI/lib/*.so
+FFI/lib/*.dylib
+FFI/lib/*.dll
+FFI/lib/*.a
+.cargo/registry/
+.cargo/git/
+
+# ==== CARGO & DEPENDENCIES ====
+Cargo.lock
+Cargo.toml.bak
+
+# ==== IDE & EDITOR ====
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.iml
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+*.swp
+*.swo
+*~
+.vim/
+.LSOverride
+.AppleDouble
+
+# ==== ENVIRONMENT & CONFIGURATION ====
+.env
+.env.local
+.env.*.local
+.pixi/*
+!.pixi/config.toml
+
+# ==== LOGS & OUTPUT ====
+*.log
+*.log.*
+/logs/
+Thumbs.db
+
+# ==== TEST & COVERAGE ====
+tarpaulin-report.html
+cobertura.xml
+coverage/
+benches/target/
+criterion/
+*.profdata
+
+# ==== PERFORMANCE & PROFILING ====
+flamegraph.svg
+perf.data
+perf.data.old
+callgrind.out.*
+cachegrind.out.*
+
+# ==== PYTHON & JAX ====
+brain/python/__pycache__/
+brain/python/*.pyc
+brain/python/*.pyo
+brain/python/.venv/
+brain/python/venv/
+brain/python/*.egg-info/
+brain/python/dist/
+brain/python/build/
+
+# ==== JULIA ====
+brain/julia/Manifest.toml
+brain/julia/.juliahist
+
+# ==== MOJO ====
+brain/mojo/.mojo/
+brain/mojo/__pycache__/
+
+# ==== ZIG ====
+brain/zig/zig-cache/
+brain/zig/build/
+
+# ==== PONY ====
+.pony-deps/
+
+# ==== DOCKER & COMPOSE OVERRIDES ====
+docker-compose.override.yml
+.docker/
+
+# ==== TEMPORARY & BACKUP FILES ====
+*.tmp
+*.bak
+*.backup
+~$*
+.~*
+*.orig
+
+# ==== DATABASE ====
+*.db
+*.sqlite
+*.sqlite3
+.sqlc.yml
+
+# ==== PACKAGE MANAGERS ====
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+*.egg-info/
+
+# ==== GENERATED FILES ====
+/docs/generated/
+/src/generated/
+*.generated.rs
+
+# ==== GIT MERGE CONFLICTS ====
+*.rej
+
+# ==== CREDENTIALS & SECRETS ====
+*.pem
+*.key
+*.pub
+/private/
+/secrets/
+.ssh/
+
+# ==== PROJECT SPECIFIC ====
+analysis_results/
+NOWAY_LOGS/
+.cargo-cache/
+config/local.toml
+config/override.toml
+
+# ==== SYSTEM FILES ====
+.vscode/ipch/
+.vscode/doxygen-docs/
+
+# ============================================================================
+# ALLOW PROJECT ESSENTIAL FILES
+# ============================================================================
+!/.gitignore
+!/Cargo.toml
+!/Cargo.lock
+!/README.md
+!/LICENSE
+!/INSTALL.md
+!/CHANGELOG.md
+!/CONTRIBUTING.md
+
+# Documentation
+!/docs/
+!/docs/**
+
+# Source code
+!/src/
+!/src/**
+
+# Benchmarks
+!/benches/
+!/benches/**
+
+# GitHub configuration
+!/.github/
+!/.github/**
+
+# Windsurf configuration
+!/.windsurf/
+!/.windsurf/**
+
+# Configuration
+!/config/
+!/config/**
+
+# FFI bridges
+!/FFI/
+!/FFI/**
+
+# Multi-language brain
+!/brain/
+!/brain/**
+
+# NEWAY architecture
+!/NEWAY/
+!/NEWAY/**
+
+# Build configuration
+!/.agent/
+!/build.rs
+!/.cargo/config.toml
+
+# Docker files
+!/docker-compose.yml
+!/Dockerfile
+
+# Scripts
+!/scripts/
+!/scripts/**
+
+# Development files
+!/devbox.json
+!/pixi.toml
+!/environment.yml
+
+# Agents & Skills
+!/AGENTS.md
+!/SKILLS.md
+
+# Configuration files in project root
+!/mcp_status.json
