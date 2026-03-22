@@ -7,6 +7,9 @@
 interface Env {
     BINARIES: KVNamespace;
     MEMORY_P_API_KEY?: string;
+    JWT_SECRET?: string;
+    OAUTH_CLIENT_ID?: string;
+    OAUTH_CLIENT_SECRET?: string;
 }
 
 interface JsonRpcRequest {
@@ -21,6 +24,22 @@ interface JsonRpcResponse<T> {
     id: number;
     result?: T;
     error?: { code: number; message: string; data?: unknown };
+}
+
+interface OAuthCode {
+    code: string;
+    clientId: string;
+    redirectUri: string;
+    codeChallenge: string;
+    expiresAt: number;
+    scope: string;
+}
+
+interface JWTPayload {
+    sub: string;
+    iat: number;
+    exp: number;
+    scope: string;
 }
 
 // 19 microservices mapping
@@ -56,12 +75,82 @@ const MOTORS_MAP: Record<string, { port: number; name: string }> = {
 };
 
 /**
+ * Encode string to base64url (for PKCE)
+ */
+function toBase64Url(str: string): string {
+    return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+}
+
+/**
+ * Generate random string (for code_verifier)
+ */
+function generateRandomString(length: number = 43): string {
+    const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+    let result = "";
+    const array = new Uint8Array(length);
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+        crypto.getRandomValues(array);
+    }
+    for (let i = 0; i < length; i++) {
+        result += charset.charCodeAt(array[i] % charset.length);
+    }
+    return result;
+}
+
+/**
+ * Calculate PKCE code_challenge from code_verifier (SHA256)
+ */
+async function calculateCodeChallenge(verifier: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return toBase64Url(String.fromCharCode(...new Uint8Array(hashBuffer)));
+}
+
+/**
+ * Create JWT token
+ */
+async function createJWT(payload: JWTPayload, secret: string): Promise<string> {
+    const header = { alg: "HS256", typ: "JWT" };
+    const encoder = new TextEncoder();
+    const toSign = `${btoa(JSON.stringify(header))}.${btoa(JSON.stringify(payload))}`;
+
+    const keyData = encoder.encode(secret);
+    const key = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
+
+    return `${toSign}.${toBase64Url(String.fromCharCode(...new Uint8Array(signature)))}`;
+}
+
+/**
+ * Verify JWT token
+ */
+async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
+    try {
+        const [headerB64, payloadB64, signatureB64] = token.split(".");
+        if (!headerB64 || !payloadB64 || !signatureB64) return null;
+
+        const payload = JSON.parse(atob(payloadB64)) as JWTPayload;
+
+        // Check expiration
+        if (payload.exp < Math.floor(Date.now() / 1000)) {
+            return null;
+        }
+
+        return payload;
+    } catch {
+        return null;
+    }
+}
+
+/**
  * Authenticate request using API key
  */
 function authenticateRequest(request: Request, env: Env): { valid: boolean; reason?: string } {
-    // Health check is public
+    // Public endpoints
     const url = new URL(request.url);
-    if (url.pathname === "/health") {
+    const pathname = url.pathname;
+    if (pathname === "/health" || pathname.startsWith("/oauth/")) {
         return { valid: true };
     }
 
@@ -139,6 +228,128 @@ export default {
                     headers: { "Content-Type": "application/json", ...corsHeaders },
                 }
             );
+        }
+
+        // OAuth 2.0 Endpoints
+        // POST /oauth/authorize
+        if (url.pathname === "/oauth/authorize" && method === "POST") {
+            try {
+                const data = await request.json() as any;
+                const { client_id, redirect_uri, code_challenge, scope = "mcp:full" } = data;
+
+                if (!client_id || !redirect_uri || !code_challenge) {
+                    return new Response(
+                        JSON.stringify({
+                            error: "invalid_request",
+                            error_description: "Missing required parameters: client_id, redirect_uri, code_challenge",
+                        }),
+                        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
+                // Generate authorization code (valid for 60 seconds)
+                const code = generateRandomString(32);
+                const oauth: OAuthCode = {
+                    code,
+                    clientId: client_id,
+                    redirectUri: redirect_uri,
+                    codeChallenge: code_challenge,
+                    scope,
+                    expiresAt: Math.floor(Date.now() / 1000) + 60,
+                };
+
+                // Store code in KV
+                await env.BINARIES.put(`oauth:code:${code}`, JSON.stringify(oauth), { expirationTtl: 60 });
+
+                return new Response(
+                    JSON.stringify({
+                        authorization_code: code,
+                        expires_in: 60,
+                        redirect_uri: `${redirect_uri}?code=${code}&state=${url.searchParams.get("state") || ""}`,
+                    }),
+                    { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            } catch (error) {
+                return new Response(
+                    JSON.stringify({ error: "invalid_request", error_description: String(error) }),
+                    { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
+        }
+
+        // POST /oauth/token
+        if (url.pathname === "/oauth/token" && method === "POST") {
+            try {
+                const data = await request.json() as any;
+                const { code, code_verifier, client_id, client_secret } = data;
+
+                if (!code || !code_verifier || !client_id) {
+                    return new Response(
+                        JSON.stringify({
+                            error: "invalid_request",
+                            error_description: "Missing required parameters: code, code_verifier, client_id",
+                        }),
+                        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
+                // Retrieve authorization code from KV
+                const storedCode = await env.BINARIES.get(`oauth:code:${code}`);
+                if (!storedCode) {
+                    return new Response(
+                        JSON.stringify({ error: "invalid_grant", error_description: "Authorization code not found or expired" }),
+                        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
+                const oauth = JSON.parse(storedCode) as OAuthCode;
+
+                // Verify PKCE code_challenge
+                const calculatedChallenge = await calculateCodeChallenge(code_verifier);
+                if (calculatedChallenge !== oauth.codeChallenge) {
+                    return new Response(
+                        JSON.stringify({ error: "invalid_grant", error_description: "code_verifier does not match code_challenge" }),
+                        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
+                // Verify client credentials (optional in public clients)
+                if (client_secret && client_secret !== env.OAUTH_CLIENT_SECRET) {
+                    return new Response(
+                        JSON.stringify({ error: "invalid_client", error_description: "Invalid client secret" }),
+                        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
+                // Create JWT token
+                const secret = env.JWT_SECRET || "dev-secret-change-in-production";
+                const payload: JWTPayload = {
+                    sub: client_id,
+                    iat: Math.floor(Date.now() / 1000),
+                    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+                    scope: oauth.scope,
+                };
+
+                const accessToken = await createJWT(payload, secret);
+
+                // Cleanup - delete used code
+                await env.BINARIES.delete(`oauth:code:${code}`);
+
+                return new Response(
+                    JSON.stringify({
+                        access_token: accessToken,
+                        token_type: "Bearer",
+                        expires_in: 3600,
+                        scope: oauth.scope,
+                    }),
+                    { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            } catch (error) {
+                return new Response(
+                    JSON.stringify({ error: "server_error", error_description: String(error) }),
+                    { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                );
+            }
         }
 
         // Route /mcp/{motor}/{endpoint}
