@@ -1,0 +1,19 @@
+{
+  "name": "memory-p-cloudflare-gateway",
+  "version": "1.0.0",
+  "description": "MEMORY_P MCP JSON-RPC Gateway deployed on Cloudflare Workers",
+  "main": "cloudflare-worker.ts",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "build": "tsc",
+    "test": "echo 'Run: curl http://localhost:8787/health'"
+  },
+  "dependencies": {
+    "wrangler": "^3.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
