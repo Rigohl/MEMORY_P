@@ -1,0 +1,186 @@
+version: '3.9'
+
+services:
+  memory_p:
+    build:
+      context: .
+      dockerfile: Dockerfile.chapel_pony
+      args:
+        CHAPEL_VERSION: "2.0.0"
+        PONY_VERSION: "0.1.0"
+        RUST_VERSION: "1.88.0"
+    container_name: memory_p_server
+    ports:
+      - "8000:8000" # HTTP Server
+      - "9090:9090" # Prometheus metrics
+      - "3000:3000" # Grafana (via reverse proxy)
+    environment:
+      RUST_LOG: "memory_p=info,tokio=info"
+      CHAPEL_LOCALES: "8"
+      PONY_ACTORS: "4"
+      CHPL_LLVM: "bundled"
+      MEMORY_LIMIT: "8GB"
+    volumes:
+      - ./config:/opt/config:ro
+      - ./config/chapel_pony.toml:/etc/memory_p/chapel_pony.toml:ro
+      - chapel_cache:/opt/chapel_cache
+      - pony_cache:/opt/pony_cache
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - prometheus
+      - grafana
+    networks:
+      - memory_p_net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: memory_p_postgres
+    environment:
+      POSTGRES_DB: memory_p
+      POSTGRES_USER: memory_p
+      POSTGRES_PASSWORD: memory_p_secure_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: memory_p_redis
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: memory_p_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT_API_KEY: "qdrant_key_memory_p"
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: memory_p_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: memory_p_grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: "memory_p_admin"
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_INSTALL_PLUGINS: "redis-datasource"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  # Optional: LNX distributed search node 1
+  lnx_node1:
+    image: lnx:latest
+    container_name: memory_p_lnx_1
+    environment:
+      LNX_NODE_ID: "node_1"
+      LNX_CLUSTER_NODES: "lnx_node1:8000,lnx_node2:8000,lnx_node3:8000"
+    ports:
+      - "7000:8000"
+    volumes:
+      - lnx_node1_data:/data
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  lnx_node2:
+    image: lnx:latest
+    container_name: memory_p_lnx_2
+    environment:
+      LNX_NODE_ID: "node_2"
+      LNX_CLUSTER_NODES: "lnx_node1:8000,lnx_node2:8000,lnx_node3:8000"
+    ports:
+      - "7001:8000"
+    volumes:
+      - lnx_node2_data:/data
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+  lnx_node3:
+    image: lnx:latest
+    container_name: memory_p_lnx_3
+    environment:
+      LNX_NODE_ID: "node_3"
+      LNX_CLUSTER_NODES: "lnx_node1:8000,lnx_node2:8000,lnx_node3:8000"
+    ports:
+      - "7002:8000"
+    volumes:
+      - lnx_node3_data:/data
+    networks:
+      - memory_p_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  chapel_cache:
+    driver: local
+  pony_cache:
+    driver: local
+  lnx_node1_data:
+    driver: local
+  lnx_node2_data:
+    driver: local
+  lnx_node3_data:
+    driver: local
+
+networks:
+  memory_p_net:
+    driver: bridge

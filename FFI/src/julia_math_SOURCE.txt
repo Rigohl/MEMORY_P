@@ -1,0 +1,24 @@
+⚠️ JULIA MATH - SOURCE REFERENCE
+
+This directory previously contained a DUPLICATE of julia_math.jl
+
+✅ CONSOLIDATED TO: ../../brain/julia/julia_math.jl
+   (Single source of truth)
+
+❌ REMOVED FROM: FFI/src/julia_math.jl
+   (Duplicate eliminated on 2026-03-22)
+
+🔗 In Rust FFI code (src/ffi/julia.rs):
+   - Load Julia from: brain/julia/julia_math.jl
+   - Include path: ../brain/julia/julia_math.jl
+
+📝 To update Julia math functions:
+   1. Edit: brain/julia/julia_math.jl
+   2. Changes automatically reflected in:
+      - src/ffi/julia.rs (optimize_chaotic_system)
+      - src/ffi/julia.rs (analyze_dynamics)
+      - MCP compliance_handler.rs tools
+
+⏱️  Consolidation Date: 2026-03-22
+   Reason: Eliminate maintenance burden of duplicate files
+   Impact: Single source of truth, easier to maintain

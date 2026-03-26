@@ -1,0 +1,122 @@
+name: Deploy to OCI VMs
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deploy target'
+        required: true
+        default: 'both'
+        type: choice
+        options: [vm1, vm2, both]
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - 'Dockerfile'
+
+jobs:
+  build-linux:
+    name: Build Linux x86_64
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-deploy-${{ hashFiles('**/Cargo.toml') }}
+
+      - name: Build release binaries
+        id: build
+        run: |
+          cargo build --release --bins
+          echo "artifact-name=memory_p-linux-$(date +%Y%m%d-%H%M)" >> $GITHUB_OUTPUT
+
+      - name: Upload binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.artifact-name }}
+          path: |
+            target/release/memory_p
+            target/release/mcp_server
+            target/release/motor_orchestrator
+          retention-days: 3
+
+  deploy-vm1:
+    name: Deploy to VM1 (DevOps)
+    runs-on: ubuntu-latest
+    needs: build-linux
+    if: inputs.target == 'vm1' || inputs.target == 'both' || github.event_name == 'push'
+    environment: production
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-linux.outputs.artifact-name }}
+          path: ./dist
+
+      - name: Deploy to VM1
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM1_HOST }}
+          username: opc
+          key: ${{ secrets.VM1_SSH_KEY }}
+          source: dist/*
+          target: /home/opc/memory_p_dist/
+
+      - name: Restart services on VM1
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM1_HOST }}
+          username: opc
+          key: ${{ secrets.VM1_SSH_KEY }}
+          script: |
+            chmod +x /home/opc/memory_p_dist/*
+            echo "✅ Binaries updated on VM1"
+            ls -lh /home/opc/memory_p_dist/
+
+  deploy-vm2:
+    name: Deploy to VM2 (AI/ML)
+    runs-on: ubuntu-latest
+    needs: build-linux
+    if: inputs.target == 'vm2' || inputs.target == 'both'
+    environment: production
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-linux.outputs.artifact-name }}
+          path: ./dist
+
+      - name: Deploy to VM2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM2_HOST }}
+          username: opc
+          key: ${{ secrets.VM2_SSH_KEY }}
+          source: dist/*
+          target: /home/opc/memory_p_dist/
+
+      - name: Restart MCP server on VM2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM2_HOST }}
+          username: opc
+          key: ${{ secrets.VM2_SSH_KEY }}
+          script: |
+            chmod +x /home/opc/memory_p_dist/*
+            pkill -f "memory_p" || true
+            nohup /home/opc/memory_p_dist/mcp_server > /tmp/mcp_server.log 2>&1 &
+            echo "✅ MCP server restarted on VM2"

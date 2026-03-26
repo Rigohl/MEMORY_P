@@ -1,0 +1,143 @@
+[package]
+name = "memory_p"
+version = "0.3.0"
+edition = "2021"
+authors = ["MEMORY_P Team"]
+description = "MEMORY_P v2.0 - Always-On MCP Toolkit with FFI + BRAIN"
+license = "MIT"
+keywords = ["mcp", "http", "memory", "brain", "rust"]
+categories = ["development-tools", "utilities"]
+
+[dependencies]
+tokio = { version = "1.40", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+async-stream = "0.3"
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "postgres", "json"] }
+sled = "0.34"
+qdrant-client = "1.10"
+tantivy = "0.25"
+libloading = "0.8"
+dashmap = "6.1"
+parking_lot = "0.12"
+rayon = "1.11"
+num_cpus = "1.17"
+scc = "2.4"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.22", features = ["v4", "v5", "serde"] }
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+prometheus = "0.13"
+jwalk = "0.8"
+walkdir = "2.4"
+ignore = "0.4"
+memmap2 = "0.9.9"
+regex = "1.12"
+clap = { version = "4.5", features = ["derive", "cargo"] }
+colored = "2.1"
+lazy_static = "1.4"
+mimalloc = "0.1.48"
+smallvec = "1.13"
+smartstring = { version = "1.0", features = ["serde"] }
+dotenv = "0.15"
+log = "0.4"
+env_logger = "0.11"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+mockall = "0.14"
+tokio-test = "0.4"
+proptest = "1.4"
+reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[bench]]
+name = "parallel_engine"
+harness = false
+
+[[bench]]
+name = "vector_search"
+harness = false
+
+[[bench]]
+name = "memory_operations"
+harness = false
+
+[[bench]]
+name = "motor_performance"
+harness = false
+
+[[bin]]
+name = "memory_p"
+path = "src/main.rs"
+# MEMORY_P Core: ALL motors (9) + ALL FFI (5) + ALL brain + autonomous daemon + prediction engine
+# HTTP Server (port 3000)
+# Exposes: /search, /health, /mcp/tools/*, /cli/*, /info
+
+[[bin]]
+name = "memory_p_mcp"
+path = "src/bin/memory_p_mcp.rs"
+# MCP HTTP Server with Julia FFI Tools
+# JSON-RPC 2.0 protocol (2024-11-05 spec)
+# Port: 4040
+# Tools: search, embed, analyze, julia_optimize, julia_chaos, motors_health, predict, context, decision, + 3 more
+
+[[bin]]
+name = "memory_p_cli"
+path = "src/bin/memory_p_cli.rs"
+# DevOps/Analysis CLI (merge of: jar.rs + chaos_analyzer.rs + motor_orchestrator.rs)
+# Commands: analyze, validate, repair, detect-sql, ci-check, health, optimize, chaos-analyze
+# NO PORT - only CLI interface
+# FFI: Julia chaos analysis, Zig bridges for low-level ops
+
+[lib]
+name = "memory_p"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[profile.release]
+opt-level = 1
+lto = false
+codegen-units = 1
+strip = false
+panic = "unwind"
+incremental = false
+
+[profile.bench]
+inherits = "release"
+opt-level = 2
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[features]
+default = ["full"]
+full = ["ffi-zig", "ffi-julia", "ffi-mojo", "ffi-jax", "ffi-pony"]
+ffi-zig = []
+ffi-julia = []
+ffi-julia-chaos = ["ffi-julia"]
+ffi-mojo = []
+ffi-jax = []
+ffi-pony = []
+ffi-all = ["ffi-zig", "ffi-julia", "ffi-jax", "ffi-mojo", "ffi-pony"]
+
+# Custom cfg flags for FFI bridges (defined in build.rs, declared here to suppress warnings)
+has_zig_ffi = []
+has_julia_ffi = []
+has_jax_ffi = []
+has_mojo_ffi = []
+has_pony_ffi = []
+
+[build-dependencies]
+cc = "1.0"

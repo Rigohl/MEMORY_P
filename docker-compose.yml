@@ -1,0 +1,487 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # MEMORY_P Main Application
+  # ==========================================
+  memory-p:
+    build:
+      context: .
+      dockerfile: Dockerfile
+<<<<<<< HEAD
+<<<<<<< HEAD
+      args:
+        JULIA_VERSION: "1.10.0"  # Set to enable Julia support
+    container_name: memory-p-app
+    ports:
+      - "4040:4040"
+      - "9091:9091"  # Metrics endpoint
+=======
+    container_name: memory-p-app
+    ports:
+      - "4040:4040"
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+    container_name: memory-p-app
+    ports:
+      - "4040:4040"
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    environment:
+      - RUST_LOG=info
+      - MEMORY_P_CONFIG=/app/config/docker.toml
+      # Vector Search Engines
+      - QDRANT_URL=http://qdrant:6333
+      - FAISS_ENABLED=false  # Set to true if GPU available
+      - SCANN_ENABLED=false  # Set to true for enterprise
+      # Text Search Engines
+      - TANTIVY_INDEX_PATH=/app/indices/tantivy
+      - LNX_NODES=lnx-node1:9200,lnx-node2:9200,lnx-node3:9200
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_KEY=masterKey123
+      # Specialized Engines
+<<<<<<< HEAD
+<<<<<<< HEAD
+      - JULIA_ENABLED=true  # Enable Julia mathematical brain
+      - JULIA_THREADS=4
+=======
+      - JULIA_ENABLED=false  # Set to true if Julia installed
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+      - JULIA_ENABLED=false  # Set to true if Julia installed
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+      - MEMORYBANK_ENABLED=true
+    volumes:
+      - ./indices:/app/indices
+      - ./config:/app/config
+      - ./PAYLOAD_BANK:/app/PAYLOAD_BANK
+<<<<<<< HEAD
+<<<<<<< HEAD
+      - ./JULIA_BRAIN:/app/JULIA_BRAIN:ro  # Julia scripts (read-only)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4040/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+=======
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    depends_on:
+      - postgres
+      - redis
+      - qdrant
+      - meilisearch
+      - lnx-node1
+      - lnx-node2
+      - lnx-node3
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+<<<<<<< HEAD
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+
+  # ==========================================
+  # Vector Search Engines (3)
+  # ==========================================
+  
+  # Qdrant - Semantic General Purpose
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"  # gRPC
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+<<<<<<< HEAD
+<<<<<<< HEAD
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=64
+      - QDRANT__STORAGE__OPTIMIZERS__INDEXING_THRESHOLD=20000
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Note: FAISS-GPU requires NVIDIA GPU and nvidia-docker
+  # Uncomment if GPU is available
+  # faiss-gpu:
+  #   build:
+  #     context: ./motores/vector_search/faiss
+  #     dockerfile: Dockerfile.gpu
+  #   container_name: faiss-gpu
+  #   runtime: nvidia
+  #   environment:
+  #     - CUDA_VISIBLE_DEVICES=0
+  #   volumes:
+  #     - faiss_indices:/indices
+  #   networks:
+  #     - memory-p-network
+  #   restart: unless-stopped
+
+  # Note: SCANN requires TensorFlow and significant resources
+  # Uncomment for enterprise deployments
+  # scann:
+  #   build:
+  #     context: ./motores/vector_search/scann
+  #     dockerfile: Dockerfile
+  #   container_name: scann
+  #   environment:
+  #     - TF_CPP_MIN_LOG_LEVEL=2
+  #   volumes:
+  #     - scann_indices:/indices
+  #   networks:
+  #     - memory-p-network
+  #   restart: unless-stopped
+
+  # ==========================================
+  # Text Search Engines (3)
+  # ==========================================
+  
+  # Note: Tantivy is embedded in memory-p app
+  # No separate container needed
+  
+  # LNX - Distributed Text Search (3-node cluster)
+  lnx-node1:
+    image: lnx/lnx:latest
+    container_name: lnx-node1
+    ports:
+      - "9201:9200"
+    environment:
+      - NODE_ID=node1
+      - CLUSTER_NODES=node1,node2,node3
+      - BIND_ADDRESS=0.0.0.0:9200
+      - RAFT_ELECTION_TIMEOUT=300
+      - RAFT_HEARTBEAT_INTERVAL=100
+    volumes:
+      - lnx1_data:/data
+      - ./config/lnx-node1.toml:/etc/lnx/config.toml:ro
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  lnx-node2:
+    image: lnx/lnx:latest
+    container_name: lnx-node2
+    ports:
+      - "9202:9200"
+    environment:
+      - NODE_ID=node2
+      - CLUSTER_NODES=node1,node2,node3
+      - BIND_ADDRESS=0.0.0.0:9200
+      - RAFT_ELECTION_TIMEOUT=300
+      - RAFT_HEARTBEAT_INTERVAL=100
+    volumes:
+      - lnx2_data:/data
+      - ./config/lnx-node2.toml:/etc/lnx/config.toml:ro
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  lnx-node3:
+    image: lnx/lnx:latest
+    container_name: lnx-node3
+    ports:
+      - "9203:9200"
+    environment:
+      - NODE_ID=node3
+      - CLUSTER_NODES=node1,node2,node3
+      - BIND_ADDRESS=0.0.0.0:9200
+      - RAFT_ELECTION_TIMEOUT=300
+      - RAFT_HEARTBEAT_INTERVAL=100
+    volumes:
+      - lnx3_data:/data
+      - ./config/lnx-node3.toml:/etc/lnx/config.toml:ro
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MeiliSearch - User-Friendly Search
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    container_name: meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=masterKey123
+      - MEILI_ENV=production
+      - MEILI_DB_PATH=/meili_data
+      - MEILI_HTTP_ADDR=0.0.0.0:7700
+    volumes:
+      - meili_data:/meili_data
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Specialized Engines (2)
+  # ==========================================
+  
+  # Note: Julia NLP runs as a subprocess in memory-p
+  # See JULIA_BRAIN/ directory
+  
+  # Note: MemoryBank Ultra is embedded in memory-p
+  # No separate container needed
+
+  # ==========================================
+  # Supporting Infrastructure
+  # ==========================================
+  
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=memory_p
+      - POSTGRES_PASSWORD=memory_p_password
+      - POSTGRES_DB=memory_p
+<<<<<<< HEAD
+<<<<<<< HEAD
+      - POSTGRES_SHARED_BUFFERS=256MB
+      - POSTGRES_MAX_CONNECTIONS=200
+      - POSTGRES_EFFECTIVE_CACHE_SIZE=1GB
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U memory_p"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for caching and coordination
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+<<<<<<< HEAD
+<<<<<<< HEAD
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru --tcp-backlog 511
+=======
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    volumes:
+      - redis_data:/data
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+<<<<<<< HEAD
+<<<<<<< HEAD
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2.5G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+=======
+>>>>>>> origin/copilot/add-advanced-memory-mcp
+=======
+>>>>>>> origin/copilot/add-autonomous-mcp-integration
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Monitoring & Observability (Optional)
+  # ==========================================
+  
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+    networks:
+      - memory-p-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  memory-p-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  # Vector search indices
+  qdrant_storage:
+  faiss_indices:
+  scann_indices:
+  
+  # Text search data
+  lnx1_data:
+  lnx2_data:
+  lnx3_data:
+  meili_data:
+  
+  # Supporting infrastructure
+  postgres_data:
+  redis_data:
+  
+  # Monitoring
+  prometheus_data:
+  grafana_data:
+
+# ==========================================
+# Usage Instructions
+# ==========================================
+# 
+# Start all services:
+#   docker-compose up -d
+# 
+# Start specific tier:
+#   docker-compose up -d memory-p postgres redis qdrant  # Tier 1
+#   docker-compose up -d  # Tier 2 (all)
+# 
+# View logs:
+#   docker-compose logs -f memory-p
+#   docker-compose logs -f lnx-node1
+# 
+# Check status:
+#   docker-compose ps
+# 
+# Stop all:
+#   docker-compose down
+# 
+# Remove volumes (WARNING: deletes all data):
+#   docker-compose down -v
+# 
+# Scale specific services:
+#   docker-compose up -d --scale memory-p=3
+# 
+# Access services:
+#   - MEMORY_P API: http://localhost:4040
+#   - Qdrant: http://localhost:6333
+#   - MeiliSearch: http://localhost:7700
+#   - LNX Node 1: http://localhost:9201
+#   - LNX Node 2: http://localhost:9202
+#   - LNX Node 3: http://localhost:9203
+#   - Grafana: http://localhost:3000
+#   - Prometheus: http://localhost:9090

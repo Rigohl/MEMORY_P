@@ -1,0 +1,95 @@
+# MEMORY_P v2.0 - 9 Motor Configuration
+# Removed Chapel 2.8 and Pony - using base 9 motors only
+
+[qdrant]
+binary_path = "/opt/qdrant/bin/qdrant"
+version = "1.0.0"
+enabled = true
+
+[faiss]
+binary_path = "/opt/faiss/lib/libfaiss.so"
+version = "1.7.4"
+enabled = true
+
+[scann]
+binary_path = "/opt/scann/lib/libscann.so"
+version = "1.2.0"
+enabled = true
+
+[tantivy]
+binary_path = "/opt/tantivy/bin/tantivy"
+version = "0.20.0"
+enabled = true
+
+[lnx]
+binary_path = "/opt/lnx/bin/lnx"
+version = "1.3.0"
+enabled = true
+nodes = ["localhost:3000", "localhost:3001", "localhost:3002"]
+
+[meilisearch]
+binary_path = "/opt/meilisearch/bin/meilisearch"
+version = "1.2.0"
+enabled = true
+
+[julia_nlp]
+binary_path = "/usr/local/julia/bin/julia"
+version = "1.9.0"
+enabled = true
+
+[memorybank]
+router_enabled = true
+version = "1.0.0"
+enabled = true
+
+[toshi]
+binary_path = "/opt/toshi/bin/toshi"
+version = "0.10.0"
+enabled = true
+experimental = true
+
+# Parallelism
+batch_processing = true
+batch_size = 100
+max_concurrent_batches = 8
+
+# Reference Capabilities (Pony's safety model)
+enable_sendable_verification = true
+enable_iso_checking = true
+
+# Monitoring
+enable_telemetry = true
+metrics_interval_seconds = 60
+log_actor_violations = true
+
+[hybrid]
+# Combined Chapel + Pony Configuration
+strategy = "first-success"  # or "race", "load-balance", "cache-aware"
+fallback_engine = "chapel"
+aggregation_method = "score-fusion"
+
+# Load Balancing
+load_balance_interval_seconds = 30
+chapel_weight = 0.5
+pony_weight = 0.5
+
+# Caching
+enable_result_cache = true
+cache_backend = "redis"
+cache_ttl_seconds = 300
+
+[ffi]
+# FFI Bridge Configuration
+chapel_ffi_enabled = true
+pony_ffi_enabled = true
+zig_bridge_enabled = true
+
+# Memory Management
+shared_memory_size_mb = 1024
+buffer_pool_size = 100
+zero_copy_threshold_kb = 512
+
+# Error Handling
+ffi_timeout_ms = 5000
+retry_attempts = 3
+retry_backoff_ms = 100

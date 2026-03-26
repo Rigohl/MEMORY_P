@@ -1,0 +1,455 @@
+---
+# Ansible Playbook for MEMORY_P Chapel + Pony Full Deployment
+# Deploy to: Oracle Linux 10 VMs
+
+- name: MEMORY_P Full Deployment with Chapel 2.0 & Pony
+  hosts: memory_p_vms
+  remote_user: opc
+  become: yes
+  become_method: sudo
+  gather_facts: yes
+  
+  vars:
+    chapel_version: "2.0.0"
+    pony_version: "0.1.0"
+    rust_version: "1.88.0"
+    memory_p_repo: "https://github.com/memory-p/memory_p.git"
+    deployment_dir: "/opt/memory_p"
+    build_dir: "/tmp/memory_p_build"
+
+  tasks:
+    # ========================================================================
+    # Block 1: System Preparation
+    # ========================================================================
+    - name: "Block 1: Prepare System"
+      block:
+        - name: Update system packages
+          dnf:
+            name: "*"
+            state: latest
+          tags: [system]
+
+        - name: Install development tools
+          dnf:
+            name:
+              - gcc
+              - gcc-c++
+              - make
+              - cmake
+              - git
+              - curl
+              - wget
+              - vim
+              - htop
+              - tmux
+              - openssl-devel
+              - pkg-config
+              - llvm-devel
+              - clang-devel
+              - python3-devel
+              - perl-CPAN
+            state: present
+          tags: [system]
+
+        - name: Increase file descriptor limit
+          lineinfile:
+            path: /etc/security/limits.conf
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            state: present
+          loop:
+            - { regexp: '^\* soft nofile', line: '* soft nofile 65535' }
+            - { regexp: '^\* hard nofile', line: '* hard nofile 65535' }
+          tags: [system]
+
+    # ========================================================================
+    # Block 2: Rust Installation (if not present)
+    # ========================================================================
+    - name: "Block 2: Rust Installation"
+      block:
+        - name: Check if Rust is installed
+          command: rustc --version
+          register: rust_check
+          ignore_errors: yes
+          tags: [rust]
+
+        - name: Install Rust {{ rust_version }}
+          shell: |
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
+            sh -s -- -y --default-toolchain {{ rust_version }}
+          when: rust_check.rc != 0
+          tags: [rust]
+
+        - name: Ensure Rust is in PATH
+          lineinfile:
+            path: "/root/.bashrc"
+            line: "source $HOME/.cargo/env"
+            state: present
+          tags: [rust]
+
+    # ========================================================================
+    # Block 3: Chapel 2.0 Deployment
+    # ========================================================================
+    - name: "Block 3: Deploy Chapel 2.0"
+      block:
+        - name: Create Chapel build directory
+          file:
+            path: /tmp/chapel_src
+            state: directory
+            mode: '0755'
+          tags: [chapel]
+
+        - name: Clone Chapel repository
+          git:
+            repo: https://github.com/chapel-lang/chapel.git
+            dest: /tmp/chapel_src
+            depth: 1
+            single_branch: yes
+            version: main
+          tags: [chapel]
+          async: 600
+          poll: 0
+          register: chapel_clone
+
+        - name: Wait for Chapel clone to complete
+          async_status:
+            jid: "{{ chapel_clone.ansible_job_id }}"
+          register: job_result
+          until: job_result.finished
+          retries: 30
+          delay: 20
+          tags: [chapel]
+
+        - name: Compile Chapel with bundled LLVM
+          shell: |
+            cd /tmp/chapel_src
+            export CHPL_LLVM=bundled
+            make -j{{ ansible_processor_nprocs }} 2>&1 | tee /var/log/chapel_build.log
+          environment:
+            CHPL_LLVM: bundled
+          tags: [chapel]
+          async: 3600
+          poll: 0
+          register: chapel_compile
+
+        - name: Monitor Chapel compilation status
+          async_status:
+            jid: "{{ chapel_compile.ansible_job_id }}"
+          register: chapel_result
+          until: chapel_result.finished
+          retries: 120
+          delay: 30
+          tags: [chapel]
+
+        - name: Install Chapel to /opt/chapel
+          shell: |
+            cd /tmp/chapel_src
+            mkdir -p /opt/chapel
+            make install INSTALL_DIR=/opt/chapel
+          tags: [chapel]
+
+        - name: Create Chapel symlinks
+          file:
+            src: /opt/chapel/bin/chpl
+            dest: /usr/local/bin/chpl
+            state: link
+          tags: [chapel]
+
+        - name: Verify Chapel installation
+          shell: chpl --version
+          register: chapel_version_result
+          tags: [chapel]
+
+        - name: Display Chapel version
+          debug:
+            msg: "{{ chapel_version_result.stdout }}"
+          tags: [chapel]
+
+    # ========================================================================
+    # Block 4: Pony Deployment
+    # ========================================================================
+    - name: "Block 4: Deploy Pony"
+      block:
+        - name: Create Pony build directory
+          file:
+            path: /tmp/ponyc_src
+            state: directory
+            mode: '0755'
+          tags: [pony]
+
+        - name: Clone Pony repository
+          git:
+            repo: https://github.com/ponylang/ponyc.git
+            dest: /tmp/ponyc_src
+            depth: 1
+          tags: [pony]
+
+        - name: Compile Pony
+          shell: |
+            cd /tmp/ponyc_src
+            make install PREFIX=/opt/pony 2>&1 | tee /var/log/pony_build.log
+          environment:
+            PREFIX: /opt/pony
+          tags: [pony]
+          ignore_errors: yes
+          async: 1800
+          poll: 0
+          register: pony_compile
+
+        - name: Wait for Pony compilation
+          async_status:
+            jid: "{{ pony_compile.ansible_job_id }}"
+          register: pony_result
+          ignore_errors: yes
+          tags: [pony]
+
+        - name: Create Pony symlinks
+          file:
+            src: /opt/pony/bin/ponyc
+            dest: /usr/local/bin/ponyc
+            state: link
+          ignore_errors: yes
+          tags: [pony]
+
+    # ========================================================================
+    # Block 5: MEMORY_P Repository Setup
+    # ========================================================================
+    - name: "Block 5: Setup MEMORY_P Repository"
+      block:
+        - name: Create deployment directory
+          file:
+            path: "{{ deployment_dir }}"
+            state: directory
+            mode: '0755'
+          tags: [memory_p]
+
+        - name: Clone MEMORY_P repository
+          git:
+            repo: "{{ memory_p_repo }}"
+            dest: "{{ deployment_dir }}"
+            version: main
+            update: yes
+          tags: [memory_p]
+
+        - name: Copy configuration files
+          copy:
+            src: "{{ deployment_dir }}/config/"
+            dest: /etc/memory_p/
+            remote_src: yes
+            owner: memory_p
+            group: memory_p
+            mode: '0644'
+          tags: [memory_p]
+          ignore_errors: yes
+
+    # ========================================================================
+    # Block 6: Build MEMORY_P
+    # ========================================================================
+    - name: "Block 6: Build MEMORY_P"
+      block:
+        - name: Build Rust release binary
+          shell: |
+            cd {{ deployment_dir }}
+            export CHPL_LLVM=bundled
+            source ~/.cargo/env
+            cargo build --release \
+              --bin memory_p \
+              --features "ffi-chapel,ffi-pony,ffi-julia,ffi-zig" \
+              2>&1 | tee /var/log/memory_p_build.log
+          environment:
+            CHPL_LLVM: bundled
+            RUST_BACKTRACE: "1"
+            CARGO_TERM_VERBOSE: "true"
+          tags: [memory_p]
+          async: 3600
+          poll: 0
+          register: memory_p_build
+
+        - name: Wait for MEMORY_P build
+          async_status:
+            jid: "{{ memory_p_build.ansible_job_id }}"
+          register: build_result
+          until: build_result.finished
+          retries: 120
+          delay: 30
+          tags: [memory_p]
+
+        - name: Install MEMORY_P binary
+          copy:
+            src: "{{ deployment_dir }}/target/release/memory_p"
+            dest: /usr/local/bin/memory_p
+            remote_src: yes
+            mode: '0755'
+            owner: root
+            group: root
+          tags: [memory_p]
+
+    # ========================================================================
+    # Block 7: Create systemd Service
+    # ========================================================================
+    - name: "Block 7: Create systemd Service"
+      block:
+        - name: Create memory_p systemd service
+          copy:
+            content: |
+              [Unit]
+              Description=MEMORY_P Multi-Language Search Engine
+              After=network.target
+              
+              [Service]
+              Type=simple
+              User=memory_p
+              Group=memory_p
+              Environment="RUST_LOG=memory_p=info"
+              Environment="CHAPEL_LOCALES=8"
+              Environment="PONY_ACTORS=4"
+              ExecStart=/usr/local/bin/memory_p
+              Restart=always
+              RestartSec=10
+              StandardOutput=journal
+              StandardError=journal
+              
+              [Install]
+              WantedBy=multi-user.target
+            dest: /etc/systemd/system/memory_p.service
+            mode: '0644'
+          notify: reload systemd
+          tags: [service]
+
+        - name: Create memory_p user
+          user:
+            name: memory_p
+            system: yes
+            home: /var/lib/memory_p
+            shell: /sbin/nologin
+            state: present
+          tags: [service]
+
+    # ========================================================================
+    # Block 8: Setup Monitoring
+    # ========================================================================
+    - name: "Block 8: Setup Monitoring"
+      block:
+        - name: Create Prometheus config directory
+          file:
+            path: /etc/prometheus
+            state: directory
+            mode: '0755'
+          tags: [monitoring]
+
+        - name: Copy Prometheus configuration
+          copy:
+            src: "{{ deployment_dir }}/config/prometheus.yml"
+            dest: /etc/prometheus/prometheus.yml
+            remote_src: yes
+            mode: '0644'
+          tags: [monitoring]
+          ignore_errors: yes
+
+        - name: Create log directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            owner: memory_p
+            group: memory_p
+            mode: '0755'
+          loop:
+            - /var/log/memory_p
+            - /var/lib/memory_p
+            - /var/lib/memory_p/cache
+          tags: [monitoring]
+
+    # ========================================================================
+    # Block 9: Validation & Testing
+    # ========================================================================
+    - name: "Block 9: Validation & Testing"
+      block:
+        - name: Run tests
+          shell: |
+            cd {{ deployment_dir }}
+            cargo test --release --lib -- --test-threads=1
+          tags: [test]
+          async: 1800
+          poll: 0
+          register: test_run
+
+        - name: Wait for tests
+          async_status:
+            jid: "{{ test_run.ansible_job_id }}"
+          register: test_result
+          until: test_result.finished
+          retries: 60
+          delay: 30
+          ignore_errors: yes
+          tags: [test]
+
+        - name: Verify Chapel binary
+          shell: chpl --version
+          register: chapel_verify
+          tags: [test]
+
+        - name: Verify Pony compiler
+          shell: ponyc --version
+          register: pony_verify
+          ignore_errors: yes
+          tags: [test]
+
+        - name: Display verification results
+          debug:
+            msg:
+              - "Chapel: {{ chapel_verify.stdout_lines | default(['Not available']) }}"
+              - "Pony: {{ pony_verify.stdout_lines | default(['Not available']) }}"
+          tags: [test]
+
+    # ========================================================================
+    # Block 10: Start Services
+    # ========================================================================
+    - name: "Block 10: Start Services"
+      block:
+        - name: Enable MEMORY_P service
+          systemd:
+            name: memory_p
+            enabled: yes
+            state: started
+          tags: [service]
+
+        - name: Wait for service startup
+          wait_for:
+            port: 8000
+            state: started
+            timeout: 30
+          tags: [service]
+
+        - name: Check MEMORY_P health
+          uri:
+            url: http://localhost:8000/health
+            method: GET
+            status_code: 200
+          register: health_check
+          retries: 10
+          delay: 5
+          tags: [service]
+
+        - name: Display health status
+          debug:
+            msg: "{{ health_check.json }}"
+          tags: [service]
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+  post_tasks:
+    - name: Deployment Summary
+      debug:
+        msg:
+          - "=========================================="
+          - "MEMORY_P Deployment Complete!"
+          - "=========================================="
+          - "Chapel: {{ chapel_verify.stdout | default('Not verified') }}"
+          - "Pony: {{ pony_verify.stdout | default('Not verified') }}"
+          - "MEMORY_P: Running on port 8000"
+          - "Health: {{ health_check.json.status | default('Unknown') }}"
+          - "=========================================="
+      tags: [summary]

@@ -1,0 +1,125 @@
+FROM rust:1.88 as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    pkg-config \
+    llvm-dev \
+    clang \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build Rust application
+WORKDIR /build
+COPY Cargo.toml Cargo.lock ./
+COPY src ./src
+COPY benches ./benches
+COPY tests ./tests
+
+RUN cargo build --release \
+    && cargo install --path . --bin memory_p
+
+# Chapel stage
+FROM ubuntu:22.04 as chapel_builder
+
+ARG CHAPEL_VERSION=2.0.0
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    git \
+    curl \
+    pkg-config \
+    llvm-dev \
+    clang \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp/chapel_build
+RUN git clone --depth 1 https://github.com/chapel-lang/chapel.git chapel_src && \
+    cd chapel_src && \
+    export CHPL_LLVM=bundled && \
+    make -j4 && \
+    mkdir -p /opt/chapel && \
+    make install INSTALL_DIR=/opt/chapel
+
+# Pony stage
+FROM ubuntu:22.04 as pony_builder
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    apt-transport-https \
+    gnupg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build Pony from source or use prebuilt
+WORKDIR /tmp/pony_build
+RUN git clone https://github.com/ponylang/ponyc.git && \
+    cd ponyc && \
+    make install PREFIX=/opt/pony
+
+# Final runtime stage
+FROM ubuntu:22.04
+
+RUN apt-get update && apt-get install -y \
+    libssl3 \
+    ca-certificates \
+    curl \
+    postgresql-client \
+    redis-tools \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Chapel
+COPY --from=chapel_builder /opt/chapel /opt/chapel
+ENV PATH="/opt/chapel/bin:${PATH}"
+ENV CHPL_HOME=/opt/chapel
+
+# Copy Pony
+COPY --from=pony_builder /opt/pony /opt/pony
+ENV PATH="/opt/pony/bin:${PATH}"
+
+# Copy MEMORY_P binary and config
+COPY --from=builder /usr/local/cargo/bin/memory_p /usr/local/bin/
+COPY config/ /opt/config/
+COPY docs/ /opt/docs/
+
+# Create run user
+RUN useradd -r -u 1000 -d /home/memory_p -m -s /sbin/nologin memory_p && \
+    mkdir -p /opt/memory_p/cache /opt/memory_p/logs && \
+    chown -R memory_p:memory_p /opt/memory_p
+
+WORKDIR /opt/memory_p
+USER memory_p
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose ports
+EXPOSE 8000 9090
+
+# Default command
+CMD ["memory_p"]
+
+# Build arguments for version tracking
+ARG BUILD_DATE
+ARG VCS_REF
+ARG MEMORY_P_VERSION=2.0
+ARG PONY_VERSION=0.1.0
+
+LABEL org.opencontainers.image.created=$BUILD_DATE \
+    org.opencontainers.image.authors="MEMORY_P Team" \
+    org.opencontainers.image.url="https://github.com/memory-p/memory_p" \
+    org.opencontainers.image.documentation="https://github.com/memory-p/memory_p/docs" \
+    org.opencontainers.image.source="https://github.com/memory-p/memory_p" \
+    org.opencontainers.image.version="2.0" \
+    org.opencontainers.image.revision=$VCS_REF \
+    org.opencontainers.image.vendor="MEMORY_P" \
+    org.opencontainers.image.title="MEMORY_P v2.0 - 9 Motor Search" \
+    org.opencontainers.image.description="Multi-language search engine coordination system" \
+    chapel.version=$CHAPEL_VERSION \
+    pony.version=$PONY_VERSION

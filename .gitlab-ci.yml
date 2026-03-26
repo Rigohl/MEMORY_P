@@ -24,7 +24,7 @@ stages:
   - deploy
 
 variables:
-  RUST_VERSION: "1.94"
+  RUST_VERSION: "stable"
   RUSTFLAGS: "-C target-cpu=native"
   CARGO_PROFILE_RELEASE_LTO: "true"
   CARGO_INCREMENTAL: "0"

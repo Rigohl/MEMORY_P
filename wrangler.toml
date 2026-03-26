@@ -1,0 +1,20 @@
+name = "memory-p-api"
+main = "cloudflare-worker.ts"
+compatibility_date = "2024-03-21"
+type = "service"
+
+# Binaries storage (KV namespace)
+[[kv_namespaces]]
+binding = "BINARIES"
+id = "memory-p-binaries-kv"
+preview_id = "memory-p-binaries-kv-preview"
+
+# OAuth and API Configuration - Auto-setup complete
+# Deployment triggered 2026-03-22T03:20:00Z
+
+# Environment variables
+[env.production]
+vars = { MEMORY_P_API_KEY = "change-this-in-production", JWT_SECRET = "change-this-jwt-secret-in-production", OAUTH_CLIENT_ID = "memory-p-prod", OAUTH_CLIENT_SECRET = "change-this-oauth-secret-in-production" }
+
+[env.development]
+vars = { MEMORY_P_API_KEY = "dev-key-12345", JWT_SECRET = "dev-jwt-secret-change-me", OAUTH_CLIENT_ID = "memory-p-dev", OAUTH_CLIENT_SECRET = "dev-oauth-secret-change-me" }

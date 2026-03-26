@@ -388,13 +388,13 @@ pub async fn mcp_handler(
     Json(request): Json<serde_json::Value>,
 ) -> Json<serde_json::Value> {
     let start_time = std::time::Instant::now();
-    let method = request.get("method").and_then(|m| m.as_str()).unwrap_or("unknown");
+    let method = request.get("method").and_then(|m: &serde_json::Value| m.as_str()).unwrap_or("unknown");
     let request_id = request.get("id");
     let tool_name = if method == "tools/call" {
         request
             .get("params")
-            .and_then(|p| p.get("name"))
-            .and_then(|n| n.as_str())
+            .and_then(|p: &serde_json::Value| p.get("name"))
+            .and_then(|n: &serde_json::Value| n.as_str())
             .unwrap_or("unknown")
     } else {
         "unknown"
@@ -421,8 +421,8 @@ pub async fn mcp_handler(
         "tools/call" => {
             let tool_name = request
                 .get("params")
-                .and_then(|p| p.get("name"))
-                .and_then(|n| n.as_str())
+                .and_then(|p: &serde_json::Value| p.get("name"))
+                .and_then(|n: &serde_json::Value| n.as_str())
                 .unwrap_or("unknown");
 
             match tool_name {
@@ -528,8 +528,8 @@ pub async fn mcp_handler(
                 // === NEW Memory MCP Tools (Simplified JSON responses) ===
                 "mcp_memory_store_context" => {
                     let params = request.get("params").cloned().unwrap_or_default();
-                    let content = params.get("content").and_then(|v| v.as_str()).unwrap_or("").to_string();
-                    let github_repo = params.get("github_repo").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                    let content = params.get("content").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("").to_string();
+                    let github_repo = params.get("github_repo").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("").to_string();
                     
                     Json(json!({
                         "jsonrpc": "2.0",
@@ -546,7 +546,7 @@ pub async fn mcp_handler(
                 
                 "mcp_memory_predict_next" => {
                     let params = request.get("params").cloned().unwrap_or_default();
-                    let lookahead = params.get("lookahead").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+                    let lookahead = params.get("lookahead").and_then(|v: &serde_json::Value| v.as_u64()).unwrap_or(5) as usize;
                     
                     Json(json!({
                         "jsonrpc": "2.0",
@@ -563,7 +563,7 @@ pub async fn mcp_handler(
                 
                 "mcp_memory_detect_patterns" => {
                     let params = request.get("params").cloned().unwrap_or_default();
-                    let user_id = params.get("user_id").and_then(|v| v.as_str()).unwrap_or("default_user");
+                    let user_id = params.get("user_id").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("default_user");
                     
                     Json(json!({
                         "jsonrpc": "2.0",
@@ -587,7 +587,7 @@ pub async fn mcp_handler(
                 
                 "mcp_memory_reorder" => {
                     let params = request.get("params").cloned().unwrap_or_default();
-                    let strategy = params.get("strategy").and_then(|v| v.as_str()).unwrap_or("combined");
+                    let strategy = params.get("strategy").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("combined");
                     
                     Json(json!({
                         "jsonrpc": "2.0",
@@ -621,8 +621,8 @@ pub async fn mcp_handler(
                 
                 "mcp_github_context_search" => {
                     let params = request.get("params").cloned().unwrap_or_default();
-                    let query = params.get("query").and_then(|v| v.as_str()).unwrap_or("mcp");
-                    let repo = params.get("repo").and_then(|v| v.as_str()).unwrap_or("memory_p");
+                    let query = params.get("query").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("mcp");
+                    let repo = params.get("repo").and_then(|v: &serde_json::Value| v.as_str()).unwrap_or("memory_p");
                     
                     Json(json!({
                         "jsonrpc": "2.0",

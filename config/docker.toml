@@ -1,0 +1,83 @@
+# ==========================================
+# MEMORY_P v2.0 - Docker Configuration
+# ==========================================
+
+[server]
+host = "0.0.0.0"
+port = 4040
+workers = 4
+max_connections = 1000
+
+[logging]
+level = "info"
+format = "json"
+output = "/app/logs/memory_p.log"
+
+[search.qdrant]
+enabled = true
+url = "http://qdrant:6333"
+collection = "memory_p_vectors"
+timeout_ms = 5000
+max_retries = 3
+
+[search.tantivy]
+enabled = true
+index_path = "/app/indices/tantivy"
+writer_memory_mb = 256
+reader_threads = 4
+
+[search.meilisearch]
+enabled = true
+url = "http://meilisearch:7700"
+api_key = "masterKey123"
+index = "memory_p_docs"
+
+[search.lnx]
+enabled = true
+nodes = ["lnx-node1:9200", "lnx-node2:9200", "lnx-node3:9200"]
+timeout_ms = 3000
+
+[search.faiss]
+enabled = false  # Enable if GPU available
+device = "cuda:0"
+index_type = "IVF1024,PQ64"
+
+[search.scann]
+enabled = false  # Enable for enterprise
+num_leaves = 1000
+num_leaves_to_search = 100
+
+[database.postgres]
+host = "postgres"
+port = 5432
+database = "memory_p"
+user = "memory_p"
+password = "memory_p_password"
+max_connections = 10
+
+[database.redis]
+host = "redis"
+port = 6379
+db = 0
+max_connections = 20
+ttl_seconds = 3600
+
+[julia]
+enabled = false  # Enable for mathematical analysis
+scripts_path = "/app/JULIA_BRAIN"
+timeout_ms = 10000
+
+[memorybank]
+enabled = true
+languages = ["rust", "julia", "jax", "mojo", "pony", "zig"]
+max_workers = 8
+
+[monitoring]
+metrics_enabled = true
+metrics_port = 9091
+health_check_interval_secs = 30
+
+[performance]
+parallel_workers = 8
+batch_size = 1000
+cache_size_mb = 512
