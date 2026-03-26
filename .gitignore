@@ -29,6 +29,7 @@ Cargo.toml.bak
 .vscode/
 !.vscode/extensions.json
 !.vscode/settings.json
+!.vscode/mcp.json
 .idea/
 *.iml
 *.sublime-project

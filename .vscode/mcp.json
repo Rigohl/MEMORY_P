@@ -1,0 +1,18 @@
+{
+  "servers": {
+    "ai-editor-vm2": {
+      "type": "stdio",
+      "command": "ssh",
+      "args": [
+        "-o", "BatchMode=yes",
+        "-o", "ConnectTimeout=15",
+        "vm2",
+        "python3",
+        "/home/opc/ai-editor/mcp_server.py"
+      ],
+      "env": {
+        "PYTHONPATH": "/home/opc/ai-editor"
+      }
+    }
+  }
+}
