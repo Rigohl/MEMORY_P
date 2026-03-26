@@ -223,10 +223,14 @@ impl MasterOrchestrator {
             
             {
                 let mut orchestrator = self.motor_orchestrator.write().await;
-                // Get chaos metrics from Julia
+                // Get chaos metrics from coordinator and convert to ChaosMetrics
                 let chaos_data = {
                     let coord = self.chaos_coordinator.read().await;
-                    coord.get_system_chaos_metrics().await
+                    coord.get_system_chaos_metrics().map(|m| ChaosMetrics {
+                        lyapunov_exponent: m.current_lyapunov,
+                        shannon_entropy: m.entropy,
+                        stability_score: m.stability,
+                    })
                 };
 
                 // Optimize motor weights based on chaos metrics
@@ -269,7 +273,6 @@ impl MasterOrchestrator {
                         // Predict bifurcations
                         if metrics.lyapunov_exponent > 0.5 {
                             warn!("⚠️  Chaotic behavior detected | Preemptive scaling recommended");
-                            // Trigger preventive motor rebalance
                         }
                     }
                     Err(e) => {
@@ -292,7 +295,6 @@ impl MasterOrchestrator {
             
             {
                 let mut bridge = self.oracle_bridge.write().await;
-                // Check FFI toolchains on Oracle VMs
                 match bridge.verify_vm_toolchains().await {
                     Ok(status) => {
                         info!("☁️  Oracle VM check | Julia: {}, Zig: {}, Mojo: {}, JAX: {}, Pony: {}",
@@ -303,7 +305,6 @@ impl MasterOrchestrator {
                             status.pony_available
                         );
                         
-                        // Sync code if all toolchains ready
                         if status.all_ready() {
                             if let Err(e) = bridge.sync_code_to_vms().await {
                                 error!("❌ Code sync to VMs failed: {}", e);
@@ -354,13 +355,11 @@ impl MasterOrchestrator {
         info!("🛑 Shutting down MasterOrchestrator...");
         *self.is_running.write().await = false;
         
-        // Persist all memory contexts
         {
             let bank = self.memory_bank.write().await;
             bank.persist_all_contexts().await?;
         }
 
-        // Stop all motors gracefully
         {
             let orchestrator = self.motor_orchestrator.write().await;
             orchestrator.shutdown_all_motors().await?;
