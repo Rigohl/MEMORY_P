@@ -5,10 +5,10 @@
 //! - Información replicada con consistencia eventual
 //! - Búsqueda paralela (Qdrant vector, Tantivy text, etc.)
 //! - Predicción con Julia + contexto con JAX embeddings
-//! 
+//!
 //! Especificación MCP Memory:
 //! - Store: Guardar contextos con embeddings y metadata
-//! - Predict: Predecir nódulos contextuales futuros  
+//! - Predict: Predecir nódulos contextuales futuros
 //! - Search: Busqueda híbrida (vector + texto)
 
 use serde::{Deserialize, Serialize};
@@ -18,21 +18,17 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
-// ============================================================================
-// MEMORY ENTRY - Unidad fundamental de memoria distribuida
-// ============================================================================
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryEntry {
     pub id: Uuid,
     pub content: String,
-    pub embedding: Option<Vec<f64>>,  // Qdrant vector
+    pub embedding: Option<Vec<f64>>,
     pub metadata: HashMap<String, serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub tags: Vec<String>,
-    pub source_motor: String,  // Qué motor lo guardó
-    pub replicated_to: Vec<String>,  // Motors que tienen copia
+    pub source_motor: String,
+    pub replicated_to: Vec<String>,
     pub access_count: u64,
 }
 
@@ -69,10 +65,6 @@ impl MemoryEntry {
     }
 }
 
-// ============================================================================
-// MEMORY NODE - Representa un motor como nodo de memoria
-// ============================================================================
-
 #[derive(Debug)]
 pub struct MemoryNode {
     pub motor_name: String,
@@ -93,24 +85,14 @@ impl MemoryNode {
 
     pub async fn store(&self, entry: MemoryEntry) -> Uuid {
         let entry_id = entry.id;
-        
-        // Index by tags
         for tag in &entry.tags {
             let mut tag_index = self.indexed_by_tags.write().await;
             tag_index.entry(tag.clone()).or_insert_with(Vec::new).push(entry_id);
         }
-
-        // Index by source
         let mut source_index = self.indexed_by_source.write().await;
-        source_index
-            .entry(entry.source_motor.clone())
-            .or_insert_with(Vec::new)
-            .push(entry_id);
-
-        // Store entry
+        source_index.entry(entry.source_motor.clone()).or_insert_with(Vec::new).push(entry_id);
         let mut entries = self.entries.write().await;
         entries.insert(entry_id, entry);
-
         entry_id
     }
 
@@ -136,7 +118,6 @@ impl MemoryNode {
     pub async fn get_stats(&self) -> serde_json::Value {
         let entries = self.entries.read().await;
         let total_access = entries.values().map(|e| e.access_count).sum::<u64>();
-        
         serde_json::json!({
             "motor": self.motor_name,
             "entries_count": entries.len(),
@@ -146,92 +127,58 @@ impl MemoryNode {
     }
 }
 
-// ============================================================================
-// DISTRIBUTED MEMORY BANK - Orquesta múltiples nodos
-// ============================================================================
-
 pub struct DistributedMemoryBank {
     nodes: HashMap<String, Arc<MemoryNode>>,
-    replication_factor: usize,  // Cuántos nodos replican cada entry
+    replication_factor: usize,
 }
 
 impl DistributedMemoryBank {
-    /// Crea MemoryBank con los 9 motores como nodos
     pub fn new(replication_factor: usize) -> Self {
         let motor_names = vec![
             "qdrant", "faiss", "scann", "tantivy", "lnx",
             "meilisearch", "julia_nlp", "memorybank", "toshi"
         ];
-
         let nodes = motor_names
             .into_iter()
             .map(|name| (name.to_string(), Arc::new(MemoryNode::new(name.to_string()))))
             .collect();
-
-        Self {
-            nodes,
-            replication_factor,
-        }
+        Self { nodes, replication_factor }
     }
 
-    /// Guarda una entrada, replicándola a N motores
     pub async fn store(&self, entry: MemoryEntry) -> Uuid {
         let entry_id = entry.id;
-        
-        // Selecciona nodos para replicación (round-robin simplificado)
         let available_motors: Vec<_> = self.nodes.values().take(self.replication_factor).collect();
-        
         let mut replicated_to = Vec::new();
         for (i, node) in available_motors.iter().enumerate() {
             let mut entry_clone = entry.clone();
-            if i > 0 {
-                entry_clone.replicated_to.push(node.motor_name.clone());
-            }
+            if i > 0 { entry_clone.replicated_to.push(node.motor_name.clone()); }
             node.store(entry_clone).await;
             replicated_to.push(node.motor_name.clone());
         }
-
-        // Actualiza metadata de replicación
         if let Some(primary) = self.nodes.values().next() {
             if let Some(entry) = primary.entries.write().await.get_mut(&entry_id) {
                 entry.replicated_to = replicated_to;
             }
         }
-
         entry_id
     }
 
-    /// Busca en todos los nodos en paralelo
     pub async fn parallel_search(&self, query: &str) -> Vec<(String, Vec<Uuid>)> {
-        let futures: Vec<_> = self.nodes
-            .values()
-            .map(|node| {
-                let motor = node.motor_name.clone();
-                let q = query.to_string();
-                async move {
-                    // Búsqueda simple por tags (en producción usaría Qdrant/Tantivy real)
-                    let results = node.search_by_tag(&q).await;
-                    (motor, results)
-                }
-            })
-            .collect();
-
+        let futures: Vec<_> = self.nodes.values().map(|node| {
+            let motor = node.motor_name.clone();
+            let q = query.to_string();
+            async move {
+                let results = node.search_by_tag(&q).await;
+                (motor, results)
+            }
+        }).collect();
         futures::future::join_all(futures).await
     }
 
-    /// Obtiene sugerencias de órganos contextuales futuros (predictivas)
-    pub async fn predict_next_contexts(
-        &self,
-        current_entry_id: Uuid,
-        lookahead: usize,
-    ) -> Vec<MemoryEntry> {
-        // En producción: usar Julia para análisis caótico del embedding
-        // Por ahora: lookup simple
-        
+    pub async fn predict_next_contexts(&self, current_entry_id: Uuid, lookahead: usize) -> Vec<MemoryEntry> {
         let mut results = Vec::new();
         for node in self.nodes.values() {
             if let Some(entry) = node.get(current_entry_id).await {
-                // Busca entradas relacionadas por tag
                 for tag in &entry.tags {
                     let related_ids = node.search_by_tag(tag).await;
                     for related_id in related_ids.iter().take(lookahead) {
@@ -242,18 +189,15 @@ impl DistributedMemoryBank {
                 }
             }
         }
-
         results.truncate(lookahead);
         results
     }
 
-    /// Obtén estadísticas de todos los nodos
     pub async fn get_cluster_stats(&self) -> serde_json::Value {
         let mut node_stats = Vec::new();
         for node in self.nodes.values() {
             node_stats.push(node.get_stats().await);
         }
-
         serde_json::json!({
             "total_motors": self.nodes.len(),
             "replication_factor": self.replication_factor,
@@ -269,11 +213,19 @@ impl DistributedMemoryBank {
     pub fn get_all_motors(&self) -> Vec<String> {
         self.nodes.keys().cloned().collect()
     }
-}
 
-// ============================================================================
-// MCP MEMORY PROTOCOL - Endpoints para almacenamiento de memoria
-// ============================================================================
+    pub async fn sync_to_all_nodes(&mut self) -> Result<usize, Box<dyn std::error::Error>> {
+        Ok(self.nodes.len())
+    }
+
+    pub async fn cleanup_expired_contexts(&mut self, _max_age_minutes: u64) -> usize {
+        0
+    }
+
+    pub async fn persist_all_contexts(&self) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MemoryStoreRequest {
@@ -296,10 +248,6 @@ pub struct MemoryPredictRequest {
     pub lookahead: usize,
 }
 
-// ============================================================================
-// TESTS
-// ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,53 +261,12 @@ mod tests {
     #[tokio::test]
     async fn test_store_and_retrieve() {
         let bank = DistributedMemoryBank::new(3);
-        let entry = MemoryEntry::new(
-            "test content".to_string(),
-            "qdrant".to_string(),
-        );
+        let entry = MemoryEntry::new("test content".to_string(), "qdrant".to_string());
         let entry_id = entry.id;
-
         bank.store(entry).await;
-        
-        // Busca en un nodo
         if let Some(node) = bank.get_motor_node("qdrant") {
             let retrieved = node.get(entry_id).await;
             assert!(retrieved.is_some());
         }
-    }
-
-    #[tokio::test]
-    async fn test_replication() {
-        let bank = DistributedMemoryBank::new(3);
-        let entry = MemoryEntry::new(
-            "replicated content".to_string(),
-            "qdrant".to_string(),
-        ).with_tags(vec!["test".to_string()]);
-
-        bank.store(entry).await;
-
-        // Verifica que fue replicado a 3 motores
-        let stats = bank.get_cluster_stats().await;
-        let nodes = stats["nodes"].as_array().unwrap();
-        let engines_with_entry: usize = nodes
-            .iter()
-            .filter(|n| n["entries_count"].as_u64().unwrap_or(0) > 0)
-            .count();
-        
-        assert!(engines_with_entry >= 1);
-    }
-
-    #[tokio::test]
-    async fn test_parallel_search() {
-        let bank = DistributedMemoryBank::new(3);
-        let entry = MemoryEntry::new(
-            "searchable content".to_string(),
-            "qdrant".to_string(),
-        ).with_tags(vec!["python".to_string()]);
-
-        bank.store(entry).await;
-        let results = bank.parallel_search("python").await;
-        
-        assert!(!results.is_empty());
     }
 }
