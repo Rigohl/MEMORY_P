@@ -1,0 +1,110 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		// ── BUILD ───────────────────────────────────────────────────────────────
+		{
+			"label": "Build MEMORY_P - Dynamic FFI Only",
+			"type": "shell",
+			"command": "cd \"d:\\REPOSITORIOS\\memory_p_fresh\" && cargo build --release --bins --no-default-features 2>&1 | tail -30",
+			"isBackground": false,
+			"problemMatcher": ["$rustc"],
+			"group": { "kind": "build", "isDefault": true }
+		},
+		{
+			"label": "Cargo check (fast)",
+			"type": "shell",
+			"command": "cargo check --all-targets --no-default-features 2>&1",
+			"problemMatcher": ["$rustc"],
+			"group": "build"
+		},
+		{
+			"label": "Cargo fmt",
+			"type": "shell",
+			"command": "cargo fmt --all",
+			"presentation": { "reveal": "silent" },
+			"group": "build"
+		},
+		{
+			"label": "Cargo clippy",
+			"type": "shell",
+			"command": "cargo clippy --all-targets --no-default-features 2>&1",
+			"problemMatcher": ["$rustc"],
+			"group": "build"
+		},
+		{
+			"label": "Cargo test",
+			"type": "shell",
+			"command": "cargo test --no-default-features 2>&1",
+			"problemMatcher": ["$rustc"],
+			"group": { "kind": "test", "isDefault": true }
+		},
+		// ── SSH TUNNELS ─────────────────────────────────────────────────────────
+		{
+			"label": "SSH Tunnels: Start VM2",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File D:\\VM\\start_tunnels.ps1 -Target vm2",
+			"isBackground": true,
+			"presentation": { "reveal": "always", "panel": "dedicated", "group": "tunnels" },
+			"problemMatcher": []
+		},
+		{
+			"label": "SSH Tunnels: Start ALL",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File D:\\VM\\start_tunnels.ps1 -Target all",
+			"isBackground": true,
+			"presentation": { "reveal": "always", "panel": "dedicated", "group": "tunnels" },
+			"problemMatcher": []
+		},
+		{
+			"label": "SSH Tunnels: Stop ALL",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File D:\\VM\\stop_tunnels.ps1",
+			"presentation": { "reveal": "silent" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Open Desktop Services (browser)",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File D:\\VM\\open_services.ps1 -All",
+			"presentation": { "reveal": "silent" },
+			"problemMatcher": []
+		},
+		// ── VM OPERATIONS ───────────────────────────────────────────────────────
+		{
+			"label": "VM2: Git sync with GitHub",
+			"type": "shell",
+			"command": "ssh -o BatchMode=yes vm2 \"cd /home/opc/memory_p_repo_vm2 && git fetch origin main && git reset --hard origin/main && git log --oneline -3\"",
+			"presentation": { "reveal": "always" },
+			"problemMatcher": []
+		},
+		{
+			"label": "VM2: Status check",
+			"type": "shell",
+			"command": "ssh -o BatchMode=yes vm2 \"echo '=== DISK ===' && df -h /home/opc --output=used,avail,pcent && echo '=== REPO ===' && cd /home/opc/memory_p_repo_vm2 && git log --oneline -1 && echo '=== RUNNING ===' && ps aux | grep memory_p | grep -v grep | head -5\"",
+			"presentation": { "reveal": "always" },
+			"problemMatcher": []
+		},
+		{
+			"label": "VM1: Status check",
+			"type": "shell",
+			"command": "ssh -o BatchMode=yes -o ConnectTimeout=10 vm1 \"pgrep -c cargo 2>/dev/null | xargs echo 'cargo_procs:' && test -f ~/memory_p/target/release/memory_p && echo 'BINARY: READY' || echo 'BINARY: still building...'\"",
+			"presentation": { "reveal": "always" },
+			"problemMatcher": []
+		},
+		{
+			"label": "VM2: Launch memory_p daemon",
+			"type": "shell",
+			"command": "ssh -o BatchMode=yes vm2 \"nohup /home/opc/memory_p_dist/memory_p > /tmp/memory_p.log 2>&1 & echo Launched_PID:$!\"",
+			"presentation": { "reveal": "always" },
+			"problemMatcher": []
+		},
+		// ── DEPLOY ──────────────────────────────────────────────────────────────
+		{
+			"label": "Git: add all + commit + push",
+			"type": "shell",
+			"command": "git add -A && git status --short && git commit -m \"chore: update $(date +%Y%m%d-%H%M)\" && git push origin main",
+			"presentation": { "reveal": "always" },
+			"problemMatcher": []
+		}
+	]
+}

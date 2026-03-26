@@ -41,7 +41,7 @@ jobs:
       - name: Build release binaries
         id: build
         run: |
-          cargo build --release --bins
+          cargo build --release --bins --no-default-features
           echo "artifact-name=memory_p-linux-$(date +%Y%m%d-%H%M)" >> $GITHUB_OUTPUT
 
       - name: Upload binaries
@@ -50,8 +50,9 @@ jobs:
           name: ${{ steps.build.outputs.artifact-name }}
           path: |
             target/release/memory_p
-            target/release/mcp_server
-            target/release/motor_orchestrator
+            target/release/memory_p_mcp
+            target/release/memory_p_cli
+            target/release/memory_p_bench
           retention-days: 3
 
   deploy-vm1:
@@ -91,7 +92,7 @@ jobs:
     name: Deploy to VM2 (AI/ML)
     runs-on: ubuntu-latest
     needs: build-linux
-    if: inputs.target == 'vm2' || inputs.target == 'both'
+    if: inputs.target == 'vm2' || inputs.target == 'both' || github.event_name == 'push'
     environment: production
     steps:
       - name: Download binaries
@@ -109,7 +110,7 @@ jobs:
           source: dist/*
           target: /home/opc/memory_p_dist/
 
-      - name: Restart MCP server on VM2
+      - name: Deploy and restart services on VM2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM2_HOST }}
@@ -117,6 +118,20 @@ jobs:
           key: ${{ secrets.VM2_SSH_KEY }}
           script: |
             chmod +x /home/opc/memory_p_dist/*
-            pkill -f "memory_p" || true
+            pkill -f "memory_p" 2>/dev/null || true
+            echo "✅ Binaries updated on VM2:"
+            ls -lh /home/opc/memory_p_dist/
+
+      - name: Sync VM2 repo with GitHub
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM2_HOST }}
+          username: opc
+          key: ${{ secrets.VM2_SSH_KEY }}
+          script: |
+            cd /home/opc/memory_p_repo_vm2
+            git fetch origin main --quiet
+            git reset --hard origin/main
+            echo "✅ VM2 repo synced: $(git log --oneline -1)"
             nohup /home/opc/memory_p_dist/mcp_server > /tmp/mcp_server.log 2>&1 &
             echo "✅ MCP server restarted on VM2"
