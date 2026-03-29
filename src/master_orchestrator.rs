@@ -19,19 +19,12 @@ use tokio::time::{interval, Duration};
 use tracing::{info, error, warn};
 use uuid::Uuid;
 
-mod memory_bank;
-mod motor_orchestrator;
-mod health_monitor;
-mod self_healer;
-mod oracle_vm_bridge;
-mod chaos_coordinator;
-
-use memory_bank::DistributedMemoryBank;
-use motor_orchestrator::MotorOrchestrator;
-use health_monitor::HealthMonitor;
-use self_healer::SelfHealer;
-use oracle_vm_bridge::OracleVMBridge;
-use chaos_coordinator::ChaosCoordinator;
+use crate::distributed_memory_bank::DistributedMemoryBank;
+use crate::motor_orchestrator::{MotorOrchestrator, ChaosMetrics};
+use crate::health_monitor::{HealthMonitor, MotorStatus, FFIStatus};
+use crate::self_healer::SelfHealer;
+use crate::oracle_vm_bridge::OracleVMBridge;
+use crate::chaos_coordinator::ChaosCoordinator;
 
 /// ════════════════════════════════════════════════════════════════
 /// MASTER STATE - Coordina TODAS las capacidades
@@ -152,36 +145,36 @@ impl MasterOrchestrator {
         loop {
             ticker.tick().await;
             
-            if let Ok(mut health) = self.health_monitor.write().await {
+            {
+                let mut health = self.health_monitor.write().await;
                 // Check 9 motors
-                let motors = &["qdrant", "faiss", "scann", "tantivy", "lnx", 
+                let motors = &["qdrant", "faiss", "scann", "tantivy", "lnx",
                               "meili", "julia_nlp", "memory_bank", "toshi"];
-                
+
                 for motor in motors {
                     let status = self.check_motor(*motor).await;
                     health.update_motor(*motor, status);
                 }
-                
+
                 // Check FFI bridges
                 let ffis = &["julia", "zig", "mojo", "jax", "pony"];
                 for ffi in ffis {
                     let status = self.check_ffi_bridge(*ffi).await;
                     health.update_ffi(*ffi, status);
                 }
-                
+
                 // Overall health %
                 let health_pct = health.calculate_health_percentage();
-                
+
                 if health_pct < 80.0 {
                     warn!("⚠️  System health: {:.1}%", health_pct);
-                    
+
                     // Trigger self-healing
-                    if let Ok(mut healer) = self.self_healer.write().await {
-                        healer.suggest_repairs(&health);
-                    }
+                    let mut healer = self.self_healer.write().await;
+                    healer.suggest_repairs(&health);
                 }
-                
-                info!("❤️  Health check: {:.1}% | Motors: {}/{} | FFI: {}/{}", 
+
+                info!("❤️  Health check: {:.1}% | Motors: {}/{} | FFI: {}/{}",
                     health_pct, motors.len(), motors.len(), ffis.len(), ffis.len());
             }
         }
@@ -197,7 +190,8 @@ impl MasterOrchestrator {
         loop {
             ticker.tick().await;
             
-            if let Ok(mut bank) = self.memory_bank.write().await {
+            {
+                let mut bank = self.memory_bank.write().await;
                 // Sync contexts to all 9 motor nodes
                 match bank.sync_to_all_nodes().await {
                     Ok(synced) => {
@@ -227,14 +221,18 @@ impl MasterOrchestrator {
         loop {
             ticker.tick().await;
             
-            if let Ok(mut orchestrator) = self.motor_orchestrator.write().await {
-                // Get chaos metrics from Julia
-                let chaos_data = if let Ok(coord) = self.chaos_coordinator.read().await {
-                    coord.get_system_chaos_metrics().await
-                } else {
-                    None
+            {
+                let mut orchestrator = self.motor_orchestrator.write().await;
+                // Get chaos metrics from coordinator and convert to ChaosMetrics
+                let chaos_data = {
+                    let coord = self.chaos_coordinator.read().await;
+                    coord.get_system_chaos_metrics().map(|m| ChaosMetrics {
+                        lyapunov_exponent: m.current_lyapunov,
+                        shannon_entropy: m.entropy,
+                        stability_score: m.stability,
+                    })
                 };
-                
+
                 // Optimize motor weights based on chaos metrics
                 match orchestrator.optimize_motor_weights(chaos_data).await {
                     Ok(optimized) => {
@@ -262,7 +260,8 @@ impl MasterOrchestrator {
         loop {
             ticker.tick().await;
             
-            if let Ok(mut coordinator) = self.chaos_coordinator.write().await {
+            {
+                let mut coordinator = self.chaos_coordinator.write().await;
                 match coordinator.analyze_system_chaos().await {
                     Ok(metrics) => {
                         info!("🌀 Chaos metrics | Lyapunov: {}, Entropy: {}, Stability: {}",
@@ -274,7 +273,6 @@ impl MasterOrchestrator {
                         // Predict bifurcations
                         if metrics.lyapunov_exponent > 0.5 {
                             warn!("⚠️  Chaotic behavior detected | Preemptive scaling recommended");
-                            // Trigger preventive motor rebalance
                         }
                     }
                     Err(e) => {
@@ -295,8 +293,8 @@ impl MasterOrchestrator {
         loop {
             ticker.tick().await;
             
-            if let Ok(mut bridge) = self.oracle_bridge.write().await {
-                // Check FFI toolchains on Oracle VMs
+            {
+                let mut bridge = self.oracle_bridge.write().await;
                 match bridge.verify_vm_toolchains().await {
                     Ok(status) => {
                         info!("☁️  Oracle VM check | Julia: {}, Zig: {}, Mojo: {}, JAX: {}, Pony: {}",
@@ -307,7 +305,6 @@ impl MasterOrchestrator {
                             status.pony_available
                         );
                         
-                        // Sync code if all toolchains ready
                         if status.all_ready() {
                             if let Err(e) = bridge.sync_code_to_vms().await {
                                 error!("❌ Code sync to VMs failed: {}", e);
@@ -328,10 +325,8 @@ impl MasterOrchestrator {
     /// HELPER: Check Motor Status
     /// ════════════════════════════════════════════════════════════════
     
-    async fn check_motor(&self, motor_name: &str) -> MotorStatus {
-        // Implement actual health checks per motor
+    async fn check_motor(&self, _motor_name: &str) -> MotorStatus {
         MotorStatus {
-            name: motor_name.to_string(),
             is_healthy: true,
             latency_ms: 15.0,
             qps: 1000.0,
@@ -343,11 +338,10 @@ impl MasterOrchestrator {
     /// HELPER: Check FFI Bridge Status
     /// ════════════════════════════════════════════════════════════════
     
-    async fn check_ffi_bridge(&self, bridge_name: &str) -> FFIStatus {
+    async fn check_ffi_bridge(&self, _bridge_name: &str) -> FFIStatus {
         FFIStatus {
-            name: bridge_name.to_string(),
             is_healthy: true,
-            native_available: false, // Check Oracle VMs
+            native_available: false,
             fallback_active: true,
             last_check: chrono::Utc::now(),
         }
@@ -361,39 +355,19 @@ impl MasterOrchestrator {
         info!("🛑 Shutting down MasterOrchestrator...");
         *self.is_running.write().await = false;
         
-        // Persist all memory contexts
-        if let Ok(bank) = self.memory_bank.write().await {
+        {
+            let bank = self.memory_bank.write().await;
             bank.persist_all_contexts().await?;
         }
-        
-        // Stop all motors gracefully
-        if let Ok(orchestrator) = self.motor_orchestrator.write().await {
+
+        {
+            let orchestrator = self.motor_orchestrator.write().await;
             orchestrator.shutdown_all_motors().await?;
         }
         
         info!("✅ MasterOrchestrator shutdown complete");
         Ok(())
     }
-}
-
-/// ════════════════════════════════════════════════════════════════
-/// STATUS TYPES
-/// ════════════════════════════════════════════════════════════════
-
-pub struct MotorStatus {
-    pub name: String,
-    pub is_healthy: bool,
-    pub latency_ms: f64,
-    pub qps: f64,
-    pub error_rate: f64,
-}
-
-pub struct FFIStatus {
-    pub name: String,
-    pub is_healthy: bool,
-    pub native_available: bool,
-    pub fallback_active: bool,
-    pub last_check: chrono::DateTime<chrono::Utc>,
 }
 
 #[cfg(test)]
