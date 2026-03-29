@@ -264,3 +264,44 @@ scheduled:cleanup:
     - echo "Running maintenance cleanup..."
   only:
     - schedules
+      expire_in: 30 days
+
+# ============================================================================
+# CLEANUP: Remove Redundant Documentation (Phase 4)
+# ============================================================================
+# Remove duplicated documentation files after consolidation into
+# FFI_AND_DEVOPS_GUIDE.md. This job runs after all phases complete.
+# ============================================================================
+
+cleanup:docs:
+  stage: cleanup
+  image: alpine:3.18
+  script:
+    - |
+      echo "════════════════════════════════════════════════════════════════"
+      echo "  PHASE 4 CLEANUP: Remove Redundant Documentation"
+      echo "════════════════════════════════════════════════════════════════"
+      
+      # Files consolidated into FFI_AND_DEVOPS_GUIDE.md
+      FILES=(
+        "FFI_AUDIT_REAL_STATE.md"
+        "FFI_PHASE_1_COMPLETION.md"
+        "FFI_REAL_IMPLEMENTATION_STATUS.md"
+        "GITLAB_IMPROVEMENTS_2026.md"
+        "GITLAB_PHASE_1_IMPLEMENTATION.md"
+        "PHASE_3_STATUS.md"
+        "ROOT_FUSION_SUMMARY.md"
+        "QUICK_FINISH.md"
+        "build_errors_full.txt"
+        "check_output_full.txt"
+        "check_output.txt"
+        "full_check.txt"
+      )
+      
+      for f in "\"; do
+        rm -f "\" 2>/dev/null || true
+      done
+      echo "✅ Cleanup complete"
+  allow_failure: true
+  only:
+    - main
