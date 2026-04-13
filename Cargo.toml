@@ -195,4 +195,4 @@ ffi-pony = []
 ffi-all = ["ffi-zig", "ffi-julia", "ffi-jax", "ffi-mojo", "ffi-pony"]
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.2"
