@@ -171,3 +171,93 @@ fn validate_pair(a: &[f64], b: &[f64]) -> Result<()> {
 pub fn is_available() -> bool {
     MOJO_AVAILABLE.load(Ordering::SeqCst)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_init() {
+        let res = init();
+        #[cfg(feature = "ffi-mojo")]
+        assert!(res.is_ok());
+        #[cfg(not(feature = "ffi-mojo"))]
+        assert!(matches!(res, Err(FfiError::NotAvailable(_))));
+    }
+
+    #[test]
+    fn test_dot_product() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![4.0, 5.0, 6.0];
+        let res = dot_product(&a, &b).unwrap();
+
+        #[cfg(not(feature = "ffi-mojo"))]
+        assert_eq!(res, 32.0); // 4 + 10 + 18
+
+        #[cfg(feature = "ffi-mojo")]
+        {
+            // The stub returns 0.0
+            assert_eq!(res, 0.0);
+        }
+    }
+
+    #[test]
+    fn test_dot_product_mismatch() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let res = dot_product(&a, &b);
+
+        #[cfg(feature = "ffi-mojo")]
+        assert!(res.is_err());
+
+        #[cfg(not(feature = "ffi-mojo"))]
+        {
+            // Zip will stop at shortest
+            assert_eq!(res.unwrap(), 5.0);
+        }
+    }
+
+    #[test]
+    fn test_cosine_similarity() {
+        let a = vec![1.0, 0.0];
+        let b = vec![1.0, 0.0];
+        let res = cosine_similarity(&a, &b).unwrap();
+
+        #[cfg(not(feature = "ffi-mojo"))]
+        assert!((res - 1.0).abs() < 1e-6);
+
+        #[cfg(feature = "ffi-mojo")]
+        assert_eq!(res, 0.0); // stub
+    }
+
+    #[test]
+    fn test_cosine_similarity_zero() {
+        let a = vec![0.0, 0.0];
+        let b = vec![1.0, 1.0];
+        let res = cosine_similarity(&a, &b).unwrap();
+        assert_eq!(res, 0.0);
+    }
+
+    #[test]
+    fn test_cosine_similarity_batch() {
+        let query = vec![1.0, 0.0];
+        let corpus = vec![
+            vec![1.0, 0.0],
+            vec![0.0, 1.0],
+        ];
+        let res = cosine_similarity_batch(&query, &corpus).unwrap();
+        assert_eq!(res.len(), 2);
+
+        #[cfg(not(feature = "ffi-mojo"))]
+        {
+            assert!((res[0] - 1.0).abs() < 1e-6);
+            assert!((res[1] - 0.0).abs() < 1e-6);
+        }
+
+        #[cfg(feature = "ffi-mojo")]
+        {
+            assert_eq!(res[0], 0.0);
+            assert_eq!(res[1], 0.0);
+        }
+    }
+}
