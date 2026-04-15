@@ -101,3 +101,111 @@ impl KnowledgeGraph {
         counts
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_graph() {
+        let graph = KnowledgeGraph::new();
+        assert_eq!(graph.node_count(), 0);
+        assert_eq!(graph.edge_count(), 0);
+    }
+
+    #[test]
+    fn test_add_get_node() {
+        let mut graph = KnowledgeGraph::new();
+        let node = GraphNode {
+            id: "node1".to_string(),
+            label: "Node 1".to_string(),
+            node_type: NodeType::Concept,
+            metadata: HashMap::new(),
+        };
+        graph.add_node(node.clone());
+        assert_eq!(graph.node_count(), 1);
+        let retrieved = graph.get_node("node1").unwrap();
+        assert_eq!(retrieved.label, "Node 1");
+        assert!(graph.get_node("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_add_edge() {
+        let mut graph = KnowledgeGraph::new();
+        let edge = GraphEdge {
+            source: "node1".to_string(),
+            target: "node2".to_string(),
+            relation: "related_to".to_string(),
+            weight: 1.0,
+        };
+        graph.add_edge(edge);
+        assert_eq!(graph.edge_count(), 1);
+    }
+
+    #[test]
+    fn test_neighbors() {
+        let mut graph = KnowledgeGraph::new();
+        let node1 = GraphNode {
+            id: "node1".to_string(),
+            label: "Node 1".to_string(),
+            node_type: NodeType::Concept,
+            metadata: HashMap::new(),
+        };
+        let node2 = GraphNode {
+            id: "node2".to_string(),
+            label: "Node 2".to_string(),
+            node_type: NodeType::Concept,
+            metadata: HashMap::new(),
+        };
+        let node3 = GraphNode {
+            id: "node3".to_string(),
+            label: "Node 3".to_string(),
+            node_type: NodeType::Concept,
+            metadata: HashMap::new(),
+        };
+        graph.add_node(node1);
+        graph.add_node(node2);
+        graph.add_node(node3);
+
+        graph.add_edge(GraphEdge {
+            source: "node1".to_string(),
+            target: "node2".to_string(),
+            relation: "link".to_string(),
+            weight: 1.0,
+        });
+        graph.add_edge(GraphEdge {
+            source: "node3".to_string(),
+            target: "node1".to_string(),
+            relation: "link".to_string(),
+            weight: 1.0,
+        });
+
+        let neighbors = graph.neighbors("node1");
+        assert_eq!(neighbors.len(), 2);
+        let ids: Vec<String> = neighbors.iter().map(|n| n.id.clone()).collect();
+        assert!(ids.contains(&"node2".to_string()));
+        assert!(ids.contains(&"node3".to_string()));
+    }
+
+    #[test]
+    fn test_stats() {
+        let mut graph = KnowledgeGraph::new();
+        graph.add_node(GraphNode {
+            id: "node1".to_string(),
+            label: "Node 1".to_string(),
+            node_type: NodeType::Concept,
+            metadata: HashMap::new(),
+        });
+        graph.add_edge(GraphEdge {
+            source: "node1".to_string(),
+            target: "node2".to_string(),
+            relation: "link".to_string(),
+            weight: 1.0,
+        });
+
+        let stats = graph.stats();
+        assert_eq!(stats["node_count"], 1);
+        assert_eq!(stats["edge_count"], 1);
+        assert_eq!(stats["node_types"]["Concept"], 1);
+    }
+}
