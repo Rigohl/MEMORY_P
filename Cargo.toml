@@ -31,7 +31,7 @@ rayon = "1.11"
 num_cpus = "1.17"
 scc = "2.4"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.22", features = ["v4", "v5", "serde"] }
+uuid = { version = "1.23", features = ["v4", "v5", "serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
 tracing = "0.1"
