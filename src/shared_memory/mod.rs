@@ -14,6 +14,7 @@ pub use types::*;
 
 pub struct SharedMemorySystem {
     pub manager: Arc<ContextManager>,
+    pub sync: Arc<sync::SyncCoordinator>,
 }
 
 impl SharedMemorySystem {
@@ -25,9 +26,13 @@ impl SharedMemorySystem {
     }
 
     pub async fn new() -> Result<Self> {
-        Ok(Self {
-            manager: Arc::new(ContextManager::new().await?),
-        })
+        let manager = Arc::new(ContextManager::new().await?);
+        let sync = Arc::new(sync::SyncCoordinator::new().await?);
+
+        // Inicializar el coordinador de sincronización
+        sync.initialize().await?;
+
+        Ok(Self { manager, sync })
     }
 
     pub async fn get_or_create_context(&self, agent_id: AgentId) -> Result<SharedContext> {
@@ -38,11 +43,12 @@ impl SharedMemorySystem {
         self.manager.update(context).await
     }
 
-    pub async fn sync_contexts(&self, _source: AgentId, _targets: Vec<AgentId>) -> Result<()> {
-        // Sync implementation: Full context replication across agent network
-        // REAL implementation needed when distributed coordination is enabled
-        // For now: Stub returns success - actual sync happens via ContextManager.update()
-        Ok(())
+    pub async fn sync_contexts(&self, source: AgentId, targets: Vec<AgentId>) -> Result<()> {
+        // Obtener el contexto actual de la fuente
+        let context = self.manager.get_or_create(source.clone()).await?;
+
+        // Sincronizar selectivamente con los objetivos
+        self.sync.sync_contexts(source, targets, context).await
     }
 
     pub async fn get_stats(&self) -> MemoryStats {
