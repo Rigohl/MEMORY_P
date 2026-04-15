@@ -5,6 +5,7 @@
 use anyhow::Result;
 use colored::Colorize;
 use regex::Regex;
+use std::sync::OnceLock;
 
 use jwalk::WalkDir;
 use std::collections::HashMap;
@@ -161,23 +162,28 @@ impl SqlReport {
     }
 }
 
+static SQL_PATTERNS: OnceLock<Vec<Regex>> = OnceLock::new();
+
+fn get_sql_patterns() -> &'static [Regex] {
+    SQL_PATTERNS.get_or_init(|| {
+        vec![
+            // Rust string literals with SQL keywords
+            Regex::new(r#"(?i)["'][\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?["']"#)
+                .unwrap(),
+            // sqlx macros
+            Regex::new(r#"(?i)query!?\s*\(\s*["'](.+?)["']"#).unwrap(),
+            // Raw SQL strings
+            Regex::new(r"(?i)r#[\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?#").unwrap(),
+        ]
+    })
+}
+
 /// Detect SQL queries in project
 pub fn detect_sql(path: &str, validate_syntax: bool, detect_issues: bool) -> Result<SqlReport> {
     let mut report = SqlReport::default();
     let project_path = Path::new(path);
 
     println!("{} Scanning for SQL queries in: {}", "🔍".cyan(), path);
-
-    // Patterns to detect SQL queries
-    let sql_patterns = vec![
-        // Rust string literals with SQL keywords
-        Regex::new(r#"(?i)["'][\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?["']"#)
-            .unwrap(),
-        // sqlx macros
-        Regex::new(r#"(?i)query!?\s*\(\s*["'](.+?)["']"#).unwrap(),
-        // Raw SQL strings
-        Regex::new(r"(?i)r#[\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?#").unwrap(),
-    ];
 
     for entry in WalkDir::new(project_path)
         .skip_hidden(false)
@@ -193,7 +199,7 @@ pub fn detect_sql(path: &str, validate_syntax: bool, detect_issues: bool) -> Res
 
         if let Ok(content) = fs::read_to_string(&entry_path) {
             for (line_num, line) in content.lines().enumerate() {
-                for pattern in &sql_patterns {
+                for pattern in get_sql_patterns() {
                     if let Some(caps) = pattern.captures(line) {
                         // Try to extract the query
                         let query_str = caps
