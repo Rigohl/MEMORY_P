@@ -7,11 +7,6 @@
 //! FALLBACK: Rust Optim.rs equivalent (NelderMead)
 
 use std::io::{self, Write};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-// Import from memory_p library crate
-use memory_p;
 
 type OptimizationResult = Vec<f64>;
 
