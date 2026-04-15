@@ -155,7 +155,11 @@ function authenticateRequest(request: Request, env: Env): { valid: boolean; reas
     }
 
     // Get API key from environment (set in wrangler.toml)
-    const expectedKey = env.MEMORY_P_API_KEY || "demo-key-change-in-production";
+    const expectedKey = env.MEMORY_P_API_KEY;
+
+    if (!expectedKey) {
+        return { valid: false, reason: "Server misconfiguration: MEMORY_P_API_KEY is not set" };
+    }
 
     // Check Authorization header
     const authHeader = request.headers.get("Authorization");
@@ -322,7 +326,14 @@ export default {
                 }
 
                 // Create JWT token
-                const secret = env.JWT_SECRET || "dev-secret-change-in-production";
+                const secret = env.JWT_SECRET;
+                if (!secret) {
+                    return new Response(
+                        JSON.stringify({ error: "server_error", error_description: "Server misconfiguration: JWT_SECRET is not set" }),
+                        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+                    );
+                }
+
                 const payload: JWTPayload = {
                     sub: client_id,
                     iat: Math.floor(Date.now() / 1000),
