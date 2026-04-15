@@ -9,7 +9,7 @@ keywords = ["mcp", "http", "memory", "brain", "rust"]
 categories = ["development-tools", "utilities"]
 
 [dependencies]
-tokio = { version = "1.40", features = ["full"] }
+tokio = { version = "1.51", features = ["full"] }
 futures = "0.3"
 async-trait = "0.1"
 async-stream = "0.3"
