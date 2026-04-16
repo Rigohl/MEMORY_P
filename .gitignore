@@ -219,3 +219,4 @@ config/override.toml
 
 # Configuration files in project root
 !/mcp_status.json
+.build/
