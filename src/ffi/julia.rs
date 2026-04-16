@@ -22,7 +22,7 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 
 /// Initialize Julia runtime and load mathematics modules
-/// 
+///
 /// This function:
 /// 1. Initializes Julia interpreter (jl_init_with_image)
 /// 2. Loads Optim.jl, LinearAlgebra, Statistics
@@ -55,7 +55,7 @@ pub fn init() -> Result<()> {
 fn try_load_julia_math() -> Result<()> {
     // REAL Julia FFI Implementation:
     // This code executes when Julia C API is available (usually installed via Juliaup or system package)
-    // 
+    //
     // Steps:
     // 1. Initialize Julia runtime: jl_init_with_image()
     // 2. Load dependencies: using Optim, LinearAlgebra, Statistics
@@ -69,7 +69,7 @@ fn try_load_julia_math() -> Result<()> {
     // - shannon_entropy(data) -> Float64
     //
     // Error handling: Try-catch in Julia, propagate Result<T, FfiError>
-    
+
     JULIA_AVAILABLE.store(true, Ordering::SeqCst);
     tracing::info!("[Julia] FFI successfully initialized");
     Ok(())
@@ -104,7 +104,7 @@ pub fn optimize_chaotic_system(params: &[f64]) -> Result<Vec<f64>> {
 }
 
 /// Analyze system dynamics using chaos theory
-/// REAL: Calls brain/julia/julia_math.jl chaos_analysis() 
+/// REAL: Calls brain/julia/julia_math.jl chaos_analysis()
 /// FALLBACK: Rust logistic map
 pub fn analyze_dynamics(time_series: &[f64]) -> Result<f64> {
     #[cfg(has_julia_ffi)]
@@ -122,14 +122,12 @@ pub fn analyze_dynamics(time_series: &[f64]) -> Result<f64> {
         if time_series.is_empty() {
             return Ok(0.0);
         }
-        
+
         // Simple divergence metric (not true Lyapunov, but similar)
         let mean = time_series.iter().sum::<f64>() / time_series.len() as f64;
-        let variance: f64 = time_series
-            .iter()
-            .map(|x| (x - mean).powi(2))
-            .sum::<f64>() / time_series.len() as f64;
-        
+        let variance: f64 =
+            time_series.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / time_series.len() as f64;
+
         // Approximate Lyapunov exponent
         let lyapunov = variance.log2() / time_series.len() as f64;
         Ok(lyapunov.clamp(-1.0, 1.0))
@@ -146,7 +144,8 @@ pub fn init_julia_runtime() -> Result<()> {
     #[cfg(not(has_julia_ffi))]
     {
         Err(FfiError::InitFailed(
-            "Julia FFI library not linked. Install Julia and compile with JULIA_DIR env var.".into(),
+            "Julia FFI library not linked. Install Julia and compile with JULIA_DIR env var."
+                .into(),
         ))
     }
 }

@@ -3,17 +3,12 @@
 //! Puerto: 3014
 //! Compilación: cargo build --release --bin lnx_cluster_engine
 
+use axum::{extract::Json, response::Json as JsonResponse, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use axum::{
-    extract::Json,
-    response::Json as JsonResponse,
-    routing::post,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DistributedSearchQuery {
@@ -54,7 +49,10 @@ async fn health_check() -> JsonResponse<JsonRpcResponse<LNXClusterStatus>> {
 async fn distributed_search(
     Json(query): Json<DistributedSearchQuery>,
 ) -> JsonResponse<JsonRpcResponse<Vec<DistributedSearchResult>>> {
-    println!("LNX distributed search: '{}' (k={})", query.query, query.top_k);
+    println!(
+        "LNX distributed search: '{}' (k={})",
+        query.query, query.top_k
+    );
     println!("  Consistency: {}", query.consistency_level);
     JsonResponse(json_rpc_success(vec![], Some(1)))
 }
@@ -91,8 +89,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("   MCP Endpoint: http://localhost:3014/mcp/");
     println!();
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

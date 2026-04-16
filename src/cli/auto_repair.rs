@@ -32,19 +32,20 @@ pub fn repair_project(
 ) -> Result<RepairReport> {
     let mut errors = Vec::new();
     let project_path = Path::new(path);
-    
+
     tracing::info!("🔧 Starting project repair for: {}", path);
-    
+
     // 1. Fix dependencies if requested
     if fix_deps {
         tracing::info!("  📦 Checking dependencies...");
         match Command::new("cargo")
             .args(&["update", "--aggressive"])
             .current_dir(project_path)
-            .output() {
+            .output()
+        {
             Ok(_) => {
                 tracing::info!("  ✅ Dependencies updated");
-            },
+            }
             Err(e) => {
                 let msg = format!("Dependency update failed: {}", e);
                 errors.push(msg.clone());
@@ -52,7 +53,7 @@ pub fn repair_project(
             }
         }
     }
-    
+
     // 2. Format code if requested
     if format {
         tracing::info!("  📝 Formatting code...");
@@ -62,7 +63,7 @@ pub fn repair_project(
             .output();
         tracing::info!("  ✅ Code formatted");
     }
-    
+
     // 3. Fix clippy warnings if requested
     if fix_clippy {
         tracing::info!("  🔍 Running clippy fixes...");
@@ -72,19 +73,19 @@ pub fn repair_project(
             .output();
         tracing::info!("  ✅ Clippy warnings fixed");
     }
-    
+
     // 4. Regenerate schemas if requested
     if regen_schemas {
         tracing::info!("  🗄️  Regenerating database schemas...");
         // Schemas regenerated from config/init.sql
         tracing::info!("  ✅ Database schemas regenerated");
     }
-    
+
     if !dry_run {
         tracing::info!("✅ Project repair completed");
     } else {
         tracing::info!("📋 Dry run - actual repairs not applied");
     }
-    
+
     Ok(RepairReport { errors })
 }

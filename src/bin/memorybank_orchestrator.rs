@@ -3,17 +3,12 @@
 //! Puerto: 3016
 //! Compilación: cargo build --release --bin memorybank_orchestrator --features ffi-julia,ffi-jax,ffi-mojo,ffi-zig,ffi-pony
 
+use axum::{extract::Json, response::Json as JsonResponse, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use axum::{
-    extract::Json,
-    response::Json as JsonResponse,
-    routing::post,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct HybridSearchQuery {
@@ -127,8 +122,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("   Hybrid Search: Coordinating all 9 motors");
     println!();
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

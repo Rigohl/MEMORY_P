@@ -9,6 +9,7 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 /// Validation results
 #[derive(Debug, Default)]
@@ -178,11 +179,11 @@ pub fn validate_project(
     Ok(report)
 }
 
+static TODO_RE: OnceLock<Regex> = OnceLock::new();
+
 /// Scan for TODO, FIXME, HACK, XXX, NOTE comments
 fn scan_todos_in_project(path: &Path) -> Result<Vec<TodoItem>> {
     let mut todos = Vec::new();
-
-    let todo_re = Regex::new(r"(?i)(TODO|FIXME|HACK|XXX|NOTE)[\s:]*(.*)").unwrap();
 
     for entry in WalkDir::new(path)
         .skip_hidden(false)
@@ -204,6 +205,9 @@ fn scan_todos_in_project(path: &Path) -> Result<Vec<TodoItem>> {
         }
 
         if let Ok(content) = fs::read_to_string(&path) {
+            let todo_re = TODO_RE
+                .get_or_init(|| Regex::new(r"(?i)(TODO|FIXME|HACK|XXX|NOTE)[\s:]*(.*)").unwrap());
+
             for (line_num, line) in content.lines().enumerate() {
                 if let Some(caps) = todo_re.captures(line) {
                     let kind = match caps.get(1).unwrap().as_str().to_uppercase().as_str() {
@@ -234,12 +238,11 @@ fn scan_todos_in_project(path: &Path) -> Result<Vec<TodoItem>> {
     Ok(todos)
 }
 
+static UNUSED_FN_RE: OnceLock<Regex> = OnceLock::new();
+
 /// Check for potential dead code patterns
 fn check_dead_code_patterns(path: &Path) -> Result<Vec<String>> {
     let mut suspects = Vec::new();
-
-    // Look for unused function patterns (simplified heuristic)
-    let _unused_fn_re = Regex::new(r"(?m)^[\s]*(?:pub\s+)?fn\s+([a-z_][a-z0-9_]*)\s*\(").unwrap();
 
     for entry in WalkDir::new(path)
         .skip_hidden(false)
@@ -253,6 +256,11 @@ fn check_dead_code_patterns(path: &Path) -> Result<Vec<String>> {
         }
 
         if let Ok(content) = fs::read_to_string(&entry_path) {
+            // Look for unused function patterns (simplified heuristic)
+            let _unused_fn_re = UNUSED_FN_RE.get_or_init(|| {
+                Regex::new(r"(?m)^[\s]*(?:pub\s+)?fn\s+([a-z_][a-z0-9_]*)\s*\(").unwrap()
+            });
+
             // Look for #[allow(dead_code)] or #[cfg(test)]
             if content.contains("#[allow(dead_code)]") {
                 suspects.push(format!(

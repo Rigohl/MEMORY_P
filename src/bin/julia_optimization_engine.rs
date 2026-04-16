@@ -1,8 +1,8 @@
 //! julia_optimization_engine.rs - Specialized binary for Julia-powered weight optimization
-//! 
+//!
 //! Compila con feature `ffi-julia` cuando Julia está disponible
 //! Fallback: Usar Rust pure optimization (no-Julia mode)
-//! 
+//!
 //! REAL FFI: Si Julia está instalado + brain/julia/julia_math.jl compilado
 //! FALLBACK: Rust Optim.rs equivalent (NelderMead)
 
@@ -15,10 +15,10 @@ type OptimizationResult = Vec<f64>;
 fn optimize_with_julia(weights: Vec<f64>) -> OptimizationResult {
     println!("[julia_optimization_engine] Attempting Julia FFI optimization...");
     println!("[julia_optimization_engine] Note: Julia FFI integration in progress");
-    
+
     // TODO: When julia FFI is fully available, this would call:
     // memory_p::ffi::julia::optimize_weights(weights)
-    
+
     println!("[julia_optimization_engine] Falling back to Rust pure optimization");
     optimize_with_rust_fallback(weights)
 }
@@ -35,13 +35,13 @@ fn optimize_with_julia(weights: Vec<f64>) -> OptimizationResult {
 fn optimize_with_rust_fallback(mut weights: Vec<f64>) -> OptimizationResult {
     println!("[julia_optimization_engine] Starting Rust-based NelderMead optimization");
     println!("[julia_optimization_engine] Initial weights: {:?}", weights);
-    
+
     let n = weights.len();
     if n == 0 {
         eprintln!("[julia_optimization_engine] Error: Empty weights vector");
         return vec![];
     }
-    
+
     // Normalize input
     let sum: f64 = weights.iter().sum();
     if sum > 0.0 {
@@ -49,23 +49,26 @@ fn optimize_with_rust_fallback(mut weights: Vec<f64>) -> OptimizationResult {
             *w /= sum;
         }
     }
-    
+
     // Simplified optimization: iterative refinement
     let mut best_weights = weights.clone();
     let mut best_score = evaluate_search_quality(&best_weights);
-    
-    println!("[julia_optimization_engine] Initial quality score: {:.4}", best_score);
-    
+
+    println!(
+        "[julia_optimization_engine] Initial quality score: {:.4}",
+        best_score
+    );
+
     // 10 iterations of optimization
     for iteration in 0..10 {
         let mut improved = false;
-        
+
         // Try small perturbations
         for i in 0..n {
             for delta in &[-0.02, -0.01, 0.01, 0.02] {
                 let mut candidate = best_weights.clone();
                 candidate[i] += delta;
-                
+
                 // Normalize to sum = 1.0
                 let sum: f64 = candidate.iter().sum();
                 if sum > 0.0 {
@@ -73,7 +76,7 @@ fn optimize_with_rust_fallback(mut weights: Vec<f64>) -> OptimizationResult {
                         *c /= sum;
                     }
                 }
-                
+
                 let score = evaluate_search_quality(&candidate);
                 if score > best_score {
                     best_weights = candidate;
@@ -82,18 +85,31 @@ fn optimize_with_rust_fallback(mut weights: Vec<f64>) -> OptimizationResult {
                 }
             }
         }
-        
-        println!("[julia_optimization_engine] Iteration {}: score={:.4}", iteration + 1, best_score);
-        
+
+        println!(
+            "[julia_optimization_engine] Iteration {}: score={:.4}",
+            iteration + 1,
+            best_score
+        );
+
         if !improved {
-            println!("[julia_optimization_engine] Converged after {} iterations", iteration + 1);
+            println!(
+                "[julia_optimization_engine] Converged after {} iterations",
+                iteration + 1
+            );
             break;
         }
     }
-    
-    println!("[julia_optimization_engine] Final optimized weights: {:?}", best_weights);
-    println!("[julia_optimization_engine] Final quality score: {:.4}", best_score);
-    
+
+    println!(
+        "[julia_optimization_engine] Final optimized weights: {:?}",
+        best_weights
+    );
+    println!(
+        "[julia_optimization_engine] Final quality score: {:.4}",
+        best_score
+    );
+
     best_weights
 }
 
@@ -102,19 +118,15 @@ fn optimize_with_rust_fallback(mut weights: Vec<f64>) -> OptimizationResult {
 fn evaluate_search_quality(weights: &[f64]) -> f64 {
     // Metric 1: Balance (prefer weights closer to 1/n)
     let ideal = 1.0 / weights.len() as f64;
-    let balance_score = 1.0 - weights
-        .iter()
-        .map(|w| (w - ideal).abs())
-        .sum::<f64>() / weights.len() as f64;
-    
+    let balance_score =
+        1.0 - weights.iter().map(|w| (w - ideal).abs()).sum::<f64>() / weights.len() as f64;
+
     // Metric 2: Variance penalty (penalize extreme weights)
     let mean: f64 = weights.iter().sum::<f64>() / weights.len() as f64;
-    let variance: f64 = weights
-        .iter()
-        .map(|w| (w - mean).powi(2))
-        .sum::<f64>() / weights.len() as f64;
+    let variance: f64 =
+        weights.iter().map(|w| (w - mean).powi(2)).sum::<f64>() / weights.len() as f64;
     let variance_penalty = 1.0 - (variance * 2.0).min(1.0);
-    
+
     // Combined score
     (balance_score * 0.6 + variance_penalty * 0.4) + 0.01
 }
@@ -122,39 +134,39 @@ fn evaluate_search_quality(weights: &[f64]) -> f64 {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    
+
     println!("╔════════════════════════════════════════════════════════════╗");
     println!("║ MEMORY_P v2.0 - Julia Optimization Engine                 ║");
     println!("║ Specialized Binary: Weight Optimization                    ║");
     println!("╚════════════════════════════════════════════════════════════╝\n");
-    
+
     // Determine compilation mode
     #[cfg(feature = "ffi-julia")]
     println!("[MAIN] Compiled WITH ffi-julia feature");
     #[cfg(not(feature = "ffi-julia"))]
     println!("[MAIN] Compiled WITHOUT ffi-julia feature (Rust pure mode)");
-    
+
     println!("\nEnter weight vector (comma-separated floats, e.g., '0.4,0.3,0.3'):");
     print!("> ");
     io::stdout().flush().unwrap();
-    
+
     let mut input = String::new();
     if io::stdin().read_line(&mut input).is_err() {
         eprintln!("Failed to read input");
         std::process::exit(1);
     }
-    
+
     let weights: Result<Vec<f64>, _> = input
         .trim()
         .split(',')
         .map(|s| s.trim().parse::<f64>())
         .collect();
-    
+
     match weights {
         Ok(w) if !w.is_empty() => {
             println!("\n[MAIN] Processing {} weights...\n", w.len());
             let optimized = optimize_with_julia(w);
-            
+
             println!("\n╔════════════════════════════════════════════════════════════╗");
             println!("║ OPTIMIZATION COMPLETE                                      ║");
             println!("╠════════════════════════════════════════════════════════════╣");

@@ -35,14 +35,14 @@ impl SearchEngine for MemoryBankEngine {
         query: &SearchQuery,
     ) -> Result<Vec<SearchResult>, Box<dyn Error + Send + Sync>> {
         // === NEW: Math-aware memory ranking using entropy ===
-        
+
         // 1. Get candidate memories (base query matching)
         let candidates = self.get_candidate_memories(query)?;
-        
+
         if candidates.is_empty() {
             return Ok(vec![]);
         }
-        
+
         // 2. Compute entropy for each candidate
         // Higher entropy = less predictable/relevant = lower score
         let mut scored_results: Vec<(SearchResult, f64)> = candidates
@@ -58,60 +58,55 @@ impl SearchEngine for MemoryBankEngine {
                     // If no vector, estimate from text
                     let text = result.content.as_bytes();
                     let freq_dist: Vec<f64> = (0..=255u8)
-                        .map(|byte| {
-                            text.iter().filter(|&&b| b == byte).count() as f64
-                        })
+                        .map(|byte| text.iter().filter(|&&b| b == byte).count() as f64)
                         .filter(|&count| count > 0.0)
                         .collect();
-                    
+
                     if freq_dist.is_empty() {
                         0.5
                     } else {
                         crate::ffi::julia::shannon_entropy(&freq_dist)
                     }
                 };
-                
+
                 // 3. Compute stability score: 1.0 - entropy_penalty
                 // Lower entropy = higher relevance (more stable memory)
                 let stability_score = (1.0 - entropy * 0.7).max(0.1);
-                
+
                 // 4. Base score from query matching
                 let base_relevance = if result.content.contains(&query.text) {
                     1.0
                 } else {
                     0.5
                 };
-                
+
                 // 5. Combine stability + relevance
                 let final_score = base_relevance * stability_score;
                 result.score = final_score as f32;
-                
+
                 (result, final_score)
             })
             .collect();
-        
+
         // 6. Sort by score descending
-        scored_results.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-        
+        scored_results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
         // 7. Return top N results above confidence threshold
         let threshold = 0.3_f64;
         let limit = if query.limit > 0 { query.limit } else { 10 };
-        
+
         let results: Vec<crate::motores::core::types::SearchResult> = scored_results
             .into_iter()
             .filter(|(_, score)| *score >= threshold)
             .take(limit)
             .map(|(result, _)| result)
             .collect();
-        
+
         tracing::debug!(
             "[MEMORY_BANK] Ranked {} memories using entropy scaling",
             results.len()
         );
-        
+
         // NEW: Record query pattern for user analysis
         let user_id = "default_user"; // In production, would come from context
         let action = crate::pattern_detector::UserAction {
@@ -123,7 +118,7 @@ impl SearchEngine for MemoryBankEngine {
             duration_secs: 0.01, // ~10ms
         };
         self.pattern_detector.record_action(user_id, action).await;
-        
+
         Ok(results)
     }
 
@@ -205,7 +200,7 @@ impl MemoryBankEngine {
         // In production, this would query actual memory storage
         Ok(vec![SearchResult {
             id: format!("memory-bank:{}", query.text),
-            score: 0.5,  // Will be recomputed by search()
+            score: 0.5, // Will be recomputed by search()
             content: query.text.clone(),
             metadata: HashMap::from([(
                 "strategy".to_string(),

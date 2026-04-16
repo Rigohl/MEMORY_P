@@ -13,13 +13,13 @@
 //! 9. KPI Tracker - record metrics
 //! 10. Decision Engine - synthesize decision
 
-use crate::context_detector::{ContextDetector};
+use crate::context_detector::ContextDetector;
+use crate::health::monitor::Monitor;
 use crate::hyper_memory::HyperMemory;
 use crate::kpi_tracker::KpiTracker;
 use crate::motores::core::routing_ai::RoutingAI;
 use crate::pattern_detector::PatternDetector;
 use crate::prediction_engine::PredictionEngine;
-use crate::health::monitor::Monitor;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::{debug, info};
@@ -69,7 +69,6 @@ pub struct McpOrchestrator {
     // System 8: Memory Recall (via hyper_memory)
     // System 9: KPI Tracker
     kpi_tracker: Arc<KpiTracker>,
-
     // System 10: Decision Engine (implicit in orchestration)
 }
 
@@ -96,7 +95,10 @@ impl McpOrchestrator {
 
     /// Execute the 10-system orchestration
     pub async fn orchestrate(&self, req: McpRequest) -> McpResponse {
-        info!("🎯 MCP Orchestration START: user={}, query={}", req.user_id, req.query);
+        info!(
+            "🎯 MCP Orchestration START: user={}, query={}",
+            req.user_id, req.query
+        );
 
         let mut systems_used = Vec::new();
         let start = std::time::Instant::now();
@@ -109,10 +111,7 @@ impl McpOrchestrator {
         // System 2: Load Workspace Context
         debug!("2️⃣ Loading workspace context...");
         systems_used.push("workspace_context".to_string());
-        let workspace = self
-            .context_detector
-            .get_workspace_context()
-            .await;
+        let workspace = self.context_detector.get_workspace_context().await;
         debug!("   Workspace: {:?} files loaded", workspace.files.len());
 
         // System 3: Retrieve Chat History
@@ -124,7 +123,10 @@ impl McpOrchestrator {
             })
             .await;
         let chat_ctx = self.context_detector.get_chat_context().await;
-        debug!("   Chat history: {} recent queries", chat_ctx.query_history.len());
+        debug!(
+            "   Chat history: {} recent queries",
+            chat_ctx.query_history.len()
+        );
 
         // System 4: Analyze with Routing AI
         debug!("4️⃣ Analyzing with Routing AI...");
@@ -179,8 +181,12 @@ impl McpOrchestrator {
         let confidence = (healthy_count as f64) / (engines.len().max(1) as f64);
         let elapsed = start.elapsed().as_millis();
 
-        info!("✅ MCP Orchestration COMPLETE: {} systems used, confidence={:.2}, time={}ms",
-            systems_used.len(), confidence, elapsed);
+        info!(
+            "✅ MCP Orchestration COMPLETE: {} systems used, confidence={:.2}, time={}ms",
+            systems_used.len(),
+            confidence,
+            elapsed
+        );
 
         McpResponse {
             decision,

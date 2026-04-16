@@ -3,17 +3,12 @@
 //! Puerto: 3010
 //! Compilación: cargo build --release --bin qdrant_search_engine
 
+use axum::{extract::Json, response::Json as JsonResponse, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use axum::{
-    extract::Json,
-    response::Json as JsonResponse,
-    routing::post,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SearchQuery {
@@ -99,8 +94,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("   MCP Endpoint: http://localhost:3010/mcp/");
     println!();
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

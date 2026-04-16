@@ -1,12 +1,12 @@
 pub mod handlers;
 pub mod http_server;
-pub mod protocol;
-pub mod tools;
-pub mod orchestrator;
 pub mod models;
+pub mod orchestrator;
+pub mod protocol;
 pub mod shared_memory_tools;
 #[cfg(test)]
 pub mod tests;
+pub mod tools;
 
 pub use http_server::{
     execute_tool, start_http_server, AppState, FFIStatus, MCPInfo, McpSession, SearchQuery,

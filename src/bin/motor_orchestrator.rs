@@ -29,7 +29,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match cli.command {
         None | Some(Commands::List) => {
-            println!("{}", "Motor Orchestrator - Available Engines".bold().green());
+            println!(
+                "{}",
+                "Motor Orchestrator - Available Engines".bold().green()
+            );
             println!("{}", "=====================================".green());
             println!("1. {} - Full-text search", "Tantivy".cyan());
             println!("2. {} - Full-text search", "Toshi".cyan());

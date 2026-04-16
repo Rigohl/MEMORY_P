@@ -1,12 +1,11 @@
 /// JAX ML Inference Engine - HTTP Server
-/// 
+///
 /// Exposes JAX ML capabilities via HTTP.
 /// Demonstrates FFI integration with Python + JAX.
-
 use axum::{extract::Json, routing::get, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Serialize, Deserialize)]
 struct HealthResponse {
@@ -38,9 +37,8 @@ struct InferenceResult {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    
-    let port = std::env::var("MEMORY_P_JAX_PORT")
-        .unwrap_or_else(|_| "9001".to_string());
+
+    let port = std::env::var("MEMORY_P_JAX_PORT").unwrap_or_else(|_| "9001".to_string());
 
     info!("[JAX ML Engine] Starting on 127.0.0.1:{}", port);
 
@@ -57,9 +55,7 @@ async fn main() {
 
     info!("[JAX ML Engine] listening at http://127.0.0.1:{}", port_num);
 
-    axum::serve(listener, app)
-        .await
-        .expect("Server failed");
+    axum::serve(listener, app).await.expect("Server failed");
 }
 
 async fn health() -> Json<HealthResponse> {

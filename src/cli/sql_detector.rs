@@ -168,12 +168,15 @@ fn get_sql_patterns() -> &'static [Regex] {
     SQL_PATTERNS.get_or_init(|| {
         vec![
             // Rust string literals with SQL keywords
-            Regex::new(r#"(?i)["'][\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?["']"#)
-                .unwrap(),
+            Regex::new(
+                r#"(?i)["'][\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?["']"#,
+            )
+            .unwrap(),
             // sqlx macros
             Regex::new(r#"(?i)query!?\s*\(\s*["'](.+?)["']"#).unwrap(),
             // Raw SQL strings
-            Regex::new(r"(?i)r#[\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?#").unwrap(),
+            Regex::new(r"(?i)r#[\s]*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)[\s]+.*?#")
+                .unwrap(),
         ]
     })
 }

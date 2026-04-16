@@ -69,7 +69,9 @@ impl EmbeddingGenerator {
             // let py_module = PyModule::from_code(py, include_str!("../../brain/python/jax_inference.py"), ...);
             // let engine = py_module.call_method0("JaxInferenceEngine")?;
             // let embedding = engine.call_method1("generate_embedding", (text,))?;
-            tracing::debug!("[JAX] Calling SentenceTransformer.encode() from brain/python/jax_inference.py");
+            tracing::debug!(
+                "[JAX] Calling SentenceTransformer.encode() from brain/python/jax_inference.py"
+            );
             // Placeholder: for now use fallback
             self.generate_embedding_fallback(text).await
         }
