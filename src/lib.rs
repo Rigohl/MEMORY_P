@@ -86,13 +86,10 @@ pub mod workspace;
 #[cfg(test)]
 mod tests {
     use rayon::prelude::*;
-    
+
     #[test]
     fn test_parallel_initialization() {
-        let results: Vec<i32> = (0..1000)
-            .into_par_iter()
-            .map(|x| x * x)
-            .collect();
+        let results: Vec<i32> = (0..1000).into_par_iter().map(|x| x * x).collect();
         assert_eq!(results.len(), 1000);
     }
 

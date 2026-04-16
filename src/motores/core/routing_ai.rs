@@ -4,8 +4,8 @@
 //! characteristics, scale requirements, and engine capabilities.
 
 use super::types::{EngineSelection, QueryPattern, QueryType, SearchQuery};
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct EnginePerformanceStats {
@@ -81,7 +81,7 @@ impl RoutingAI {
     pub async fn route_with_chaos(
         &self,
         query: &SearchQuery,
-        system_metrics: &[f64],  // Historical latencies or load
+        system_metrics: &[f64], // Historical latencies or load
     ) -> Vec<EngineSelection> {
         // 1. Analyze system state using chaos theory
         let lyapunov = match crate::ffi::julia::chaos_analysis(system_metrics) {
@@ -91,13 +91,13 @@ impl RoutingAI {
                 return self.route_query(query);
             }
         };
-        
+
         let entropy = crate::ffi::julia::shannon_entropy(system_metrics);
-        
+
         // 2. Get base pattern
         let pattern = self.analyze_query_characteristics(query);
         let mut selections = self.select_engines_for_pattern(&pattern);
-        
+
         // 3. NEW: Get predictive suggestions (predict_optimizations not yet implemented)
         // TODO: Add predict_optimizations() to PredictionEngine
         // let optimizations = match self.predictive_engine.predict_optimizations(query).await {
@@ -107,7 +107,7 @@ impl RoutingAI {
         // if !optimizations.is_empty() {
         //     tracing::debug!("🔮 Predictive suggestions: {:?}", optimizations.iter().map(|o| &o.description).collect::<Vec<_>>());
         // }
-        
+
         // 4. Check for adverse results and warn (detect_adverse_results not yet implemented)
         // TODO: Implement detect_adverse_results in PredictionEngine
         // if let Ok(adverse) = self.predictive_engine.detect_adverse_results().await {
@@ -115,25 +115,34 @@ impl RoutingAI {
         //         tracing::warn!("⚠️ Potential adverse results detected: {:?}", adverse);
         //     }
         // }
-        
+
         // 5. Adapt based on chaos (λ = Lyapunov exponent, H = Shannon entropy)
         if lyapunov > 0.5 && entropy > 0.6 {
             // High chaos detected → prefer most stable engines
-            tracing::info!("[ROUTING] Chaotic state (λ={:.2}, H={:.2}) → using stable engines", lyapunov, entropy);
-            selections = selections.into_iter()
+            tracing::info!(
+                "[ROUTING] Chaotic state (λ={:.2}, H={:.2}) → using stable engines",
+                lyapunov,
+                entropy
+            );
+            selections = selections
+                .into_iter()
                 .filter(|e| self.is_stable_engine(e))
                 .collect();
         } else if lyapunov < 0.1 && entropy < 0.3 {
             // Very stable state → can parallelize aggressively
-            tracing::debug!("[ROUTING] Stable state (λ={:.2}, H={:.2}) → parallelizing", lyapunov, entropy);
+            tracing::debug!(
+                "[ROUTING] Stable state (λ={:.2}, H={:.2}) → parallelizing",
+                lyapunov,
+                entropy
+            );
             selections.push(EngineSelection::Secondary("faiss"));
             selections.push(EngineSelection::Secondary("tantivy"));
         }
-        
-        // 6. NEW: Apply predictive optimizations if available (predict_optimizations not yet implemented)  
+
+        // 6. NEW: Apply predictive optimizations if available (predict_optimizations not yet implemented)
         // TODO: Implement predict_optimizations()
         // if let Some(opt) = optimizations.first() { ...}
-        
+
         selections
     }
 
@@ -143,11 +152,11 @@ impl RoutingAI {
             EngineSelection::Primary(name) => {
                 // Most stable under chaos: strict ordering + low latency variance
                 matches!(name, &"tantivy" | &"qdrant")
-            },
+            }
             EngineSelection::Secondary(name) => {
                 // Secondary stable option
                 matches!(name, &"lnx" | &"meilisearch")
-            },
+            }
             _ => false,
         }
     }

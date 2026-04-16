@@ -72,7 +72,9 @@ pub fn init() -> Result<()> {
             ZIG_AVAILABLE.store(true, Ordering::SeqCst);
             tracing::info!("[Zig] ✓ REAL FFI: Zig zero-copy buffer management initialized");
             tracing::debug!("[Zig] REAL PATH: Calls brain/zig/ffi_bridge.zig via extern \"C\"");
-            tracing::debug!("[Zig] REAL BENEFIT: Arena allocator reduces memory fragmentation by 40-60%");
+            tracing::debug!(
+                "[Zig] REAL BENEFIT: Arena allocator reduces memory fragmentation by 40-60%"
+            );
             tracing::debug!("[Zig] REAL: Direct mmap access with zero-copy semantics");
             return Ok(());
         }
@@ -82,7 +84,9 @@ pub fn init() -> Result<()> {
     {
         tracing::warn!("[Zig] FALLBACK: zig compiler not found. Using Rust Vec<u8> buffer (safe, slight overhead)");
         tracing::debug!("[Zig] FALLBACK PATH: Rust Arena = parking_lot::RwLock<Vec<u8>> with Arc reference counting");
-        tracing::info!("[Zig] To enable REAL: Install zig compiler, build libffi_bridge.so, then rebuild");
+        tracing::info!(
+            "[Zig] To enable REAL: Install zig compiler, build libffi_bridge.so, then rebuild"
+        );
     }
 
     Ok(())
@@ -162,7 +166,10 @@ impl ZigBridge {
         match &self.inner {
             #[cfg(has_zig_ffi)]
             BridgeInner::Native(ptr) => unsafe {
-                tracing::debug!("[Zig] REAL: Writing {} bytes via Zig zero-copy buffer", data.len());
+                tracing::debug!(
+                    "[Zig] REAL: Writing {} bytes via Zig zero-copy buffer",
+                    data.len()
+                );
                 let res = shared_memory_buffer_write(*ptr, data.as_ptr(), data.len());
                 if res < 0 {
                     tracing::error!("[Zig] REAL: Write failed with code {}", res);
@@ -175,16 +182,27 @@ impl ZigBridge {
                 Ok(())
             },
             BridgeInner::Rust(buf) => {
-                tracing::debug!("[Zig] FALLBACK: Writing {} bytes via Rust Vec<u8> (RwLock protected)", data.len());
+                tracing::debug!(
+                    "[Zig] FALLBACK: Writing {} bytes via Rust Vec<u8> (RwLock protected)",
+                    data.len()
+                );
                 let used = buf.used.load(Ordering::SeqCst);
                 if used + data.len() > buf.capacity {
-                    tracing::error!("[Zig] FALLBACK: Buffer overflow {} + {} > {}", used, data.len(), buf.capacity);
+                    tracing::error!(
+                        "[Zig] FALLBACK: Buffer overflow {} + {} > {}",
+                        used,
+                        data.len(),
+                        buf.capacity
+                    );
                     return Err(crate::error::MemoryPError::Other("Buffer overflow".into()));
                 }
                 let mut guard = buf.data.write();
                 guard[used..used + data.len()].copy_from_slice(data);
                 buf.used.store(used + data.len(), Ordering::SeqCst);
-                tracing::trace!("[Zig] FALLBACK: Write complete, used now {}", buf.used.load(Ordering::SeqCst));
+                tracing::trace!(
+                    "[Zig] FALLBACK: Write complete, used now {}",
+                    buf.used.load(Ordering::SeqCst)
+                );
                 Ok(())
             }
         }

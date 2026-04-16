@@ -80,12 +80,16 @@ pub fn init() -> Result<()> {
         PONY_AVAILABLE.store(true, Ordering::SeqCst);
         tracing::info!("[Pony] ✓ REAL FFI: Pony actor runtime initialized from libpony_actors");
         tracing::debug!("[Pony] REAL PATH: Calls brain/pony/search_actor.pony via extern \"C\"");
-        tracing::debug!("[Pony] GUARANTEES: No data races, no deadlocks, no GC pauses (compile-verified)");
+        tracing::debug!(
+            "[Pony] GUARANTEES: No data races, no deadlocks, no GC pauses (compile-verified)"
+        );
         return Ok(());
     }
     #[cfg(not(has_pony_ffi))]
     {
-        tracing::warn!("[Pony] FALLBACK: ponyc compiler not found. Distributed search unavailable.");
+        tracing::warn!(
+            "[Pony] FALLBACK: ponyc compiler not found. Distributed search unavailable."
+        );
         tracing::debug!("[Pony] FALLBACK PATH: Would use Tokio actor simulation (not operational in fallback mode)");
         tracing::info!("[Pony] To enable REAL: Install ponyc-x.y.z, build libpony_actors.so, then rebuild Rust");
         Err(FfiError::InitFailed(
@@ -111,7 +115,7 @@ pub fn is_available() -> bool {
 // --- Public API ---
 
 /// Distributed search across named indices.
-/// 
+///
 /// REAL: Uses native Pony actor model (`brain/pony/search_actor.pony`)
 /// FALLBACK: Returns error (Pony not compiled)
 pub async fn distributed_search(_query: &str, _indices: &[String]) -> Result<Vec<String>> {
@@ -123,9 +127,12 @@ pub async fn distributed_search(_query: &str, _indices: &[String]) -> Result<Vec
                 "Pony actor system not initialized".into(),
             ));
         }
-        tracing::debug!("[Pony] REAL: Calling pony_distributed_search with {} indices", _indices.len());
-        let result = unsafe { native::call_distributed_search(_query, _indices) }
-            .ok_or_else(|| {
+        tracing::debug!(
+            "[Pony] REAL: Calling pony_distributed_search with {} indices",
+            _indices.len()
+        );
+        let result =
+            unsafe { native::call_distributed_search(_query, _indices) }.ok_or_else(|| {
                 tracing::error!("[Pony] pony_distributed_search returned null");
                 FfiError::CallFailed("Pony distributed_search returned null".into())
             })?;

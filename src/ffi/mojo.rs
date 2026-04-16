@@ -12,7 +12,7 @@ extern "C" {
     /// REAL: mojo_dot_product(a_ptr, b_ptr, n) -> f64
     /// From: brain/mojo/kernels.mojo @export mojo_dot_product()  
     fn mojo_dot_product(a_ptr: usize, b_ptr: usize, n: isize) -> f64;
-    
+
     /// REAL: mojo_cosine_similarity(a_ptr, b_ptr, n) -> f64
     /// From: brain/mojo/kernels.mojo @export mojo_cosine_similarity()
     fn mojo_cosine_similarity(a_ptr: usize, b_ptr: usize, n: isize) -> f64;
@@ -241,10 +241,7 @@ mod tests {
     #[test]
     fn test_cosine_similarity_batch() {
         let query = vec![1.0, 0.0];
-        let corpus = vec![
-            vec![1.0, 0.0],
-            vec![0.0, 1.0],
-        ];
+        let corpus = vec![vec![1.0, 0.0], vec![0.0, 1.0]];
         let res = cosine_similarity_batch(&query, &corpus).unwrap();
         assert_eq!(res.len(), 2);
 

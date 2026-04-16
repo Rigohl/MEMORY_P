@@ -37,9 +37,9 @@ use std::sync::Arc;
 use std::time::Instant;
 
 /// Configuración avanzada para el motor paralelo con optimizaciones de rendimiento
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```ignore
 /// let config = ParallelConfig {
 ///     max_threads: 0, // auto-detect
@@ -67,7 +67,7 @@ impl Default for ParallelConfig {
     fn default() -> Self {
         Self {
             max_threads: num_cpus::get(), // Auto-detect cores
-            chunk_size: 1000, // Optimal batch size
+            chunk_size: 1000,             // Optimal batch size
             _read_buffer_size: 1024 * 1024,
             _file_timeout_ms: 30000,
             _continue_on_error: true,

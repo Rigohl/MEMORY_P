@@ -3,17 +3,12 @@
 //! Puerto: 3011
 //! Compilación: cargo build --release --bin faiss_search_engine --features ffi-jax
 
+use axum::{extract::Json, response::Json as JsonResponse, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use axum::{
-    extract::Json,
-    response::Json as JsonResponse,
-    routing::post,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GPUSearchQuery {
@@ -98,8 +93,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("   MCP Endpoint: http://localhost:3011/mcp/");
     println!();
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

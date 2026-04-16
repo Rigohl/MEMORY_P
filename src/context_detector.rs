@@ -49,4 +49,3 @@ impl ContextDetector {
         // Stub implementation
     }
 }
-

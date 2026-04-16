@@ -1,12 +1,11 @@
 /// Pony Actor System Engine - HTTP Server
-/// 
+///
 /// Exposes Pony actor-model capabilities via HTTP.
 /// Demonstrates FFI integration with Pony's actor system.
-
 use axum::{extract::Json, routing::get, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Serialize, Deserialize)]
 struct HealthResponse {
@@ -39,9 +38,8 @@ struct ActorResponse {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    
-    let port = std::env::var("MEMORY_P_PONY_PORT")
-        .unwrap_or_else(|_| "9003".to_string());
+
+    let port = std::env::var("MEMORY_P_PONY_PORT").unwrap_or_else(|_| "9003".to_string());
 
     info!("[Pony Actor Engine] Starting on 127.0.0.1:{}", port);
 
@@ -56,11 +54,12 @@ async fn main() {
         .await
         .expect("Failed to bind port");
 
-    info!("[Pony Actor Engine] listening at http://127.0.0.1:{}", port_num);
+    info!(
+        "[Pony Actor Engine] listening at http://127.0.0.1:{}",
+        port_num
+    );
 
-    axum::serve(listener, app)
-        .await
-        .expect("Server failed");
+    axum::serve(listener, app).await.expect("Server failed");
 }
 
 async fn health() -> Json<HealthResponse> {
@@ -69,7 +68,7 @@ async fn health() -> Json<HealthResponse> {
     } else {
         "tokio-fallback".to_string()
     };
-    
+
     Json(HealthResponse {
         status: "ok".to_string(),
         service: "pony_actor_engine".to_string(),
@@ -102,9 +101,7 @@ async fn mcp_health() -> Json<JsonRpcResponse<HealthResponse>> {
     Json(json_rpc_success(result, Some(1)))
 }
 
-async fn mcp_actor_message(
-    Json(msg): Json<ActorMessage>,
-) -> Json<JsonRpcResponse<ActorResponse>> {
+async fn mcp_actor_message(Json(msg): Json<ActorMessage>) -> Json<JsonRpcResponse<ActorResponse>> {
     let result = ActorResponse {
         task_id: msg.task_id,
         result: msg.data,

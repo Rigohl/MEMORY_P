@@ -3,17 +3,12 @@
 //! Puerto: 3013
 //! Compilación: cargo build --release --bin tantivy_engine
 
+use axum::{extract::Json, response::Json as JsonResponse, routing::post, Router};
+use memory_p::json_rpc::{json_rpc_success, JsonRpcResponse};
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
-use axum::{
-    extract::Json,
-    response::Json as JsonResponse,
-    routing::post,
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use memory_p::json_rpc::{JsonRpcResponse, json_rpc_success};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TextSearchQuery {
@@ -52,7 +47,10 @@ async fn health_check() -> JsonResponse<JsonRpcResponse<TantivyStatus>> {
 async fn full_text_search(
     Json(query): Json<TextSearchQuery>,
 ) -> JsonResponse<JsonRpcResponse<Vec<TextSearchResult>>> {
-    println!("Tantivy full-text search: '{}' (limit: {})", query.text, query.limit);
+    println!(
+        "Tantivy full-text search: '{}' (limit: {})",
+        query.text, query.limit
+    );
     if let Some(fields) = query.fields {
         println!("  Fields: {:?}", fields);
     }
@@ -102,8 +100,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("   MCP Endpoint: http://localhost:3013/mcp/");
     println!();
 
-    axum::serve(listener, app)
-        .await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

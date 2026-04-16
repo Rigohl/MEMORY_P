@@ -1,5 +1,5 @@
 //! JSON-RPC 2.0 Protocol Implementation
-//! 
+//!
 //! Implements JSON-RPC 2.0 spec (https://www.jsonrpc.org/specification)
 //! Used for MCP (Model Context Protocol) 2024-11-05 compliance
 

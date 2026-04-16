@@ -113,13 +113,48 @@ impl AppState {
     async fn detect_ffi_status() -> FFIStatus {
         let _ = crate::ffi::init().await;
         let status = crate::ffi::detect_status();
-        
+
         tracing::info!("🔌 FFI Status Detection:");
-        tracing::info!("  Zig:  {}", if status.zig { "✅ ACTIVE" } else { "❌ FALLBACK" });
-        tracing::info!("  Julia: {}", if status.julia { "✅ ACTIVE" } else { "❌ FALLBACK" });
-        tracing::info!("  Mojo: {}", if status.mojo { "✅ ACTIVE" } else { "❌ FALLBACK" });
-        tracing::info!("  Pony: {}", if status.pony { "✅ ACTIVE" } else { "❌ FALLBACK" });
-        tracing::info!("  JAX: {}", if status.jax { "✅ ACTIVE" } else { "❌ FALLBACK" });
+        tracing::info!(
+            "  Zig:  {}",
+            if status.zig {
+                "✅ ACTIVE"
+            } else {
+                "❌ FALLBACK"
+            }
+        );
+        tracing::info!(
+            "  Julia: {}",
+            if status.julia {
+                "✅ ACTIVE"
+            } else {
+                "❌ FALLBACK"
+            }
+        );
+        tracing::info!(
+            "  Mojo: {}",
+            if status.mojo {
+                "✅ ACTIVE"
+            } else {
+                "❌ FALLBACK"
+            }
+        );
+        tracing::info!(
+            "  Pony: {}",
+            if status.pony {
+                "✅ ACTIVE"
+            } else {
+                "❌ FALLBACK"
+            }
+        );
+        tracing::info!(
+            "  JAX: {}",
+            if status.jax {
+                "✅ ACTIVE"
+            } else {
+                "❌ FALLBACK"
+            }
+        );
 
         FFIStatus {
             zig: status.zig,     // REAL FFI or fallback
