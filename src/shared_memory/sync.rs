@@ -14,16 +14,37 @@ pub enum SyncEvent {
     ContextUpdated {
         agent_id: AgentId,
         context: Box<SharedContext>,
+        targets: Option<Vec<AgentId>>,
     },
 
     /// Contexto creado
     ContextCreated {
         agent_id: AgentId,
         context_id: ContextId,
+        targets: Option<Vec<AgentId>>,
     },
 
     /// Contexto eliminado
-    ContextDeleted { context_id: ContextId },
+    ContextDeleted {
+        context_id: ContextId,
+        targets: Option<Vec<AgentId>>,
+    },
+}
+
+impl SyncEvent {
+    /// Verifica si un agente es objetivo de este evento
+    pub fn is_target(&self, agent_id: &AgentId) -> bool {
+        let targets = match self {
+            SyncEvent::ContextUpdated { targets, .. } => targets,
+            SyncEvent::ContextCreated { targets, .. } => targets,
+            SyncEvent::ContextDeleted { targets, .. } => targets,
+        };
+
+        match targets {
+            Some(t) => t.contains(agent_id),
+            None => true, // Broadcast general si no hay objetivos específicos
+        }
+    }
 }
 
 /// Coordinador de sincronización entre agentes
@@ -85,10 +106,16 @@ impl SyncCoordinator {
     }
 
     /// Transmite una actualización de contexto a todos los suscriptores
-    pub async fn broadcast_update(&self, agent_id: AgentId, context: SharedContext) -> Result<()> {
+    pub async fn broadcast_update(
+        &self,
+        agent_id: AgentId,
+        context: SharedContext,
+        targets: Option<Vec<AgentId>>,
+    ) -> Result<()> {
         let event = SyncEvent::ContextUpdated {
             agent_id: agent_id.clone(),
             context: Box::new(context),
+            targets,
         };
 
         match self.event_tx.send(event) {
@@ -109,6 +136,7 @@ impl SyncCoordinator {
         &self,
         source_agent: AgentId,
         target_agents: Vec<AgentId>,
+        context: SharedContext,
     ) -> Result<()> {
         debug!(
             "Sincronizando contexto de {} a {} agentes",
@@ -116,10 +144,8 @@ impl SyncCoordinator {
             target_agents.len()
         );
 
-        // TODO: Implementar sincronización selectiva
-        // Por ahora, usar broadcast general
-
-        Ok(())
+        self.broadcast_update(source_agent, context, Some(target_agents))
+            .await
     }
 
     /// Obtiene el número de suscriptores activos
@@ -190,7 +216,7 @@ mod tests {
         let agent_id_clone = agent_id.clone();
         tokio::spawn(async move {
             coordinator_clone
-                .broadcast_update(agent_id_clone, context_clone)
+                .broadcast_update(agent_id_clone, context_clone, None)
                 .await
                 .unwrap();
         });
@@ -203,8 +229,58 @@ mod tests {
                 ..
             } => {
                 assert_eq!(received_id, agent_id);
+                assert!(event.is_target(&agent_id));
             }
             _ => panic!("Tipo de evento incorrecto"),
         }
+    }
+
+    #[tokio::test]
+    async fn test_selective_sync() {
+        let coordinator = SyncCoordinator::new().await.unwrap();
+        coordinator.initialize().await.unwrap();
+
+        let source_agent = AgentId::new("source".to_string());
+        let target1 = AgentId::new("target1".to_string());
+        let target2 = AgentId::new("target2".to_string());
+        let other = AgentId::new("other".to_string());
+
+        let mut rx1 = coordinator.subscribe(target1.clone());
+        let mut rx2 = coordinator.subscribe(target2.clone());
+        let mut rx_other = coordinator.subscribe(other.clone());
+
+        let context = SharedContext::new(source_agent.clone());
+
+        // Sincronizar solo con target1 y target2
+        let targets = vec![target1.clone(), target2.clone()];
+
+        let coordinator_clone = coordinator.clone();
+        let source_clone = source_agent.clone();
+        let targets_clone = targets.clone();
+        let context_clone = context.clone();
+
+        tokio::spawn(async move {
+            coordinator_clone
+                .sync_contexts(source_clone, targets_clone, context_clone)
+                .await
+                .unwrap();
+        });
+
+        // Recibir y verificar en target1
+        let event1 = rx1.recv().await.unwrap();
+        assert!(event1.is_target(&target1));
+
+        // Recibir y verificar en target2
+        let event2 = rx2.recv().await.unwrap();
+        assert!(event2.is_target(&target2));
+
+        // Recibir en other y verificar que no es el objetivo
+        let event_other = rx_other.recv().await.unwrap();
+        assert!(!event_other.is_target(&other));
+
+        // Verificar lógica de is_target directamente
+        assert!(event1.is_target(&target1));
+        assert!(event1.is_target(&target2));
+        assert!(!event1.is_target(&other));
     }
 }
