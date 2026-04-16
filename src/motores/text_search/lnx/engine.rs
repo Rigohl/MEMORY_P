@@ -168,21 +168,26 @@ impl SearchEngine for LnxEngine {
 
     async fn health(&self) -> Result<EngineHealth, Box<dyn Error + Send + Sync>> {
         let url = format!("{}/ping", self.base_url);
-        let healthy = self
-            .http
-            .get(&url)
-            .send()
-            .await
-            .map(|r| r.status().is_success())
-            .unwrap_or(false);
+        let (healthy, status) = match self.http.get(&url).send().await {
+            Ok(resp) => {
+                let st = resp.status();
+                if st.is_success() {
+                    (true, "Running".to_string())
+                } else {
+                    let msg = match st {
+                        reqwest::StatusCode::NOT_FOUND => "Index not found".to_string(),
+                        _ => format!("Unexpected error: {}", st),
+                    };
+                    (false, msg)
+                }
+            }
+            Err(_) => (false, "Unreachable".to_string()),
+        };
+
         Ok(EngineHealth {
             engine: "lnx".to_string(),
             healthy: self.initialized && healthy,
-            status: if healthy {
-                "Running".to_string()
-            } else {
-                "Unreachable".to_string()
-            },
+            status,
             last_check: Self::current_timestamp(),
             details: HashMap::from([("endpoint".to_string(), serde_json::json!(self.base_url))]),
         })

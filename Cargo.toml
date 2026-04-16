@@ -56,17 +56,17 @@ mockall = "0.14"
 tokio-test = "0.4"
 proptest = "1.11"
 
-[[bench]]
-name = "parallel_engine"
-harness = false
+# [[bench]]
+# name = "parallel_engine"
+# harness = false
 
-[[bench]]
-name = "vector_search"
-harness = false
+# [[bench]]
+# name = "vector_search"
+# harness = false
 
-[[bench]]
-name = "memory_operations"
-harness = false
+# [[bench]]
+# name = "memory_operations"
+# harness = false
 
 [[bin]]
 name = "memory_p"
