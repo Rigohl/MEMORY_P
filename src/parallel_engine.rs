@@ -34,12 +34,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::time::Instant;
 
 /// Configuración avanzada para el motor paralelo con optimizaciones de rendimiento
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```ignore
 /// let config = ParallelConfig {
 ///     max_threads: 0, // auto-detect
@@ -67,7 +68,7 @@ impl Default for ParallelConfig {
     fn default() -> Self {
         Self {
             max_threads: num_cpus::get(), // Auto-detect cores
-            chunk_size: 1000, // Optimal batch size
+            chunk_size: 1000,             // Optimal batch size
             _read_buffer_size: 1024 * 1024,
             _file_timeout_ms: 30000,
             _continue_on_error: true,
@@ -383,7 +384,9 @@ pub fn ultra_edit(
 ) -> Result<(Vec<ProcessingResult>, ProcessingStats)> {
     let engine = UltraParallelEngine::new(config);
     let start = Instant::now();
+    use dashmap::DashMap;
     use regex::Regex;
+    use std::sync::OnceLock;
 
     // Paralelizamos sobre los archivos a cambiar
     let results: Vec<ProcessingResult> = engine.pool.install(|| {
@@ -575,6 +578,9 @@ pub fn ultra_delete(
 
     Ok((results, stats))
 }
+
+static REGEX_CACHE: OnceLock<DashMap<String, Regex>> = OnceLock::new();
+
 pub fn ultra_workflow(
     request: &crate::mcp::models::UltraWorkflowRequest,
     config: ParallelConfig,
@@ -607,7 +613,15 @@ pub fn ultra_workflow(
                 }
             }
             WorkflowStep::Filter { pattern, invert } => {
-                let re = Regex::new(pattern).map_err(|e| MemoryPError::Other(e.to_string()))?;
+                let cache = REGEX_CACHE.get_or_init(DashMap::new);
+                let re = if let Some(cached_re) = cache.get(pattern) {
+                    cached_re.clone()
+                } else {
+                    let compiled =
+                        Regex::new(pattern).map_err(|e| MemoryPError::Other(e.to_string()))?;
+                    cache.insert(pattern.to_string(), compiled.clone());
+                    compiled
+                };
                 let inv = invert.unwrap_or(false);
 
                 // Parallel Filter
