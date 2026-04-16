@@ -133,3 +133,35 @@ Este archivo consolida toda la información relevante de los siguientes archivos
 
 ---
 **Esta fusión preserva toda la información relevante y elimina solo lo duplicado o superfluo.**
+
+## ACTUALIZACIÓN OPERATIVA 2026-04-15 (MCP + FFI REAL + UNIFICACIÓN DE RAMAS)
+
+### Objetivo de unificación
+- Estado esperado de git: conservar únicamente `main` como rama operativa de integración.
+- Flujo recomendado: merge incremental por rama con validaciones de compilación, tests y smoke de MCP en cada paso.
+
+### Qué hace este MCP (resumen ejecutivo)
+- Expone JSON-RPC 2.0 sobre endpoint `/mcp` con ciclo de vida de sesión (`initialize`, `notifications/initialized`).
+- Publica herramientas (`tools/list`) y ejecución de herramientas (`tools/call`) para análisis, memoria y orquestación de motores.
+- Integra una arquitectura multi-motor (vectorial, textual, híbrida y especializada) con memoria compartida y telemetría.
+- Integra FFI multi-lenguaje (Zig, Julia, JAX, Mojo, Pony) para cómputo especializado y decisión matemática.
+
+### Principios técnicos aplicados en esta actualización
+- FFI obligatorio para arranque del servidor principal (sin modo opcional silencioso).
+- Prohibido introducir mocks/dead code en rutas críticas de ejecución.
+- Eliminar duplicidad funcional gradualmente (mantener trazabilidad histórica, reducir superficie activa).
+- Alinear claims de documentación con estado implementado y verificable.
+
+### Checklist de despliegue seguro (CI/CD)
+1. `cargo fmt --all -- --check`
+2. `cargo clippy --all-targets --all-features -- -D warnings`
+3. `cargo test --all-features`
+4. `cargo build --release --bins --all-features`
+5. Smoke MCP:
+   - `cargo run --bin memory_p_mcp`
+   - `curl -s http://localhost:4040/mcp -H "content-type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'`
+
+### Pendientes críticos para completar exigencia “FFI REAL no opcional”
+- Sustituir stubs restantes por llamadas FFI reales en Zig/Julia/JAX/Mojo/Pony y validar contrato por herramienta MCP.
+- Garantizar que cada herramienta MCP sensible a FFI falle de forma explícita y trazable cuando un backend no esté disponible.
+- Consolidar rutas duplicadas para evitar inconsistencias (`core` vs componentes heredados/corruptos).

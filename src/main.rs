@@ -40,13 +40,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn http_server(telemetry: Arc<TelemetrySystem>) -> error::Result<()> {
     tracing::info!("Starting MEMORY_P HTTP Server v2.2");
 
-    // Initialize all FFI subsystems FIRST before any other initialization
-    // try {
-    //     ffi::init().await?;
-    // } catch {
-    //     return Err("FFI init failed".into());
-    // }
-    tracing::warn!("FFI initialization skipped - using pure Rust fallbacks");
+    // FFI is mandatory in production mode. Abort startup if unavailable.
+    ffi::init().await.map_err(|e| {
+        error::MemoryPError::Other(format!("FFI init failed (mandatory): {}", e))
+    })?;
+    tracing::info!("FFI initialization completed (mandatory mode)");
 
     let shared_memory = Arc::new(shared_memory::SharedMemorySystem::new().await?);
     shared_memory.initialize().await?;

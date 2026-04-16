@@ -92,6 +92,15 @@ cargo run --release -- --listen 0.0.0.0:3000
 cargo bench
 ```
 
+
+
+## 🔎 Estado Operativo Real (Abril 2026)
+
+- El MCP opera como servidor JSON-RPC 2.0 con sesiones (`initialize`, `tools/list`, `tools/call`).
+- La arquitectura integra motores vectoriales, textuales, híbridos y especializados bajo orquestación Rust.
+- El objetivo operativo es mantener FFI multi-lenguaje **real y obligatorio** en producción (Zig/Julia/JAX/Mojo/Pony), evitando rutas con mocks en componentes críticos.
+- El flujo de integración recomendado es una única rama `main` con validación CI/CD completa en cada merge.
+
 ## 📚 Documentation
 
 - [**Architecture Guide**](docs/ARCHITECTURE.md) - System design & motor details
