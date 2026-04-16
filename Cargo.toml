@@ -9,7 +9,7 @@ keywords = ["mcp", "http", "memory", "brain", "rust"]
 categories = ["development-tools", "utilities"]
 
 [dependencies]
-tokio = { version = "1.51", features = ["full"] }
+tokio = { version = "1.40", features = ["full"] }
 futures = "0.3"
 async-trait = "0.1"
 async-stream = "0.3"
@@ -31,7 +31,7 @@ rayon = "1.11"
 num_cpus = "1.17"
 scc = "2.4"
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.23", features = ["v4", "v5", "serde"] }
+uuid = { version = "1.22", features = ["v4", "v5", "serde"] }
 thiserror = "1.0"
 anyhow = "1.0"
 tracing = "0.1"
@@ -49,12 +49,17 @@ mimalloc = "0.1.48"
 smallvec = "1.13"
 smartstring = { version = "1.0", features = ["serde"] }
 dotenv = "0.15"
+log = "0.4"
+env_logger = "0.11"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 mockall = "0.14"
 tokio-test = "0.4"
-proptest = "1.11"
+proptest = "1.4"
+reqwest = { version = "0.12", features = ["json"] }
+futures = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [[bench]]
 name = "parallel_engine"
@@ -68,100 +73,32 @@ harness = false
 name = "memory_operations"
 harness = false
 
+[[bench]]
+name = "motor_performance"
+harness = false
+
 [[bin]]
 name = "memory_p"
 path = "src/main.rs"
-# Orchestration server (HTTP) + all components
+# MEMORY_P Core: ALL motors (9) + ALL FFI (5) + ALL brain + autonomous daemon + prediction engine
+# HTTP Server (port 3000)
+# Exposes: /search, /health, /mcp/tools/*, /cli/*, /info
 
 [[bin]]
-name = "vector_engine"
-path = "src/bin/vector_engine.rs"
-# Qdrant, FAISS, SCANN
+name = "memory_p_mcp"
+path = "src/bin/memory_p_mcp.rs"
+# MCP HTTP Server with Julia FFI Tools
+# JSON-RPC 2.0 protocol (2024-11-05 spec)
+# Port: 4040
+# Tools: search, embed, analyze, julia_optimize, julia_chaos, motors_health, predict, context, decision, + 3 more
 
 [[bin]]
-name = "text_engine"
-path = "src/bin/text_engine.rs"
-# Tantivy, LNX, Toshi, MeiliSearch
-
-[[bin]]
-name = "specialized_engine"
-path = "src/bin/specialized_engine.rs"
-# Julia NLP, MemoryBank Ultra
-
-[[bin]]
-name = "jar"
-path = "src/bin/jar.rs"
-# DevOps CLI
-
-[[bin]]
-name = "mcp_server"
-path = "src/bin/mcp_server.rs"
-# MCP HTTP Server (port 4040)
-
-[[bin]]
-name = "motor_orchestrator"
-path = "src/bin/motor_orchestrator.rs"
-# Motor management CLI
-
-[[bin]]
-name = "jax_ml_engine"
-path = "src/bin/jax_ml_engine.rs"
-# JAX ML inference engine with real sentence-transformers (Port 9001)
-
-[[bin]]
-name = "mojo_search_engine"
-path = "src/bin/mojo_search_engine.rs"
-# Mojo SIMD vector engine with Rust fallback (Port 9002)
-
-[[bin]]
-name = "pony_actor_engine"
-path = "src/bin/pony_actor_engine.rs"
-# Pony actor system engine with Tokio fallback (Port 9003)
-
-[[bin]]
-name = "qdrant_search_engine"
-path = "src/bin/qdrant_search_engine.rs"
-# Qdrant semantic vector search (Motor 1)
-
-[[bin]]
-name = "faiss_search_engine"
-path = "src/bin/faiss_search_engine.rs"
-# FAISS GPU billions-scale search (Motor 2)
-
-[[bin]]
-name = "scann_search_engine"
-path = "src/bin/scann_search_engine.rs"
-# SCANN learned index trillions-scale (Motor 3)
-
-[[bin]]
-name = "tantivy_engine"
-path = "src/bin/tantivy_engine.rs"
-# Tantivy BM25 full-text (Motor 4)
-
-[[bin]]
-name = "lnx_cluster_engine"
-path = "src/bin/lnx_cluster_engine.rs"
-# LNX Raft distributed (Motor 5)
-
-[[bin]]
-name = "meilisearch_search_engine"
-path = "src/bin/meilisearch_search_engine.rs"
-# MeiliSearch typo-tolerant (Motor 6)
-
-[[bin]]
-name = "memorybank_orchestrator"
-path = "src/bin/memorybank_orchestrator.rs"
-# MemoryBank multi-language FFI coordinator (Motor 9)
-
-[[bin]]
-name = "julia_optimization_engine"
-path = "src/bin/julia_optimization_engine.rs"
-# Julia FFI: Weight optimization + NelderMead
-
-[[bin]]
-name = "chaos_analyzer"
-path = "src/bin/chaos_analyzer.rs"
-# Lyapunov exponents + bifurcation detection
+name = "memory_p_cli"
+path = "src/bin/memory_p_cli.rs"
+# DevOps/Analysis CLI (merge of: jar.rs + chaos_analyzer.rs + motor_orchestrator.rs)
+# Commands: analyze, validate, repair, detect-sql, ci-check, health, optimize, chaos-analyze
+# NO PORT - only CLI interface
+# FFI: Julia chaos analysis, Zig bridges for low-level ops
 
 [lib]
 name = "memory_p"
@@ -169,11 +106,12 @@ path = "src/lib.rs"
 crate-type = ["rlib"]
 
 [profile.release]
-opt-level = 2
+opt-level = 1
 lto = false
-codegen-units = 8
+codegen-units = 1
 strip = false
 panic = "unwind"
+incremental = false
 
 [profile.bench]
 inherits = "release"
@@ -194,5 +132,12 @@ ffi-jax = []
 ffi-pony = []
 ffi-all = ["ffi-zig", "ffi-julia", "ffi-jax", "ffi-mojo", "ffi-pony"]
 
+# Custom cfg flags for FFI bridges (defined in build.rs, declared here to suppress warnings)
+has_zig_ffi = []
+has_julia_ffi = []
+has_jax_ffi = []
+has_mojo_ffi = []
+has_pony_ffi = []
+
 [build-dependencies]
-cc = "1.2"
+cc = "1.0"
