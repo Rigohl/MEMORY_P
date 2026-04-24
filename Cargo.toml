@@ -10,7 +10,6 @@ categories = ["development-tools", "utilities"]
 
 [dependencies]
 tokio = { version = "1.40", features = ["full"] }
-futures = "0.3"
 async-trait = "0.1"
 async-stream = "0.3"
 axum = "0.7"
@@ -20,6 +19,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 toml = "0.8"
+futures = "0.3"
 sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "postgres", "json"] }
 sled = "0.34"
 qdrant-client = "1.10"
@@ -29,6 +29,7 @@ dashmap = "6.1"
 parking_lot = "0.12"
 rayon = "1.11"
 num_cpus = "1.17"
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 scc = "2.4"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.22", features = ["v4", "v5", "serde"] }

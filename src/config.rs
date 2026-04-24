@@ -31,6 +31,8 @@ pub struct AdvancedConfig {
     pub enable_zerocopy: bool,
     /// Activar caché de análisis con SCC
     pub enable_scc_cache: bool,
+    /// URL de Redis para pub/sub distribuido
+    pub redis_url: String,
 }
 
 /// Configuración del orquestador Julia
@@ -50,6 +52,7 @@ impl Default for AdvancedConfig {
             large_file_threshold: 10 * 1024 * 1024, // 10MB
             enable_zerocopy: true,
             enable_scc_cache: true,
+            redis_url: "redis://127.0.0.1:6379".to_string(),
         }
     }
 }

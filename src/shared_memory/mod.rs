@@ -27,7 +27,7 @@ impl SharedMemorySystem {
 
     pub async fn new() -> Result<Self> {
         let manager = Arc::new(ContextManager::new().await?);
-        let sync = Arc::new(sync::SyncCoordinator::new().await?);
+        let sync = Arc::new(sync::SyncCoordinator::new());
 
         // Inicializar el coordinador de sincronización
         sync.initialize().await?;
