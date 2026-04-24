@@ -272,12 +272,11 @@ impl AdvancedVectorEngine {
 
     /// Indexa múltiples documentos en paralelo
     pub async fn index_batch(&self, docs: Vec<VectorDocument>) -> Result<usize> {
-        use rayon::prelude::*;
+        let futures = docs
+            .into_iter()
+            .map(|doc| self.index_document(doc));
 
-        let results: Vec<Result<()>> = docs
-            .into_par_iter()
-            .map(|doc| futures::executor::block_on(self.index_document(doc)))
-            .collect();
+        let results = futures::future::join_all(futures).await;
 
         let success_count = results.iter().filter(|r| r.is_ok()).count();
 
@@ -345,12 +344,11 @@ impl AdvancedVectorEngine {
         limit: usize,
         filter: Option<VectorFilter>,
     ) -> Result<Vec<Vec<VectorSearchResult>>> {
-        use rayon::prelude::*;
+        let futures = query_vectors
+            .iter()
+            .map(|qv| self.search(qv, limit, filter.clone()));
 
-        let results: Vec<Result<Vec<VectorSearchResult>>> = query_vectors
-            .par_iter()
-            .map(|qv| futures::executor::block_on(self.search(qv, limit, filter.clone())))
-            .collect();
+        let results = futures::future::join_all(futures).await;
 
         results.into_iter().collect()
     }
