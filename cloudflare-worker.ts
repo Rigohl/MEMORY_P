@@ -82,6 +82,18 @@ function toBase64Url(str: string): string {
 }
 
 /**
+ * Decode base64url string to original string
+ */
+function fromBase64Url(str: string): string {
+    // Add padding if missing
+    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (base64.length % 4 !== 0) {
+        base64 += "=";
+    }
+    return atob(base64);
+}
+
+/**
  * Generate random string (for code_verifier)
  */
 function generateRandomString(length: number = 43): string {
@@ -123,14 +135,36 @@ async function createJWT(payload: JWTPayload, secret: string): Promise<string> {
 }
 
 /**
- * Verify JWT token
+ * Verify JWT token signature and expiration
  */
 async function verifyJWT(token: string, secret: string): Promise<JWTPayload | null> {
     try {
         const [headerB64, payloadB64, signatureB64] = token.split(".");
         if (!headerB64 || !payloadB64 || !signatureB64) return null;
 
-        const payload = JSON.parse(atob(payloadB64)) as JWTPayload;
+        // Verify signature using Web Crypto API
+        const encoder = new TextEncoder();
+        const data = encoder.encode(`${headerB64}.${payloadB64}`);
+        const keyData = encoder.encode(secret);
+
+        const key = await crypto.subtle.importKey(
+            "raw",
+            keyData,
+            { name: "HMAC", hash: "SHA-256" },
+            false,
+            ["verify"]
+        );
+
+        // Convert base64url signature back to binary
+        const signatureBin = Uint8Array.from(
+            fromBase64Url(signatureB64),
+            c => c.charCodeAt(0)
+        );
+
+        const isValid = await crypto.subtle.verify("HMAC", key, signatureBin, data);
+        if (!isValid) return null;
+
+        const payload = JSON.parse(fromBase64Url(payloadB64)) as JWTPayload;
 
         // Check expiration
         if (payload.exp < Math.floor(Date.now() / 1000)) {
@@ -144,9 +178,9 @@ async function verifyJWT(token: string, secret: string): Promise<JWTPayload | nu
 }
 
 /**
- * Authenticate request using API key
+ * Authenticate request using API key or JWT
  */
-function authenticateRequest(request: Request, env: Env): { valid: boolean; reason?: string } {
+async function authenticateRequest(request: Request, env: Env): Promise<{ valid: boolean; reason?: string }> {
     // Public endpoints
     const url = new URL(request.url);
     const pathname = url.pathname;
@@ -168,6 +202,14 @@ function authenticateRequest(request: Request, env: Env): { valid: boolean; reas
         const token = authHeader.replace("Bearer ", "").trim();
         if (token === expectedKey) {
             return { valid: true };
+        }
+
+        // Try JWT verification if configured
+        if (env.JWT_SECRET) {
+            const payload = await verifyJWT(token, env.JWT_SECRET);
+            if (payload) {
+                return { valid: true };
+            }
         }
     }
 
@@ -197,7 +239,7 @@ export default {
         }
 
         // Authenticate request
-        const auth = authenticateRequest(request, env);
+        const auth = await authenticateRequest(request, env);
         if (!auth.valid) {
             return new Response(
                 JSON.stringify({
