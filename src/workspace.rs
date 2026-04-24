@@ -218,3 +218,120 @@ pub fn repair_file(path: &Path) -> Result<String> {
         Ok(format!("{}: ✨ NO REQUIRIÓ REPARACIÓN", path.display()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    static TEST_ID: AtomicUsize = AtomicUsize::new(0);
+
+    struct TestFile {
+        path: PathBuf,
+    }
+
+    impl TestFile {
+        fn new(name_prefix: &str, content: &str) -> Self {
+            let id = TEST_ID.fetch_add(1, Ordering::SeqCst);
+            let mut path = std::env::temp_dir();
+            path.push("test_workspace_temp");
+            let _ = fs::create_dir_all(&path);
+
+            path.push(format!("{}_{}_{}.rs", name_prefix, std::process::id(), id));
+            fs::write(&path, content).unwrap();
+            Self { path }
+        }
+
+        fn path(&self) -> &Path {
+            &self.path
+        }
+    }
+
+    impl Drop for TestFile {
+        fn drop(&mut self) {
+            let _ = fs::remove_file(&self.path);
+        }
+    }
+
+    #[test]
+    fn test_analyze_file_basic() {
+        let file = TestFile::new("basic", "fn main() { println!(\"hello\"); }");
+        let result = analyze_file(file.path());
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains(file.path().to_str().unwrap()));
+    }
+
+    #[test]
+    fn test_analyze_file_with_issues() {
+        let content = r#"
+            fn main() {
+                let x = Some(1);
+                let y = x.unwrap(); // Potential panic
+                unsafe {
+                    let z = 10;
+                }
+            }
+        "#;
+        let file = TestFile::new("issues", content);
+        let result = analyze_file(file.path());
+        assert!(result.is_ok());
+        let output = result.unwrap();
+        assert!(output.contains("☢️ UNSAFE"));
+        assert!(output.contains("💥 POTENCIAL PANIC"));
+    }
+
+    #[test]
+    fn test_edit_file_normalization() {
+        let content = "fn main() {\n\tlet x = 1;   \n}\n";
+        let file = TestFile::new("edit", content);
+        let result = edit_file(file.path());
+        assert!(result.is_ok());
+        assert!(result.unwrap().contains("NORMALIZADO"));
+
+        let new_content = fs::read_to_string(file.path()).unwrap();
+        assert!(!new_content.contains('\t'));
+        assert!(new_content.contains("    let x = 1;\n"));
+    }
+
+    #[test]
+    fn test_smart_repair_imports() {
+        let content = "use std::fs;\nuse std::io;\nuse std::fs;\n\nfn main() {}";
+        let file = TestFile::new("smart", content);
+        let result = smart_repair(file.path());
+        assert!(result.is_ok());
+        assert!(result.unwrap().contains("Duplicate import removed"));
+
+        let new_content = fs::read_to_string(file.path()).unwrap();
+        let imports_count = new_content.lines().filter(|l| l.starts_with("use ")).count();
+        assert_eq!(imports_count, 2);
+    }
+
+    #[test]
+    fn test_repair_file_spaces() {
+        let content = "fn main() {}\n\n\n\nfn other() {}";
+        let file = TestFile::new("repair", content);
+        let result = repair_file(file.path());
+        assert!(result.is_ok());
+        assert!(result.unwrap().contains("REPARADO"));
+
+        let new_content = fs::read_to_string(file.path()).unwrap();
+        let empty_lines = new_content.lines().filter(|l| l.trim().is_empty()).count();
+        assert!(empty_lines <= 2);
+    }
+
+    #[test]
+    fn test_process_parallel_basic() {
+        let f1 = TestFile::new("p1", "fn a() {}");
+        let f2 = TestFile::new("p2", "fn b() {}");
+        let paths = vec![f1.path().to_path_buf(), f2.path().to_path_buf()];
+
+        let results = process_parallel(&paths, analyze_file).unwrap();
+        assert_eq!(results.len(), 2);
+        for res in results {
+            assert!(res.is_ok());
+        }
+    }
+}
