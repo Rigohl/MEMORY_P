@@ -27,7 +27,7 @@ tantivy = "0.25"
 libloading = "0.8"
 dashmap = "6.1"
 parking_lot = "0.12"
-rayon = "1.11"
+rayon = "1.12"
 num_cpus = "1.17"
 scc = "2.4"
 chrono = { version = "0.4", features = ["serde"] }
