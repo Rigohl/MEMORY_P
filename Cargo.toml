@@ -45,7 +45,7 @@ regex = "1.12"
 clap = { version = "4.5", features = ["derive", "cargo"] }
 colored = "2.1"
 lazy_static = "1.4"
-mimalloc = "0.1.48"
+mimalloc = "0.1.50"
 smallvec = "1.13"
 smartstring = { version = "1.0", features = ["serde"] }
 dotenv = "0.15"
