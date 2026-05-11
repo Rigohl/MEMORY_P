@@ -140,4 +140,4 @@ has_mojo_ffi = []
 has_pony_ffi = []
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.2"
